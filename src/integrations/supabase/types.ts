@@ -14,16 +14,237 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      crew_members: {
+        Row: {
+          crew_id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          crew_id: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          crew_id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_members_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crews: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          invite_code: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          invite_code?: string
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          invite_code?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crews_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lifts: {
+        Row: {
+          created_at: string
+          description: string | null
+          exercise: Database["public"]["Enums"]["exercise"]
+          id: string
+          lifted_on: string
+          reps: number
+          status: Database["public"]["Enums"]["lift_status"]
+          updated_at: string
+          user_id: string
+          video_path: string | null
+          weight_kg: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          exercise: Database["public"]["Enums"]["exercise"]
+          id?: string
+          lifted_on?: string
+          reps: number
+          status?: Database["public"]["Enums"]["lift_status"]
+          updated_at?: string
+          user_id: string
+          video_path?: string | null
+          weight_kg: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          exercise?: Database["public"]["Enums"]["exercise"]
+          id?: string
+          lifted_on?: string
+          reps?: number
+          status?: Database["public"]["Enums"]["lift_status"]
+          updated_at?: string
+          user_id?: string
+          video_path?: string | null
+          weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      crew_invite_code: { Args: { _crew: string }; Returns: string }
+      crew_preview: {
+        Args: { _code: string }
+        Returns: {
+          description: string
+          id: string
+          member_count: number
+          name: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_crew_member: {
+        Args: { _crew: string; _user: string }
+        Returns: boolean
+      }
+      join_crew: { Args: { _code: string }; Returns: string }
+      leaderboard: {
+        Args: {
+          _crew?: string
+          _exercise: Database["public"]["Enums"]["exercise"]
+          _since?: string
+        }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          lift_id: string
+          lifted_on: string
+          reps: number
+          status: Database["public"]["Enums"]["lift_status"]
+          user_id: string
+          username: string
+          weight_kg: number
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      exercise: "bench" | "squat" | "deadlift" | "ohp" | "pullup"
+      lift_status:
+        | "PENDING"
+        | "AI_ANALYZING"
+        | "AI_CHECKED"
+        | "NEEDS_REVIEW"
+        | "VERIFIED"
+        | "REJECTED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +371,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      exercise: ["bench", "squat", "deadlift", "ohp", "pullup"],
+      lift_status: [
+        "PENDING",
+        "AI_ANALYZING",
+        "AI_CHECKED",
+        "NEEDS_REVIEW",
+        "VERIFIED",
+        "REJECTED",
+      ],
+    },
   },
 } as const
