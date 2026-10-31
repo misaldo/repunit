@@ -1,24 +1,95 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, Users, Video, ShieldCheck, Trophy } from "lucide-react";
+import hero from "@/assets/hero.jpg";
+import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
+import { useLeaderboard, Podium } from "@/components/leaderboard-list";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "REPUNIT — Strength is social" },
+      { name: "description", content: "The social strength network. Build your crew, submit lifts with video, climb the leaderboard." },
+      { property: "og:title", content: "REPUNIT — Strength is social" },
+      { property: "og:description", content: "Build your crew. Prove your strength. Own your rank." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Landing,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Landing() {
+  const { data: rows = [] } = useLeaderboard("bench");
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen">
+      <SiteHeader />
+      <section className="relative overflow-hidden">
+        <img src={hero} alt="Lifter setting up a heavy deadlift" width={1600} height={1104} className="absolute inset-0 h-full w-full object-cover opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
+        <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-24 md:pb-32 md:pt-40">
+          <p className="eyebrow rise">Who is the strongest in your crew?</p>
+          <h1 className="font-stat rise mt-4 text-[22vw] uppercase leading-[0.82] md:text-[11rem]">
+            Strength<br />is <span className="text-primary">social.</span>
+          </h1>
+          <p className="rise mt-6 max-w-md text-lg text-muted-foreground">Build your crew. Prove your strength. Own your rank.</p>
+          <div className="rise mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg" variant="hero" className="h-12"><Link to="/crews/new">Create your crew <ArrowRight /></Link></Button>
+            <Button asChild size="lg" variant="line" className="h-12"><Link to="/leaderboards">Explore leaderboards</Link></Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-20">
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <p className="eyebrow">Live · Global bench press</p>
+            <h2 className="mt-2 text-3xl font-bold md:text-5xl">The board right now</h2>
+          </div>
+          <Link to="/leaderboards" className="text-sm text-muted-foreground hover:text-foreground">All boards →</Link>
+        </div>
+        {rows.length >= 1 ? (
+          <Podium rows={rows.slice(0, 3)} />
+        ) : (
+          <div className="grid-lines rounded-xl border border-dashed border-border p-10 text-center">
+            <Trophy className="mx-auto h-8 w-8 text-primary" />
+            <p className="mt-3 font-heading text-xl font-bold">The podium is empty.</p>
+            <p className="mt-1 text-sm text-muted-foreground">First lift submitted takes the crown.</p>
+            <Button asChild variant="hero" className="mt-5"><Link to="/records/new">Submit a lift</Link></Button>
+          </div>
+        )}
+      </section>
+
+      <section className="border-y border-border bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-px bg-border md:grid-cols-3">
+          {[
+            { icon: Users, n: "01", t: "Build your crew", d: "Start a crew, share one link, and every friend lands on the same board." },
+            { icon: Video, n: "02", t: "Submit with video", d: "Log weight, reps and date. Attach the clip. Your evidence stays private to members." },
+            { icon: ShieldCheck, n: "03", t: "Earn verification", d: "Unverified, reviewed and verified lifts are always labelled. No fake badges." },
+          ].map((s) => (
+            <div key={s.n} className="bg-surface p-8">
+              <div className="flex items-center justify-between">
+                <s.icon className="h-6 w-6 text-primary" />
+                <span className="font-stat text-4xl text-muted-foreground/40">{s.n}</span>
+              </div>
+              <h3 className="mt-6 text-xl font-bold">{s.t}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-20">
+        <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card p-8 md:p-12">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+          <p className="eyebrow">REPUNIT Pro</p>
+          <h2 className="mt-2 max-w-lg text-3xl font-bold md:text-4xl">Deeper stats. Sharper rivalries.</h2>
+          <p className="mt-3 max-w-md text-muted-foreground">Advanced progress charts, crew analytics and exclusive themes — 99 CZK a month.</p>
+          <Button asChild variant="line" className="mt-6"><Link to="/pricing">See plans</Link></Button>
+        </div>
+      </section>
+      <SiteFooter />
+      <MobileNav />
     </div>
   );
 }
