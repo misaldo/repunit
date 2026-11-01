@@ -10,33 +10,221 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as LeaderboardsRouteImport } from './routes/leaderboards'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as RecordsIdRouteImport } from './routes/records.$id'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as AuthenticatedCrewsIndexRouteImport } from './routes/_authenticated/crews.index'
+import { Route as AuthenticatedCrewsIdRouteImport } from './routes/_authenticated/crews.$id'
+import { Route as AuthenticatedCrewsNewRouteImport } from './routes/_authenticated/crews.new'
+import { Route as AuthenticatedRecordsNewRouteImport } from './routes/_authenticated/records.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardsRoute = LeaderboardsRouteImport.update({
+  id: '/leaderboards',
+  path: '/leaderboards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const RecordsIdRoute = RecordsIdRouteImport.update({
+  id: '/records/$id',
+  path: '/records/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCrewsIndexRoute = AuthenticatedCrewsIndexRouteImport.update({
+  id: '/crews/',
+  path: '/crews/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCrewsIdRoute = AuthenticatedCrewsIdRouteImport.update({
+  id: '/crews/$id',
+  path: '/crews/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCrewsNewRoute = AuthenticatedCrewsNewRouteImport.update({
+  id: '/crews/new',
+  path: '/crews/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRecordsNewRoute = AuthenticatedRecordsNewRouteImport.update({
+  id: '/records/new',
+  path: '/records/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/leaderboards': typeof LeaderboardsRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/records/$id': typeof RecordsIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/crews/$id': typeof AuthenticatedCrewsIdRoute
+  '/crews/new': typeof AuthenticatedCrewsNewRoute
+  '/records/new': typeof AuthenticatedRecordsNewRoute
+  '/crews/': typeof AuthenticatedCrewsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/leaderboards': typeof LeaderboardsRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/records/$id': typeof RecordsIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/crews/$id': typeof AuthenticatedCrewsIdRoute
+  '/crews/new': typeof AuthenticatedCrewsNewRoute
+  '/records/new': typeof AuthenticatedRecordsNewRoute
+  '/crews': typeof AuthenticatedCrewsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/leaderboards': typeof LeaderboardsRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/records/$id': typeof RecordsIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/_authenticated/crews/$id': typeof AuthenticatedCrewsIdRoute
+  '/_authenticated/crews/new': typeof AuthenticatedCrewsNewRoute
+  '/_authenticated/records/new': typeof AuthenticatedRecordsNewRoute
+  '/_authenticated/crews/': typeof AuthenticatedCrewsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/leaderboards'
+    | '/pricing'
+    | '/privacy'
+    | '/reset-password'
+    | '/terms'
+    | '/dashboard'
+    | '/settings'
+    | '/records/$id'
+    | '/u/$username'
+    | '/crews/$id'
+    | '/crews/new'
+    | '/records/new'
+    | '/crews/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/leaderboards'
+    | '/pricing'
+    | '/privacy'
+    | '/reset-password'
+    | '/terms'
+    | '/dashboard'
+    | '/settings'
+    | '/records/$id'
+    | '/u/$username'
+    | '/crews/$id'
+    | '/crews/new'
+    | '/records/new'
+    | '/crews'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/leaderboards'
+    | '/pricing'
+    | '/privacy'
+    | '/reset-password'
+    | '/terms'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/settings'
+    | '/records/$id'
+    | '/u/$username'
+    | '/_authenticated/crews/$id'
+    | '/_authenticated/crews/new'
+    | '/_authenticated/records/new'
+    | '/_authenticated/crews/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  LeaderboardsRoute: typeof LeaderboardsRoute
+  PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  TermsRoute: typeof TermsRoute
+  RecordsIdRoute: typeof RecordsIdRoute
+  UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +236,146 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboards': {
+      id: '/leaderboards'
+      path: '/leaderboards'
+      fullPath: '/leaderboards'
+      preLoaderRoute: typeof LeaderboardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/records/$id': {
+      id: '/records/$id'
+      path: '/records/$id'
+      fullPath: '/records/$id'
+      preLoaderRoute: typeof RecordsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/crews/': {
+      id: '/_authenticated/crews/'
+      path: '/crews'
+      fullPath: '/crews/'
+      preLoaderRoute: typeof AuthenticatedCrewsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crews/$id': {
+      id: '/_authenticated/crews/$id'
+      path: '/crews/$id'
+      fullPath: '/crews/$id'
+      preLoaderRoute: typeof AuthenticatedCrewsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/crews/new': {
+      id: '/_authenticated/crews/new'
+      path: '/crews/new'
+      fullPath: '/crews/new'
+      preLoaderRoute: typeof AuthenticatedCrewsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/records/new': {
+      id: '/_authenticated/records/new'
+      path: '/records/new'
+      fullPath: '/records/new'
+      preLoaderRoute: typeof AuthenticatedRecordsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedCrewsIdRoute: typeof AuthenticatedCrewsIdRoute
+  AuthenticatedCrewsNewRoute: typeof AuthenticatedCrewsNewRoute
+  AuthenticatedRecordsNewRoute: typeof AuthenticatedRecordsNewRoute
+  AuthenticatedCrewsIndexRoute: typeof AuthenticatedCrewsIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedCrewsIdRoute: AuthenticatedCrewsIdRoute,
+  AuthenticatedCrewsNewRoute: AuthenticatedCrewsNewRoute,
+  AuthenticatedRecordsNewRoute: AuthenticatedRecordsNewRoute,
+  AuthenticatedCrewsIndexRoute: AuthenticatedCrewsIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  LeaderboardsRoute: LeaderboardsRoute,
+  PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  TermsRoute: TermsRoute,
+  RecordsIdRoute: RecordsIdRoute,
+  UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
