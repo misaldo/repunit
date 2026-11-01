@@ -11,11 +11,10 @@ export function useLeaderboard(exercise: Exercise, crew?: string | null, since?:
   return useQuery({
     queryKey: ["leaderboard", exercise, crew ?? null, since ?? null],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("leaderboard", {
-        _exercise: exercise,
-        _crew: crew ?? undefined,
-        _since: since ?? undefined,
-      });
+      const args: { _exercise: Exercise; _crew?: string; _since?: string } = { _exercise: exercise };
+      if (crew) args._crew = crew;
+      if (since) args._since = since;
+      const { data, error } = await supabase.rpc("leaderboard", args);
       if (error) throw error;
       return data ?? [];
     },
