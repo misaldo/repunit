@@ -20,6 +20,7 @@ function NewRecord() {
   const [busy, setBusy] = useState(false);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy) return;
     const f = new FormData(e.currentTarget);
     const weight = Number(f.get("weight")); const reps = Number(f.get("reps"));
     if (!(weight >= 0 && weight <= 600) || !(reps >= 1 && reps <= 100)) { toast.error("Check weight and reps."); return; }
@@ -40,7 +41,13 @@ function NewRecord() {
       if (error) throw error;
       toast.success("Lift submitted");
       navigate({ to: "/records/$id", params: { id: data.id } });
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); } finally { setBusy(false); }
+    } catch (err) {
+      if (video_path) {
+        const { error: cleanupError } = await supabase.storage.from("lift-videos").remove([video_path]);
+        if (cleanupError) toast.error("The lift was not saved, and its video could not be removed. Please try again later.");
+      }
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally { setBusy(false); }
   }
   return (
     <PageShell>

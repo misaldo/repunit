@@ -42,6 +42,7 @@ export function Podium({ rows }: { rows: Row[] }) {
             <p className={cn("font-stat mt-1", rank === 1 ? "text-5xl" : "text-3xl")}>{Number(r.weight_kg)}<span className="text-base text-muted-foreground">kg</span></p>
             {r.reps > 1 && <p className="text-[10px] text-muted-foreground">× {r.reps} reps</p>}
             <p className={cn("font-stat mt-2 text-2xl", PODIUM[rank - 1])}>#{rank}</p>
+            <StatusBadge status={r.status} className="mt-2" />
           </Link>
         );
       })}

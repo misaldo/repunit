@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Wordmark } from "@/components/brand";
 import { USERNAME_RE } from "@/lib/lifts";
+import { safeAuthPath } from "@/lib/auth-redirect";
 
 const search = z.object({ redirect: z.string().optional() });
 
@@ -26,13 +27,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function safePath(p?: string) {
-  if (!p) return "/dashboard";
-  try {
-    const u = new URL(p, window.location.origin);
-    return u.origin === window.location.origin ? u.pathname + u.search : "/dashboard";
-  } catch {
-    return "/dashboard";
-  }
+  return safeAuthPath(p, window.location.origin);
 }
 
 function AuthPage() {
@@ -41,6 +36,19 @@ function AuthPage() {
   const [mode, setMode] = useState<"in" | "up" | "reset">("in");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  const redirected = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active || error || !data.session || redirected.current) return;
+      redirected.current = true;
+      const destination = safePath(sessionStorage.getItem("post_auth") ?? redirect);
+      sessionStorage.removeItem("post_auth");
+      navigate({ to: destination, replace: true });
+    });
+    return () => { active = false; };
+  }, [redirect, navigate]);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,12 +65,13 @@ function AuthPage() {
         const username = String(f.get("username") ?? "").trim().toLowerCase();
         if (!USERNAME_RE.test(username)) throw new Error("Username: 3–20 lowercase letters, numbers or _.");
         if (password.length < 8) throw new Error("Password must be at least 8 characters.");
-        const { data: taken } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
+        const { data: taken, error: lookupError } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
+        if (lookupError) throw lookupError;
         if (taken) throw new Error("That username is taken.");
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + safePath(redirect), data: { username } },
+          options: { emailRedirectTo: window.location.origin + "/auth", data: { username } },
         });
         if (error) throw error;
         setSent("Confirm your email to activate your account.");
@@ -79,22 +88,11 @@ function AuthPage() {
   }
 
   async function google() {
-    if (redirect) sessionStorage.setItem("post_auth", safePath(redirect));
+    sessionStorage.setItem("post_auth", safePath(redirect));
     const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
     if (r.error) { toast.error("Google sign-in failed"); return; }
     if (r.redirected) return;
     navigate({ to: safePath(redirect) });
-  }
-
-  // After an OAuth round trip back to /auth, continue once the session exists.
-  if (typeof window !== "undefined") {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session && window.location.pathname === "/auth") {
-        const p = sessionStorage.getItem("post_auth") ?? safePath(redirect);
-        sessionStorage.removeItem("post_auth");
-        navigate({ to: p, replace: true });
-      }
-    });
   }
 
   return (

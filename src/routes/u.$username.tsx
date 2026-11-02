@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
 import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
@@ -13,16 +14,19 @@ export const Route = createFileRoute("/u/$username")({
 
 function Profile() {
   const { username } = Route.useParams();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
     queryFn: async () => {
-      const { data: p } = await supabase.from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username).maybeSingle();
+      const { data: p, error } = await supabase.from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username).maybeSingle();
+      if (error) throw error;
       if (!p) return null;
-      const { data: lifts } = await supabase.from("lifts").select("*").eq("user_id", p.id).order("lifted_on", { ascending: false });
+      const { data: lifts, error: liftsError } = await supabase.from("lifts").select("*").eq("user_id", p.id).order("lifted_on", { ascending: false });
+      if (liftsError) throw liftsError;
       return { p, lifts: lifts ?? [] };
     },
   });
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
+  if (isError) return <PageShell><p>Could not load this profile.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts } = data;
   return (

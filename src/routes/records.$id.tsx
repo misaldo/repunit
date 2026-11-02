@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { exerciseLabel, estimated1RM } from "@/lib/lifts";
 
@@ -12,10 +13,11 @@ export const Route = createFileRoute("/records/$id")({
 
 function Record() {
   const { id } = Route.useParams();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["lift", id],
     queryFn: async () => {
-      const { data: l } = await supabase.from("lifts").select("*, profiles(username)").eq("id", id).maybeSingle();
+      const { data: l, error } = await supabase.from("lifts").select("*, profiles(username)").eq("id", id).maybeSingle();
+      if (error) throw error;
       if (!l) return null;
       let video: string | null = null;
       if (l.video_path) {
@@ -26,6 +28,7 @@ function Record() {
     },
   });
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
+  if (isError) return <PageShell><p>Could not load this lift. Please try again.</p><Button className="mt-4" variant="line" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Record not found.</p></PageShell>;
   const { l, video } = data;
   return (
