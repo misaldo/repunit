@@ -68,6 +68,7 @@ function AuthPage() {
         const { data: taken, error: lookupError } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
         if (lookupError) throw lookupError;
         if (taken) throw new Error("That username is taken.");
+        sessionStorage.setItem("post_auth", safePath(redirect));
         const { error } = await supabase.auth.signUp({
           email,
           password,
