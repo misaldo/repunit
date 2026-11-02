@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/app-shell";
 
 export const Route = createFileRoute("/terms")({
-  head: () => ({ meta: [{ title: "Terms — REPUNIT" }, { name: "description", content: "REPUNIT terms of use (draft)." }, { property: "og:title", content: "Terms — REPUNIT" }, { property: "og:description", content: "Terms of use." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Terms — REPUNIT" }, { name: "description", content: "REPUNIT terms of use (draft)." }, { property: "og:title", content: "Terms — REPUNIT" }, { property: "og:description", content: "Terms of use." }] }),
   component: () => (
     <PageShell>
       <h1 className="text-4xl font-bold">Terms of use</h1>

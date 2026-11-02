@@ -22,7 +22,8 @@ export function useMyProfile(userId?: string) {
     queryKey: ["profile", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId!).single();
+      if (!userId) throw new Error("Sign in to load your profile.");
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
       if (error) throw error;
       return data;
     },

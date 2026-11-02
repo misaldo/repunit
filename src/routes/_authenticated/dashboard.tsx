@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useMyProfile } from "@/hooks/use-session";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — REPUNIT" }, { name: "description", content: "Your REPUNIT home." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "Dashboard — REPUNIT" }, { property: "og:description", content: "Your REPUNIT home." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Dashboard — REPUNIT" }, { name: "description", content: "Your REPUNIT home." }] }),
   component: Dashboard,
 });
 

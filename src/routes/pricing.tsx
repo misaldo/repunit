@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { PageShell } from "@/components/app-shell";
 
 export const Route = createFileRoute("/pricing")({
-  head: () => ({ meta: [{ title: "Pricing — REPUNIT" }, { name: "description", content: "REPUNIT Free and Pro plans." }, { property: "og:title", content: "Pricing — REPUNIT" }, { property: "og:description", content: "Free forever, Pro for 99 CZK/month." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Pricing — REPUNIT" }, { name: "description", content: "REPUNIT Free and Pro plans." }, { property: "og:title", content: "Pricing — REPUNIT" }, { property: "og:description", content: "Free forever, Pro for 99 CZK/month." }] }),
   component: Pricing,
 });
 

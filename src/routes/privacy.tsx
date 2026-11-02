@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/app-shell";
 
 export const Route = createFileRoute("/privacy")({
-  head: () => ({ meta: [{ title: "Privacy — REPUNIT" }, { name: "description", content: "How REPUNIT handles your data (draft)." }, { property: "og:title", content: "Privacy — REPUNIT" }, { property: "og:description", content: "Privacy policy." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Privacy — REPUNIT" }, { name: "description", content: "How REPUNIT handles your data (draft)." }, { property: "og:title", content: "Privacy — REPUNIT" }, { property: "og:description", content: "Privacy policy." }] }),
   component: () => (
     <PageShell>
       <h1 className="text-4xl font-bold">Privacy policy</h1>

@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep shared browser-safe auth destination sanitization in a dedicated utility so password and OAuth flows apply the same same-origin rule.
+- Use compensating storage cleanup when lift creation fails after video upload so abandoned evidence does not accumulate.

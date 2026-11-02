@@ -19,6 +19,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as RecordsIdRouteImport } from './routes/records.$id'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AuthenticatedCrewsIndexRouteImport } from './routes/_authenticated/crews.index'
@@ -75,6 +76,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const InviteCodeRoute = InviteCodeRouteImport.update({
+  id: '/invite/$code',
+  path: '/invite/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordsIdRoute = RecordsIdRouteImport.update({
   id: '/records/$id',
   path: '/records/$id',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
   '/crews/$id': typeof AuthenticatedCrewsIdRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
   '/crews/$id': typeof AuthenticatedCrewsIdRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/crews/$id': typeof AuthenticatedCrewsIdRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/settings'
+    | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
     | '/crews/$id'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/settings'
+    | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
     | '/crews/$id'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
     | '/_authenticated/crews/$id'
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  InviteCodeRoute: typeof InviteCodeRoute
   RecordsIdRoute: typeof RecordsIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/invite/$code': {
+      id: '/invite/$code'
+      path: '/invite/$code'
+      fullPath: '/invite/$code'
+      preLoaderRoute: typeof InviteCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/records/$id': {
       id: '/records/$id'
       path: '/records/$id'
@@ -374,6 +394,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  InviteCodeRoute: InviteCodeRoute,
   RecordsIdRoute: RecordsIdRoute,
   UUsernameRoute: UUsernameRoute,
 }
