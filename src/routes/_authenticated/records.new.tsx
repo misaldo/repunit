@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EXERCISES, validateVideo, type Exercise } from "@/lib/lifts";
 
 export const Route = createFileRoute("/_authenticated/records/new")({
-  head: () => ({ meta: [{ title: "Submit a lift — REPUNIT" }, { name: "description", content: "Log a new lift with video evidence." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "Submit a lift — REPUNIT" }, { property: "og:description", content: "Log a new lift with video evidence." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Submit a lift — REPUNIT" }, { name: "description", content: "Log a new lift with video evidence." }] }),
   component: NewRecord,
 });
 

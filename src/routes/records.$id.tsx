@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { exerciseLabel, estimated1RM } from "@/lib/lifts";
 
 export const Route = createFileRoute("/records/$id")({
-  head: () => ({ meta: [{ title: "Lift record — REPUNIT" }, { name: "description", content: "A lift submitted on REPUNIT." }, { property: "og:title", content: "Lift record — REPUNIT" }, { property: "og:description", content: "See the lift and its verification status." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Lift record — REPUNIT" }, { name: "description", content: "A lift submitted on REPUNIT." }, { property: "og:title", content: "Lift record — REPUNIT" }, { property: "og:description", content: "See the lift and its verification status." }] }),
   component: Record,
 });
 

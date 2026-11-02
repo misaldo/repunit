@@ -16,7 +16,7 @@ const search = z.object({ redirect: z.string().optional() });
 export const Route = createFileRoute("/auth")({
   validateSearch: search,
   head: () => ({
-    meta: [
+    meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, 
       { title: "Sign in — REPUNIT" },
       { name: "description", content: "Sign in or create your REPUNIT account." },
       { property: "og:title", content: "Sign in — REPUNIT" },

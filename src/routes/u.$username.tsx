@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
 
 export const Route = createFileRoute("/u/$username")({
-  head: ({ params }) => ({ meta: [{ title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records and rank." }] }),
+  head: ({ params }) => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records and rank." }] }),
   component: Profile,
 });
 

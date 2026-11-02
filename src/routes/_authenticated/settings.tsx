@@ -12,7 +12,7 @@ import { useMyProfile } from "@/hooks/use-session";
 import { USERNAME_RE } from "@/lib/lifts";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Settings — REPUNIT" }, { name: "description", content: "Edit your REPUNIT profile." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "Settings — REPUNIT" }, { property: "og:description", content: "Edit your REPUNIT profile." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Settings — REPUNIT" }, { name: "description", content: "Edit your REPUNIT profile." }] }),
   component: Settings,
 });
 

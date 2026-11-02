@@ -10,7 +10,7 @@ import { useLeaderboard, Podium, RankList } from "@/components/leaderboard-list"
 import { EXERCISES, type Exercise } from "@/lib/lifts";
 
 export const Route = createFileRoute("/_authenticated/crews/$id")({
-  head: () => ({ meta: [{ title: "Crew — REPUNIT" }, { name: "description", content: "Crew leaderboard." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "Crew — REPUNIT" }, { property: "og:description", content: "Crew leaderboard." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Crew — REPUNIT" }, { name: "description", content: "Crew leaderboard." }] }),
   component: Crew,
 });
 

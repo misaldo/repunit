@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/crews/")({
-  head: () => ({ meta: [{ title: "My crews — REPUNIT" }, { name: "description", content: "Your crews." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "My crews — REPUNIT" }, { property: "og:description", content: "Your crews." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "My crews — REPUNIT" }, { name: "description", content: "Your crews." }] }),
   component: Crews,
 });
 

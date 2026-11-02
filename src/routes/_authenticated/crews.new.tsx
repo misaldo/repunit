@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/crews/new")({
-  head: () => ({ meta: [{ title: "Create crew — REPUNIT" }, { name: "description", content: "Start a new crew." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "Create crew — REPUNIT" }, { property: "og:description", content: "Start a new crew." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Create crew — REPUNIT" }, { name: "description", content: "Start a new crew." }] }),
   component: NewCrew,
 });
 

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/leaderboards")({
-  head: () => ({ meta: [{ title: "Leaderboards — REPUNIT" }, { name: "description", content: "Global strength rankings for bench, squat, deadlift, press and pull-ups." }, { property: "og:title", content: "Leaderboards — REPUNIT" }, { property: "og:description", content: "Who is the strongest?" }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Leaderboards — REPUNIT" }, { name: "description", content: "Global strength rankings for bench, squat, deadlift, press and pull-ups." }, { property: "og:title", content: "Leaderboards — REPUNIT" }, { property: "og:description", content: "Who is the strongest?" }] }),
   component: Boards,
 });
 
