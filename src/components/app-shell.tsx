@@ -1,86 +1,55 @@
-
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Home, Trophy, Plus, Users, User as UserIcon, LogOut, Rss, Search, Dumbbell } from "lucide-react";
+import { Trophy, Users, LogOut, Rss, Dumbbell, Settings, Crown, ChevronDown, Flame, UserRound } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
+import { InstallPrompt } from "./install-prompt";
 
 export function SiteHeader() {
   const { user, ready } = useUser();
   const { data: profile } = useMyProfile(user?.id);
   const qc = useQueryClient();
   const navigate = useNavigate();
-
   async function signOut() {
-    await qc.cancelQueries();
-    qc.clear();
-    await supabase.auth.signOut();
+    await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
-
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-2xl">
+      <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 md:px-6">
         <Wordmark />
-        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          {user && (
-            <Link to="/feed" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-              Feed
-            </Link>
-          )}
-          <Link to="/leaderboards" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-            Leaderboards
-          </Link>
-          <Link to="/pricing" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-            Pricing
-          </Link>
-          {user && (
-            <Link to="/crews" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-              Crews
-            </Link>
-          )}
-          {user && (
-            <Link to="/workouts" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-              Workouts
-            </Link>
-          )}
-          {user && (
-            <Link to="/people" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-              Find lifters
-            </Link>
-          )}
-          {user && (
-            <Link to="/dashboard" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
-              Dashboard
-            </Link>
-          )}
+        <nav className="hidden items-center gap-7 text-[13px] font-semibold text-muted-foreground lg:flex">
+          {user && <Link to="/feed" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Feed</Link>}
+          <Link to="/leaderboards" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Ranks</Link>
+          {user && <Link to="/workouts" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Workouts</Link>}
+          {user && <Link to="/crews" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Crews</Link>}
+          <Link to="/pricing" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Pricing</Link>
         </nav>
-
-        <div className="flex items-center gap-2">
-          {ready && !user && (
-            <Button asChild size="sm" variant="hero">
-              <Link to="/auth">Sign in</Link>
-            </Button>
-          )}
-          {user && (
-            <>
-              {profile && (
-                <Link
-                  to="/u/$username"
-                  params={{ username: profile.username }}
-                  className="hidden text-sm font-medium md:block"
-                >
-                  @{profile.username}
-                </Link>
-              )}
-              <Button size="icon" variant="ghost" onClick={signOut} aria-label="Sign out">
-                <LogOut />
-              </Button>
-            </>
-          )}
+        <div className="flex items-center gap-3">
+          <Link to="/pricing" className="hidden rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[11px] font-extrabold tracking-[0.14em] text-primary transition hover:bg-primary/20 sm:inline-flex"><Crown className="mr-2 h-3.5 w-3.5" /> GO PRO</Link>
+          {ready && !user && <Button asChild size="sm" variant="hero"><Link to="/auth">Sign in</Link></Button>}
+          {user && <details className="group relative">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-border bg-card p-1 pr-2 transition hover:border-primary/50 [&::-webkit-details-marker]:hidden">
+              <Avatar className="h-9 w-9"><AvatarImage src={profile?.avatar_url ?? undefined} /><AvatarFallback className="bg-elevated text-xs font-bold">{(profile?.username ?? "R").slice(0,2).toUpperCase()}</AvatarFallback></Avatar>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition group-open:rotate-180" />
+            </summary>
+            <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-2xl shadow-black/40">
+              <div className="border-b border-border px-3 py-3">
+                <p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p>
+                <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider"><span className="text-primary">Rookie · Level 1</span><span className="text-muted-foreground">0 / 100 XP</span></div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-elevated"><div className="h-full w-0 rounded-full bg-primary" /></div>
+                <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5 text-primary" /> 0 day streak</p>
+              </div>
+              {profile && <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-elevated"><UserRound className="h-4 w-4" /> My Profile</Link>}
+              <Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-elevated"><Settings className="h-4 w-4" /> Settings</Link>
+              <Link to="/pricing" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary hover:bg-elevated"><Crown className="h-4 w-4" /> Upgrade to PRO</Link>
+              <button onClick={signOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-muted-foreground hover:bg-elevated hover:text-foreground"><LogOut className="h-4 w-4" /> Log out</button>
+            </div>
+          </details>}
         </div>
       </div>
     </header>
@@ -88,82 +57,17 @@ export function SiteHeader() {
 }
 
 export function MobileNav() {
-  const { user } = useUser();
-  const { data: profile } = useMyProfile(user?.id);
-
+  const { user } = useUser(); const { data: profile } = useMyProfile(user?.id);
   if (!user) return null;
-
-  const item =
-    "flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground";
-  const active = { className: "text-foreground" };
-
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
-      <div className="flex items-end">
-        <Link to="/feed" className={item} activeProps={active}>
-          <Rss className="h-5 w-5" />
-          Feed
-        </Link>
-        <Link to="/leaderboards" className={item} activeProps={active}>
-          <Trophy className="h-5 w-5" />
-          Ranks
-        </Link>
-        <Link to="/records/new" className="-mt-5 flex flex-1 justify-center" aria-label="Submit a lift">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-red shadow-glow">
-            <Plus className="h-6 w-6 text-primary-foreground" />
-          </span>
-        </Link>
-        <Link to="/crews" className={item} activeProps={active}>
-          <Users className="h-5 w-5" />
-          Crews
-        </Link>
-        <Link to="/workouts" className={item} activeProps={active}>
-          <Dumbbell className="h-5 w-5" />
-          Train
-        </Link>
-        <Link to="/people" className={item} activeProps={active}>
-          <Search className="h-5 w-5" />
-          People
-        </Link>
-        {profile ? (
-          <Link to="/u/$username" params={{ username: profile.username }} className={item} activeProps={active}>
-            <UserIcon className="h-5 w-5" />
-            Me
-          </Link>
-        ) : (
-          <Link to="/settings" className={item} activeProps={active}>
-            <UserIcon className="h-5 w-5" />
-            Me
-          </Link>
-        )}
-      </div>
-    </nav>
-  );
+  const item = "flex min-w-0 flex-1 flex-col items-center gap-1 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground transition-colors";
+  const active = { className: "text-primary" };
+  return <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl"><div className="mx-auto flex max-w-xl items-center px-1">
+    <Link to="/feed" className={item} activeProps={active}><Rss className="h-5 w-5" />Feed</Link>
+    <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5" />Workouts</Link>
+    <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5" />Crews</Link>
+    <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5" />Ranks</Link>
+    {profile ? <Link to="/u/$username" params={{ username: profile.username }} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url ?? undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>Profile</Link> : <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>Profile</Link>}
+  </div></nav>;
 }
-
-export function PageShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="min-h-screen pb-24 md:pb-0">
-      <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-6 md:py-10">{children}</main>
-      <MobileNav />
-    </div>
-  );
-}
-
-export function SiteFooter() {
-  return (
-    <footer className="border-t border-border py-10 pb-28 md:pb-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between">
-        <Wordmark />
-        <nav className="flex flex-wrap gap-5 text-sm text-muted-foreground">
-          <Link to="/leaderboards" className="hover:text-foreground">Leaderboards</Link>
-          <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
-          <Link to="/terms" className="hover:text-foreground">Terms</Link>
-          <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-        </nav>
-        <p className="eyebrow">Strength is social.</p>
-      </div>
-    </footer>
-  );
-}
+export function PageShell({ children }: { children: ReactNode }) { return <div className="min-h-screen pb-24 md:pb-0"><SiteHeader /><main className="mx-auto max-w-7xl px-4 py-7 md:px-6 md:py-10">{children}</main><MobileNav /><InstallPrompt /></div>; }
+export function SiteFooter() { return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark /><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">Ranks</Link><Link to="/pricing" className="hover:text-foreground">Pricing</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
