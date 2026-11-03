@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Home, Trophy, Plus, Users, User as UserIcon, LogOut, Rss } from "lucide-react";
+import { Home, Trophy, Plus, Users, User as UserIcon, LogOut, Rss, Search } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,11 @@ export function SiteHeader() {
           {user && (
             <Link to="/crews" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
               Crews
+            </Link>
+          )}
+          {user && (
+            <Link to="/people" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>
+              Find lifters
             </Link>
           )}
           {user && (
@@ -106,6 +111,10 @@ export function MobileNav() {
         <Link to="/crews" className={item} activeProps={active}>
           <Users className="h-5 w-5" />
           Crews
+        </Link>
+        <Link to="/people" className={item} activeProps={active}>
+          <Search className="h-5 w-5" />
+          People
         </Link>
         {profile ? (
           <Link to="/u/$username" params={{ username: profile.username }} className={item} activeProps={active}>
