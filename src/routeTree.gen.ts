@@ -19,7 +19,9 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated/feed'
+import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedWorkoutsRouteImport } from './routes/_authenticated/workouts'
 import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as RecordsIdRouteImport } from './routes/records.$id'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -77,9 +79,19 @@ const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
   path: '/feed',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPeopleRoute = AuthenticatedPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWorkoutsRoute = AuthenticatedWorkoutsRouteImport.update({
+  id: '/workouts',
+  path: '/workouts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const InviteCodeRoute = InviteCodeRouteImport.update({
@@ -128,7 +140,9 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
+  '/people': typeof AuthenticatedPeopleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/workouts': typeof AuthenticatedWorkoutsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -147,7 +161,9 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
+  '/people': typeof AuthenticatedPeopleRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/workouts': typeof AuthenticatedWorkoutsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -168,7 +184,9 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
+  '/_authenticated/people': typeof AuthenticatedPeopleRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/workouts': typeof AuthenticatedWorkoutsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -189,7 +207,9 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/feed'
+    | '/people'
     | '/settings'
+    | '/workouts'
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
@@ -208,7 +228,9 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/feed'
+    | '/people'
     | '/settings'
+    | '/workouts'
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
@@ -228,7 +250,9 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/feed'
+    | '/_authenticated/people'
     | '/_authenticated/settings'
+    | '/_authenticated/workouts'
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
@@ -324,11 +348,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFeedRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/people': {
+      id: '/_authenticated/people'
+      path: '/people'
+      fullPath: '/people'
+      preLoaderRoute: typeof AuthenticatedPeopleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/workouts': {
+      id: '/_authenticated/workouts'
+      path: '/workouts'
+      fullPath: '/workouts'
+      preLoaderRoute: typeof AuthenticatedWorkoutsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/invite/$code': {
@@ -386,7 +424,9 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
+  AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedWorkoutsRoute: typeof AuthenticatedWorkoutsRoute
   AuthenticatedCrewsIdRoute: typeof AuthenticatedCrewsIdRoute
   AuthenticatedCrewsNewRoute: typeof AuthenticatedCrewsNewRoute
   AuthenticatedRecordsNewRoute: typeof AuthenticatedRecordsNewRoute
@@ -396,7 +436,9 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,
+  AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedWorkoutsRoute: AuthenticatedWorkoutsRoute,
   AuthenticatedCrewsIdRoute: AuthenticatedCrewsIdRoute,
   AuthenticatedCrewsNewRoute: AuthenticatedCrewsNewRoute,
   AuthenticatedRecordsNewRoute: AuthenticatedRecordsNewRoute,
