@@ -28,7 +28,7 @@ function Crew() {
   const { data, isLoading, isError, error: crewLoadError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
-      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, is_public").eq("id", id).maybeSingle();
+      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id").eq("id", id).maybeSingle();
       if (error) throw error;
       // Keep the core crew page independent from optional invite/profile relations.
       let code: string | null = null;
@@ -37,7 +37,7 @@ function Crew() {
         code = inviteCode ?? null;
       }
       const { data: memberRows, error: membersError } = await (supabase as any)
-        .from("crew_members").select("user_id, role, joined_at").eq("crew_id", id).order("joined_at");
+        .from("crew_members").select("user_id, role").eq("crew_id", id);
       if (membersError) throw membersError;
       const memberIds = (memberRows ?? []).map((m: any) => m.user_id);
       let profiles: any[] = [];
