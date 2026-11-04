@@ -46,3 +46,8 @@ begin
  update public.crews set invite_code=new_code where id=_crew; return new_code;
 end $$;
 grant execute on function public.rotate_crew_invite(uuid) to authenticated;
+
+-- A crew admin is the top role; ordinary members may leave, admins may not.
+drop policy if exists "members leave" on public.crew_members;
+create policy "members leave" on public.crew_members for delete to authenticated
+  using (user_id = auth.uid() and role = 'member');
