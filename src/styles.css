@@ -159,3 +159,20 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* REPUNIT animated red/black hero artwork */
+.repunit-motion { background: radial-gradient(ellipse at 50% 38%, rgba(255,48,60,.19), transparent 42%), linear-gradient(145deg,#080808 5%,#111 52%,#080808 100%); }
+.motion-grid { position:absolute; inset:0; opacity:.18; background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px); background-size:54px 54px; mask-image:linear-gradient(to bottom,black,transparent 90%); }
+.motion-core { position:absolute; width:min(58vw,480px); aspect-ratio:1; left:50%; top:37%; transform:translate(-50%,-50%); border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle,rgba(255,48,60,.22),rgba(255,48,60,.04) 48%,transparent 70%); box-shadow:0 0 120px rgba(255,48,60,.12); }
+.motion-core-inner { width:48%; aspect-ratio:1; display:grid; place-items:center; color:rgba(255,255,255,.82); border:1px solid rgba(255,48,60,.45); border-radius:30%; background:linear-gradient(145deg,rgba(255,48,60,.17),rgba(10,10,10,.92)); box-shadow:0 0 65px rgba(255,48,60,.2),inset 0 0 40px rgba(255,48,60,.12); transform:rotate(-12deg); }
+.motion-ring { position:absolute; left:50%; top:37%; width:min(72vw,610px); aspect-ratio:1; border:1px solid rgba(255,48,60,.25); border-radius:50%; transform:translate(-50%,-50%); }
+.motion-ring-one { animation:repunit-spin 28s linear infinite; border-style:dashed; }
+.motion-ring-two { width:min(88vw,760px); border-color:rgba(255,255,255,.1); animation:repunit-spin 42s linear infinite reverse; }
+.motion-orbit { position:absolute; left:50%; top:37%; width:min(66vw,550px); aspect-ratio:1; transform:translate(-50%,-50%) rotate(-28deg); border:2px solid transparent; border-top-color:rgba(255,48,60,.8); border-bottom-color:rgba(255,48,60,.24); border-radius:50%; filter:drop-shadow(0 0 12px rgba(255,48,60,.6)); }
+.motion-orbit-one { animation:repunit-spin 12s linear infinite; }
+.motion-orbit-two { width:min(82vw,690px); transform:translate(-50%,-50%) rotate(48deg); border-top-color:rgba(255,255,255,.3); border-bottom-color:transparent; animation:repunit-spin 18s linear infinite reverse; }
+.motion-label { position:absolute; font:600 9px/1 monospace; letter-spacing:.24em; color:rgba(255,255,255,.42); }
+.motion-label-top { top:18%; left:5%; }.motion-label-bottom { top:48%; right:5%; }
+.motion-cross { position:absolute; color:#ff303c; font:300 28px/1 monospace; opacity:.75; }.motion-cross-one { top:22%; right:18%; }.motion-cross-two { top:55%; left:12%; }
+@keyframes repunit-spin { to { rotate:360deg; } }
+@media (prefers-reduced-motion:reduce) { .motion-ring,.motion-orbit { animation:none; } }
