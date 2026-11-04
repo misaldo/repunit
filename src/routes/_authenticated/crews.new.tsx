@@ -33,7 +33,12 @@ function NewCrew() {
       if (error) throw error;
       toast.success("Crew created — you're the admin");
       navigate({ to: "/crews/$id", params: { id: data.id } });
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not create crew."); }
+    } catch (err) {
+      const message = err && typeof err === "object" && "message" in err
+        ? String((err as { message: unknown }).message)
+        : err instanceof Error ? err.message : "Unknown database error";
+      toast.error(`Could not create crew: ${message}`);
+    }
     finally { setBusy(false); }
   }
   return <PageShell><div className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-border bg-card">
