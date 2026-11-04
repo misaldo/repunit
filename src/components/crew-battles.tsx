@@ -56,14 +56,14 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
         battles = refreshed.data;
       }
       const ids = [...new Set((battles ?? []).flatMap((b: Battle) => [b.challenger_crew_id,b.opponent_crew_id]))];
-      const [{ data: crews, error: crewError }, { data: myCrews, error: myError }] = await Promise.all([
+      const [{ data: crews, error: crewError }, { data: rivalCrews, error: rivalError }] = await Promise.all([
         (supabase as any).from("crews").select("id,name,emblem,accent_color").in("id", ids),
-        (supabase as any).from("crew_members").select("crew_id,role,crews(id,name)").eq("user_id",userId).eq("role","admin"),
+        (supabase as any).from("crews").select("id,name").neq("id",crewId).order("name"),
       ]);
       if (crewError) throw crewError;
-      if (myError) throw myError;
+      if (rivalError) throw rivalError;
       const crewMap = new Map((crews ?? []).map((c: Crew) => [c.id,c]));
-      const adminCrews = (myCrews ?? []).map((m: any) => m.crews).filter((c: Crew | null) => c && c.id !== crewId);
+      const adminCrews = (rivalCrews ?? []) as Crew[];
       const battleDetails = await Promise.all((battles ?? []).map(async (battle: Battle) => {
         const [leftMembersResult,rightMembersResult] = await Promise.all([
           (supabase as any).from("crew_members").select("user_id,profiles(username,display_name)").eq("crew_id",battle.challenger_crew_id),
