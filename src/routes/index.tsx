@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Users, Video, ShieldCheck, Trophy } from "lucide-react";
-import hero from "@/assets/hero.jpg";
+import { ArrowRight, Users, Video, ShieldCheck, Trophy, Dumbbell, Zap } from "lucide-react";
 import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium } from "@/components/leaderboard-list";
@@ -8,9 +7,9 @@ import { useLeaderboard, Podium } from "@/components/leaderboard-list";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "REPUNIT — Strength is social" },
+      { title: "REPUNIT — Who is the strongest in your crew?" },
       { name: "description", content: "The social strength network. Build your crew, submit lifts with video, climb the leaderboard." },
-      { property: "og:title", content: "REPUNIT — Strength is social" },
+      { property: "og:title", content: "REPUNIT — Who is the strongest in your crew?" },
       { property: "og:description", content: "Build your crew. Prove your strength. Own your rank." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -19,23 +18,49 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
+function HeroMotion() {
+  return (
+    <div aria-hidden="true" className="repunit-motion absolute inset-0 overflow-hidden">
+      <div className="motion-grid" />
+      <div className="motion-orbit motion-orbit-one" />
+      <div className="motion-orbit motion-orbit-two" />
+      <div className="motion-core">
+        <div className="motion-core-inner"><Dumbbell className="h-16 w-16 md:h-24 md:w-24" strokeWidth={1.1} /></div>
+      </div>
+      <div className="motion-ring motion-ring-one" />
+      <div className="motion-ring motion-ring-two" />
+      <span className="motion-label motion-label-top">REPUNIT / STRENGTH SYSTEM</span>
+      <span className="motion-label motion-label-bottom">01 — BUILT TO COMPETE</span>
+      <span className="motion-cross motion-cross-one">+</span>
+      <span className="motion-cross motion-cross-two">+</span>
+    </div>
+  );
+}
+
 function Landing() {
   const { data: rows = [] } = useLeaderboard("bench");
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <section className="relative overflow-hidden">
-        <img src={hero} alt="Lifter setting up a heavy deadlift" width={1600} height={1104} className="absolute inset-0 h-full w-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-24 md:pb-32 md:pt-40">
-          <p className="eyebrow rise">Who is the strongest in your crew?</p>
-          <h1 className="font-stat rise mt-4 text-[22vw] uppercase leading-[0.82] md:text-[11rem]">
-            Strength<br />is <span className="text-primary">social.</span>
-          </h1>
-          <p className="rise mt-6 max-w-md text-lg text-muted-foreground">Build your crew. Prove your strength. Own your rank.</p>
-          <div className="rise mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" variant="hero" className="h-12"><Link to="/crews/new">Create your crew <ArrowRight /></Link></Button>
-            <Button asChild size="lg" variant="line" className="h-12"><Link to="/leaderboards">Explore leaderboards</Link></Button>
+      <section className="relative isolate overflow-hidden border-b border-border">
+        <HeroMotion />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/15 via-background/35 to-background" />
+        <div className="relative mx-auto flex min-h-[680px] max-w-6xl flex-col justify-end px-4 pb-16 pt-36 md:min-h-[780px] md:pb-24">
+          <div className="max-w-5xl">
+            <p className="eyebrow rise">REPUNIT · THE CREW STRENGTH NETWORK</p>
+            <h1 className="rise mt-5 max-w-5xl text-5xl font-extrabold uppercase leading-[0.94] tracking-[-0.055em] sm:text-6xl md:text-8xl lg:text-[7.4rem]">
+              Who is the<br />strongest in your <span className="text-primary">crew?</span>
+            </h1>
+            <p className="rise mt-6 max-w-md text-base text-muted-foreground md:text-lg">Build your crew. Prove your strength. Own your rank.</p>
+            <div className="rise mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" variant="hero" className="h-12"><Link to="/crews/new">Create your crew <ArrowRight /></Link></Button>
+              <Button asChild size="lg" variant="line" className="h-12"><Link to="/leaderboards">Explore leaderboards</Link></Button>
+            </div>
+          </div>
+          <div className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/10 pt-5 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            <span className="flex items-center gap-2"><Zap className="h-3.5 w-3.5 text-primary" /> Compete with your crew</span>
+            <span className="flex items-center gap-2"><Video className="h-3.5 w-3.5 text-primary" /> Show your proof</span>
+            <span className="flex items-center gap-2"><Trophy className="h-3.5 w-3.5 text-primary" /> Claim your rank</span>
           </div>
         </div>
       </section>
@@ -68,10 +93,7 @@ function Landing() {
             { icon: ShieldCheck, n: "03", t: "Earn verification", d: "Unverified, reviewed and verified lifts are always labelled. No fake badges." },
           ].map((s) => (
             <div key={s.n} className="bg-surface p-8">
-              <div className="flex items-center justify-between">
-                <s.icon className="h-6 w-6 text-primary" />
-                <span className="font-stat text-4xl text-muted-foreground/40">{s.n}</span>
-              </div>
+              <div className="flex items-center justify-between"><s.icon className="h-6 w-6 text-primary" /><span className="font-stat text-4xl text-muted-foreground/40">{s.n}</span></div>
               <h3 className="mt-6 text-xl font-bold">{s.t}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
             </div>
