@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X } from "lucide-react";
 import { toast } from "sonner";
@@ -43,11 +43,18 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
     queryFn: async () => {
       const { error: weeklyError } = await (supabase as any).rpc("ensure_weekly_crew_battles", { _crew: crewId });
       if (weeklyError) throw weeklyError;
-      const { data: battles, error } = await (supabase as any).from("crew_battles")
+      let { data: battles, error } = await (supabase as any).from("crew_battles")
         .select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,winner_crew_id,is_weekly,week_start")
         .or(`challenger_crew_id.eq.${crewId},opponent_crew_id.eq.${crewId}`)
         .order("starts_at", { ascending: false }).limit(20);
       if (error) throw error;
+      const expired = (battles ?? []).filter((b:Battle)=>!["pending","cancelled","completed"].includes(b.status)&&Date.now()>=new Date(b.ends_at).getTime());
+      if (expired.length) {
+        await Promise.all(expired.map((b:Battle)=>(supabase as any).rpc("complete_crew_battle",{_battle:b.id})));
+        const refreshed = await (supabase as any).from("crew_battles").select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,winner_crew_id,is_weekly,week_start").or(`challenger_crew_id.eq.${crewId},opponent_crew_id.eq.${crewId}`).order("starts_at",{ascending:false}).limit(20);
+        if (refreshed.error) throw refreshed.error;
+        battles = refreshed.data;
+      }
       const ids = [...new Set((battles ?? []).flatMap((b: Battle) => [b.challenger_crew_id,b.opponent_crew_id]))];
       const [{ data: crews, error: crewError }, { data: myCrews, error: myError }] = await Promise.all([
         (supabase as any).from("crews").select("id,name,emblem,accent_color").in("id", ids),
@@ -73,7 +80,7 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
         const { data: lifts, error: liftError } = await (supabase as any).from("lifts")
           .select("user_id,weight_kg").in("user_id",memberIds.length?memberIds:["00000000-0000-0000-0000-000000000000"])
           .eq("exercise",battle.category).eq("status","VERIFIED")
-          .gte("lifted_on",from).lte("lifted_on",to);
+          .gte("lifted_on",from).lt("lifted_on",to);
         if (liftError) throw liftError;
         const best = new Map<string,number>();
         for (const lift of lifts ?? []) best.set(lift.user_id,Math.max(best.get(lift.user_id) ?? 0,Number(lift.weight_kg)));
@@ -155,7 +162,7 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
         {!isEnded&&!isPending&&<span className="inline-flex items-center gap-1.5 text-primary tabular-nums"><Clock3 className="h-3 w-3"/>{timeLeft(target,now)}</span>}
         {isEnded&&(leftWon||rightWon)&&<span className="inline-flex items-center gap-1 text-primary"><ShieldCheck className="h-3.5 w-3.5"/>Crew badge earned</span>}
       </div>
-      {isEnded&&(leftWon||rightWon)&&<div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-primary shadow-[0_0_18px_hsl(var(--primary))]"/>}
+      {isEnded&&(leftWon||rightWon)&&<div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-xs font-black uppercase tracking-widest text-primary animate-pulse"><Trophy className="h-4 w-4"/> {leftWon?left?.name:right?.name} wins the battle!</div>}
     </article>;
   };
 
