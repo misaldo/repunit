@@ -30,21 +30,31 @@ function Crew() {
     queryFn: async () => {
       const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, is_public").eq("id", id).maybeSingle();
       if (error) throw error;
-      // Extra crew columns are protected by column-level grants. Retrieve the invite code through the member-only RPC.
+      // Keep the core crew page independent from optional invite/profile relations.
       let code: string | null = null;
       if (c) {
-        const { data: inviteCode, error: inviteError } = await (supabase as any).rpc("crew_invite_code", { _crew: id });
-        if (inviteError) throw inviteError;
+        const { data: inviteCode } = await (supabase as any).rpc("crew_invite_code", { _crew: id });
         code = inviteCode ?? null;
       }
-      const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name, avatar_url)").eq("crew_id", id).order("joined_at");
+      const { data: memberRows, error: membersError } = await (supabase as any)
+        .from("crew_members").select("user_id, role, joined_at").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
+      const memberIds = (memberRows ?? []).map((m: any) => m.user_id);
+      let profiles: any[] = [];
+      if (memberIds.length) {
+        const { data: profileRows } = await (supabase as any)
+          .from("profiles").select("id, username, display_name, avatar_url").in("id", memberIds);
+        profiles = profileRows ?? [];
+      }
+      const profileById = new Map(profiles.map((p: any) => [p.id, p]));
+      const members = (memberRows ?? []).map((m: any) => ({ ...m, profiles: profileById.get(m.user_id) ?? null }));
+      const safeIds = memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"];
       const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([
         (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),
-        (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", (members ?? []).map((m:any)=>m.user_id).length ? (members ?? []).map((m:any)=>m.user_id) : ["00000000-0000-0000-0000-000000000000"]).eq("status", "VERIFIED"),
+        (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", safeIds).eq("status", "VERIFIED"),
         (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
       ]);
-      return { c, code, members: members ?? [], badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), battleWins: battleWins?.length ?? 0 };
+      return { c, code, members, badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), battleWins: battleWins?.length ?? 0 };
     },
   });
   const { data: rows = [], isLoading: ranksLoading, isError: ranksError } = useLeaderboard(ex, id);
