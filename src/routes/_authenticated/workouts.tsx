@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Dumbbell, Plus, Trash2, Globe, Lock, Users, Search, X, CalendarDays, Flame, ImageOff } from "lucide-react";
+import { Dumbbell, Plus, Trash2, Globe, Lock, Users, Search, CalendarDays, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ const CATALOG: CatalogExercise[] = [
   { name: "Barbell Bench Press", category: "Chest", popularity: 100, image: "Barbell_Bench_Press_-_Medium" },
   { name: "Squat", category: "Legs", popularity: 98, image: "Barbell_Squat" },
   { name: "Deadlift", category: "Back", popularity: 96, image: "Barbell_Deadlift" },
-  { name: "Lat Pulldown", category: "Back", popularity: 94, image: " wide-Grip_Lat_Pulldown" },
+  { name: "Lat Pulldown", category: "Back", popularity: 94, image: "Wide-Grip_Lat_Pulldown" },
   { name: "Dumbbell Shoulder Press", category: "Shoulders", popularity: 92, image: "Dumbbell_Shoulder_Press" },
   { name: "Biceps Curl", category: "Arms", popularity: 90, image: "Dumbbell_Bicep_Curl" },
   { name: "Incline Dumbbell Press", category: "Chest", popularity: 89, image: "Incline_Dumbbell_Press" },
