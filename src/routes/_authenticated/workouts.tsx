@@ -116,7 +116,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 const CATEGORIES = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"];
 
 export const Route = createFileRoute("/_authenticated/workouts")({
-  head: () => ({ meta: [{ title: "Workout plans — REPUNIT" }, { name: "description", content: "Build, save and share your training plans." }] }),
+  head: () => ({ meta: [{ title: "Training splits — REPUNIT" }, { name: "description", content: "Build, save and share your training plans." }] }),
   component: WorkoutsPage,
 });
 
@@ -220,17 +220,17 @@ function WorkoutsPage() {
       }
       setTitle(""); setWorkoutDay("Monday"); setDraftExercises([]); setVisibility("private");
       await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
-      toast.success("Workout saved.");
+      toast.success("Split saved.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create workout.");
     } finally { setSaving(false); }
   }
 
   async function deletePlan(plan: Plan) {
-    if (!window.confirm("Delete this workout?")) return;
+    if (!window.confirm("Delete this split?")) return;
     const { error } = await db.from("workout_plans").delete().eq("id", plan.id).eq("user_id", user.id);
     if (error) toast.error(error.message);
-    else { await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] }); toast.success("Workout deleted."); }
+    else { await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] }); toast.success("Split deleted."); }
   }
 
   const plans = plansQuery.data ?? [];
@@ -238,14 +238,14 @@ function WorkoutsPage() {
     <PageShell>
       <div className="mb-8">
         <p className="eyebrow">PLAN YOUR TRAINING</p>
-        <h1 className="font-stat mt-2 text-6xl uppercase">Workouts<span className="text-primary">.</span></h1>
+        <h1 className="font-stat mt-2 text-6xl uppercase">Splits<span className="text-primary">.</span></h1>
         <p className="mt-2 text-sm text-muted-foreground">Build your split, choose your training days and share your routine.</p>
       </div>
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div className="mb-5 flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Create a workout</h2></div>
+        <div className="mb-5 flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Create a split</h2></div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workout name</label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Push day / Upper body" /></div>
+          <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Split name</label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Push day / Upper body" /></div>
           <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Training day</label><select value={workoutDay} onChange={(e) => setWorkoutDay(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{DAYS.map((day) => <option key={day}>{day}</option>)}</select></div>
         </div>
         <div className="mt-3"><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Who can see this workout?</label><select value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:max-w-sm"><option value="private">Private — only me</option><option value="public">Public — everyone</option><option value="followers">Followers</option></select></div>
@@ -260,7 +260,7 @@ function WorkoutsPage() {
           <Button type="button" variant="hero" className="w-full" onClick={() => setPickerOpen(true)}><Plus className="mr-2 h-4 w-4" />Add exercise</Button>
           {draftExercises.length > 0 ? <ol className="mt-4 space-y-2">{draftExercises.map((item, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"><span className="min-w-0"><b>{i + 1}. {item.exercise_name}</b><span className="block text-xs text-muted-foreground">{item.sets} sets × {item.reps} · {item.rest_seconds}s rest</span></span><button onClick={() => setDraftExercises((all) => all.filter((_, index) => index !== i))} aria-label="Remove exercise" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button></li>)}</ol> : <p className="mt-4 rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">Your exercise list is empty. Tap “Add exercise” to get started.</p>}
         </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your workout will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving} onClick={createPlan}>{saving ? "Saving…" : "Save workout"}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your split will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving} onClick={createPlan}>{saving ? "Saving…" : "Save split"}</Button></div>
       </section>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
@@ -282,10 +282,10 @@ function WorkoutsPage() {
       </Dialog>
 
       <section className="mt-10">
-        <h2 className="mb-4 text-xl font-bold">Your workouts</h2>
-        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading workouts…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Workout database is not ready yet.</p><p className="mt-1 text-sm text-muted-foreground">The workout tables or weekday column are missing, or access is not configured. Database setup is needed before workouts can be saved.</p><p className="mt-2 break-words font-mono text-xs text-muted-foreground">{plansQuery.error instanceof Error ? plansQuery.error.message : "Unknown database error"}</p></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No workouts yet. Create your first one above.</div> : (
+        <h2 className="mb-4 text-xl font-bold">Your splits</h2>
+        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading splits…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Split database is not ready yet.</p><p className="mt-1 text-sm text-muted-foreground">The workout tables or weekday column are missing, or access is not configured. Database setup is needed before workouts can be saved.</p><p className="mt-2 break-words font-mono text-xs text-muted-foreground">{plansQuery.error instanceof Error ? plansQuery.error.message : "Unknown database error"}</p></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No splits yet. Create your first one above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Training day not set"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete workout" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
+            <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Training day not set"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete split" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
             <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility}</div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
             {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading ? <p className="text-sm">Loading…</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
