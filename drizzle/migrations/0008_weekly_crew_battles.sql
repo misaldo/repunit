@@ -98,3 +98,48 @@ begin
   end if;
 end $$;
 grant execute on function public.respond_crew_battle(uuid,boolean) to authenticated;
+
+
+-- Finalize an expired battle exactly once and award the winning crew its badge.
+create or replace function public.complete_crew_battle(_battle uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  b record;
+  left_total numeric := 0;
+  right_total numeric := 0;
+  winner uuid;
+begin
+  select * into b from public.crew_battles where id=_battle for update;
+  if not found then raise exception 'Battle not found'; end if;
+  if auth.uid() is null or not (
+    public.is_crew_member(b.challenger_crew_id,auth.uid())
+    or public.is_crew_member(b.opponent_crew_id,auth.uid())
+  ) then raise exception 'Join one of the crews to finalize this battle'; end if;
+  if b.status in ('completed','cancelled','pending') or now()<b.ends_at then return; end if;
+
+  select coalesce(sum(best_weight),0) into left_total from (
+    select max(l.weight_kg) as best_weight
+    from public.lifts l join public.crew_members cm on cm.user_id=l.user_id
+    where cm.crew_id=b.challenger_crew_id and l.exercise::text=b.category
+      and l.status='VERIFIED' and l.lifted_on>=b.starts_at::date and l.lifted_on<b.ends_at::date
+    group by l.user_id
+  ) scores;
+  select coalesce(sum(best_weight),0) into right_total from (
+    select max(l.weight_kg) as best_weight
+    from public.lifts l join public.crew_members cm on cm.user_id=l.user_id
+    where cm.crew_id=b.opponent_crew_id and l.exercise::text=b.category
+      and l.status='VERIFIED' and l.lifted_on>=b.starts_at::date and l.lifted_on<b.ends_at::date
+    group by l.user_id
+  ) scores;
+  if left_total>right_total then winner:=b.challenger_crew_id;
+  elsif right_total>left_total then winner:=b.opponent_crew_id;
+  else winner:=null; end if;
+
+  update public.crew_battles set status='completed',winner_crew_id=winner where id=_battle;
+  if winner is not null then
+    insert into public.crew_achievements(crew_id,achievement_key)
+    values(winner,'crew_battle_winner:'||_battle::text)
+    on conflict(crew_id,achievement_key) do nothing;
+  end if;
+end $$;
+grant execute on function public.complete_crew_battle(uuid) to authenticated;
