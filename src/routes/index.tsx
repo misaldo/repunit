@@ -62,7 +62,7 @@ function Landing() {
         <div className="mb-8 flex items-end justify-between">
           <div>
             <p className="eyebrow">Live · Global bench press</p>
-            <h2 className="mt-2 text-3xl font-bold md:text-5xl">Current standings</h2>
+            <h2 className="mt-2 text-3xl font-bold md:text-5xl">Top</h2>
           </div>
           <Link to="/leaderboards" className="text-sm text-muted-foreground hover:text-foreground">All boards →</Link>
         </div>
