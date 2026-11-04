@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Users, Video, ShieldCheck, Trophy, Dumbbell, Zap } from "lucide-react";
+import { ArrowRight, Users, Video, ShieldCheck, Trophy, Zap } from "lucide-react";
 import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium } from "@/components/leaderboard-list";
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
       { title: "REPUNIT — Who is the strongest in your crew?" },
       { name: "description", content: "The social strength network. Build your crew, submit lifts with video, climb the leaderboard." },
       { property: "og:title", content: "REPUNIT — Who is the strongest in your crew?" },
-      { property: "og:description", content: "Build your crew. Prove your strength. Own your rank." },
+      { property: "og:description", content: "Your lifts. Your people. One place to see where you stand." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -21,18 +21,11 @@ export const Route = createFileRoute("/")({
 function HeroMotion() {
   return (
     <div aria-hidden="true" className="repunit-motion absolute inset-0 overflow-hidden">
-      <div className="motion-grid" />
-      <div className="motion-orbit motion-orbit-one" />
-      <div className="motion-orbit motion-orbit-two" />
-      <div className="motion-core">
-        <div className="motion-core-inner"><Dumbbell className="h-16 w-16 md:h-24 md:w-24" strokeWidth={1.1} /></div>
+      <div className="hero-mark-panel">
+        <span className="hero-mark-letter">R</span>
+        <span className="hero-mark-rule" />
+        <span className="hero-mark-index">RU / 001 — STRENGTH</span>
       </div>
-      <div className="motion-ring motion-ring-one" />
-      <div className="motion-ring motion-ring-two" />
-      <span className="motion-label motion-label-top">REPUNIT / STRENGTH SYSTEM</span>
-      <span className="motion-label motion-label-bottom">01 — BUILT TO COMPETE</span>
-      <span className="motion-cross motion-cross-one">+</span>
-      <span className="motion-cross motion-cross-two">+</span>
     </div>
   );
 }
@@ -47,7 +40,7 @@ function Landing() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/15 via-background/35 to-background" />
         <div className="relative mx-auto flex min-h-[680px] max-w-6xl flex-col justify-end px-4 pb-16 pt-36 md:min-h-[780px] md:pb-24">
           <div className="max-w-5xl">
-            <p className="eyebrow rise">REPUNIT · THE CREW STRENGTH NETWORK</p>
+            <p className="eyebrow rise">A BETTER WAY TO COMPETE</p>
             <h1 className="rise mt-5 max-w-5xl text-5xl font-extrabold uppercase leading-[0.94] tracking-[-0.055em] sm:text-6xl md:text-8xl lg:text-[7.4rem]">
               Who is the<br />strongest in your <span className="text-primary">crew?</span>
             </h1>
@@ -69,7 +62,7 @@ function Landing() {
         <div className="mb-8 flex items-end justify-between">
           <div>
             <p className="eyebrow">Live · Global bench press</p>
-            <h2 className="mt-2 text-3xl font-bold md:text-5xl">The board right now</h2>
+            <h2 className="mt-2 text-3xl font-bold md:text-5xl">Current standings</h2>
           </div>
           <Link to="/leaderboards" className="text-sm text-muted-foreground hover:text-foreground">All boards →</Link>
         </div>
@@ -79,7 +72,7 @@ function Landing() {
           <div className="grid-lines rounded-xl border border-dashed border-border p-10 text-center">
             <Trophy className="mx-auto h-8 w-8 text-primary" />
             <p className="mt-3 font-heading text-xl font-bold">The podium is empty.</p>
-            <p className="mt-1 text-sm text-muted-foreground">First lift submitted takes the crown.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Be the first to put a lift on the board.</p>
             <Button asChild variant="hero" className="mt-5"><Link to="/records/new">Submit a lift</Link></Button>
           </div>
         )}
@@ -88,9 +81,9 @@ function Landing() {
       <section className="border-y border-border bg-surface">
         <div className="mx-auto grid max-w-6xl gap-px bg-border md:grid-cols-3">
           {[
-            { icon: Users, n: "01", t: "Build your crew", d: "Start a crew, share one link, and every friend lands on the same board." },
-            { icon: Video, n: "02", t: "Submit with video", d: "Log weight, reps and date. Attach the clip. Your evidence stays private to members." },
-            { icon: ShieldCheck, n: "03", t: "Earn verification", d: "Unverified, reviewed and verified lifts are always labelled. No fake badges." },
+            { icon: Users, n: "01", t: "Build your crew", d: "Bring your training partners together and keep your results in one place." },
+            { icon: Video, n: "02", t: "Submit with video", d: "Add the weight, reps and a video so your crew can see the lift." },
+            { icon: ShieldCheck, n: "03", t: "Earn verification", d: "Every result has a clear status, so the leaderboard shows what has actually been checked." },
           ].map((s) => (
             <div key={s.n} className="bg-surface p-8">
               <div className="flex items-center justify-between"><s.icon className="h-6 w-6 text-primary" /><span className="font-stat text-4xl text-muted-foreground/40">{s.n}</span></div>
@@ -105,8 +98,8 @@ function Landing() {
         <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card p-8 md:p-12">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
           <p className="eyebrow">REPUNIT Pro</p>
-          <h2 className="mt-2 max-w-lg text-3xl font-bold md:text-4xl">Deeper stats. Sharper rivalries.</h2>
-          <p className="mt-3 max-w-md text-muted-foreground">Advanced progress charts, crew analytics and exclusive themes — 99 CZK a month.</p>
+          <h2 className="mt-2 max-w-lg text-3xl font-bold md:text-4xl">See the work behind the numbers.</h2>
+          <p className="mt-3 max-w-md text-muted-foreground">Track your progress over time and get more detail on your training.</p>
           <Button asChild variant="line" className="mt-6"><Link to="/pricing">See plans</Link></Button>
         </div>
       </section>
