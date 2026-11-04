@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,11 @@ function Profile() {
       return { p, lifts: lifts ?? [], posts: posts ?? [] };
     },
   });
+
+  useEffect(() => {
+    if (isLoading || !data || window.location.hash !== "#training-split") return;
+    document.getElementById("training-split")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [isLoading, data]);
 
   const { data: progression } = useQuery({
     queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
