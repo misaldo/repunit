@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium, RankList } from "@/components/leaderboard-list";
 import { EXERCISES, type Exercise } from "@/lib/lifts";
 import { AvatarChip } from "@/components/avatar-chip";
+import { CrewBattles } from "@/components/crew-battles";
 
 export const Route = createFileRoute("/_authenticated/crews/$id")({
   head: () => ({ meta: [{ property: "og:title", content: "Crew — REPUNIT" }, { property: "og:description", content: "Crew leaderboard." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Crew — REPUNIT" }, { name: "description", content: "Crew leaderboard." }] }),
@@ -95,6 +96,7 @@ function Crew() {
       <div className="mt-6 space-y-6">
         {ranksLoading ? <p>Loading leaderboard…</p> : ranksError ? <p>Could not load the leaderboard.</p> : rows.length === 0 ? <p className="text-muted-foreground">No lifts from this crew yet.</p> : <><Podium rows={rows.slice(0, 3)} />{rows.length > 3 && <RankList rows={rows.slice(3)} start={3} />}</>}
       </div>
+      <CrewBattles crewId={id} userId={user.id} isAdmin={isAdmin} />
       <div className="mt-10 flex items-end justify-between"><div><p className="eyebrow">THE LINEUP</p><h2 className="font-stat mt-1 text-3xl uppercase">Members ({count})</h2></div><Users className="h-6 w-6 text-primary"/></div>
       <ul className="mt-3 divide-y divide-border">
         {data.members.map((member) => <li key={member.user_id} className="flex items-center justify-between py-3">
