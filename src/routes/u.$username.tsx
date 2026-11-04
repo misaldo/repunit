@@ -10,7 +10,8 @@ import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
-import { ProgressionCard } from "@/components/progression-card";\nimport { Dumbbell, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
+import { ProgressionCard } from "@/components/progression-card";
+import { Dumbbell, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records and training activity of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records, community and training activity." }] }),
@@ -21,7 +22,8 @@ function Profile() {
   const { username } = Route.useParams();
   const { user } = useUser();
   const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);\n  const [showWorkouts, setShowWorkouts] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [showWorkouts, setShowWorkouts] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
@@ -124,6 +126,7 @@ function Profile() {
             <h1 className="text-3xl font-bold">{p.display_name ?? p.username}</h1>
             <p className="text-sm text-muted-foreground">@{p.username} · joined {new Date(p.created_at).toLocaleDateString()}</p>
           </div>
+          <div className="flex flex-wrap gap-2">
           {isOwnProfile ? (
             <Button asChild variant="line"><Link to="/settings">Edit profile</Link></Button>
           ) : user ? (
@@ -133,6 +136,8 @@ function Profile() {
           ) : (
             <Button asChild variant="hero"><Link to="/auth">Sign in to follow</Link></Button>
           )}
+          {(workoutPlans.length > 0 || isOwnProfile) && <Button variant="line" onClick={() => setShowWorkouts((value) => !value)}><Dumbbell className="mr-2 h-4 w-4" />{showWorkouts ? "Hide workouts" : "View workouts"}{showWorkouts ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}</Button>}
+          </div>
         </div>
         {p.bio && <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-6">{p.bio}</p>}
         <div className="mt-5 flex flex-wrap gap-6 border-t border-border pt-4 text-sm">
@@ -143,7 +148,12 @@ function Profile() {
         </div>
       </section>
 
-      <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>\n\n      {showWorkouts && <section className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-6">\n        <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Training split</h2></div>\n        {workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No workouts shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>}\n      </section>}
+      <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>
+
+      {showWorkouts && <section className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Training split</h2></div>
+        {workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No workouts shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>}
+      </section>}
 
       <div className="mt-8">
         <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Personal records</h2></div>
