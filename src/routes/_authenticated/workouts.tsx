@@ -21,7 +21,7 @@ type Plan = {
   created_at: string;
 };
 type PlanExercise = { id: string; plan_id: string; exercise_name: string; sets: number; reps: string; rest_seconds: number; notes: string | null; position: number };
-type CatalogExercise = { name: string; category: string; popularity: number; image: string };
+type CatalogExercise = { name: string; category: string; popularity: number; image: string; id?: string };
 type ExerciseDbEntry = { id: string; name: string; images?: string[]; primaryMuscles?: string[]; category?: string };
 
 const CATALOG: CatalogExercise[] = [
@@ -101,7 +101,7 @@ const CATALOG: CatalogExercise[] = [
   { name: "Bird Dog", category: "Core", popularity: 27, image: "Bird_Dog" },
   { name: "Superman", category: "Back", popularity: 26, image: "Superman" },
   { name: "Push-up", category: "Chest", popularity: 25, image: "Push-Up" }
-].map((item) => ({ ...item, image: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${item.image}/0.jpg` }));
+].map((item) => ({ ...item, id: item.image, image: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${item.image}/0.jpg` }));
 const EXERCISE_DB_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
 const IMAGE_BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
 const MUSCLE_CATEGORY: Record<string, string> = {
@@ -168,7 +168,7 @@ function WorkoutsPage() {
     const source = exerciseDbQuery.data;
     if (!source?.length) return CATALOG;
     const featured = CATALOG.flatMap((item) => {
-      const match = source.find((exercise) => exercise.id === item.image);
+      const match = source.find((exercise) => exercise.id === item.id);
       if (!match?.images?.[0]) return [];
       const muscle = (match.primaryMuscles ?? [])[0]?.toLowerCase() ?? "";
       return [{ name: match.name, category: MUSCLE_CATEGORY[muscle] ?? item.category, popularity: item.popularity, image: IMAGE_BASE + match.images[0] }];
