@@ -11,6 +11,7 @@ declare
   total_sessions integer;
   total_reps bigint;
   exercise_count integer;
+  training_days integer;
   best_weight numeric;
   streak integer;
   achievement_key text;
@@ -20,8 +21,8 @@ begin
   if new.status <> 'VERIFIED' then return new; end if;
   if tg_op = 'UPDATE' and old.status = 'VERIFIED' then return new; end if;
 
-  select count(*), coalesce(sum(weight_kg * reps),0), coalesce(sum(reps),0), count(distinct exercise)
-    into total_sessions,total_volume,total_reps,exercise_count
+  select count(*), coalesce(sum(weight_kg * reps),0), coalesce(sum(reps),0), count(distinct exercise), count(distinct lifted_on)
+    into total_sessions,total_volume,total_reps,exercise_count,training_days
   from public.lifts where user_id=new.user_id and status='VERIFIED';
 
   select coalesce(current_streak,0) into streak from public.user_progress where user_id=new.user_id;
@@ -146,16 +147,16 @@ begin
     'deadlift_260',
     'deadlift_280',
     'deadlift_300',
-    'variety_5',
-    'variety_10',
-    'variety_15',
-    'variety_20',
-    'variety_25',
-    'variety_30',
-    'variety_35',
-    'variety_40',
-    'variety_45',
-    'variety_50',
+    'days_3',
+    'days_7',
+    'days_14',
+    'days_30',
+    'days_60',
+    'days_100',
+    'days_200',
+    'days_365',
+    'days_500',
+    'days_1000',
     'reps_100',
     'reps_250',
     'reps_500',
@@ -182,9 +183,9 @@ begin
     elsif achievement_key like 'streak_%' then
       threshold := split_part(achievement_key,'_',2)::integer;
       earned := streak >= threshold;
-    elsif achievement_key like 'variety_%' then
+    elsif achievement_key like 'days_%' then
       threshold := split_part(achievement_key,'_',2)::integer;
-      earned := exercise_count >= threshold;
+      earned := training_days >= threshold;
     elsif achievement_key like 'reps_%' then
       threshold := split_part(achievement_key,'_',2)::integer;
       earned := total_reps >= threshold;
