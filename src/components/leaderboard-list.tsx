@@ -7,16 +7,37 @@ import { StatusBadge } from "./status-badge";
 import { AvatarChip } from "./avatar-chip";
 import { cn } from "@/lib/utils";
 
-export function useLeaderboard(exercise: Exercise, crew?: string | null, since?: string | null) {
+export function useLeaderboard(exercise: Exercise | "total", crew?: string | null, since?: string | null) {
   return useQuery({
     queryKey: ["leaderboard", exercise, crew ?? null, since ?? null],
     queryFn: async () => {
-      const args: { _exercise: Exercise; _crew?: string; _since?: string } = { _exercise: exercise };
-      if (crew) args._crew = crew;
-      if (since) args._since = since;
-      const { data, error } = await supabase.rpc("leaderboard", args);
-      if (error) throw error;
-      const rows = data ?? [];
+      const exercises: Exercise[] = exercise === "total"
+        ? ["bench", "squat", "deadlift", "ohp", "pullup"]
+        : [exercise];
+      const results = await Promise.all(exercises.map(async (_exercise) => {
+        const args: { _exercise: Exercise; _crew?: string; _since?: string } = { _exercise };
+        if (crew) args._crew = crew;
+        if (since) args._since = since;
+        const { data, error } = await supabase.rpc("leaderboard", args);
+        if (error) throw error;
+        return data ?? [];
+      }));
+      let rows = results.flat();
+      if (exercise === "total") {
+        const totals = new Map<string, (typeof rows)[number] & { total: number; lifts_count: number }>();
+        for (const row of rows) {
+          const current = totals.get(row.user_id);
+          if (current) {
+            current.total += Number(row.weight_kg);
+            current.lifts_count += 1;
+          } else {
+            totals.set(row.user_id, { ...row, total: Number(row.weight_kg), lifts_count: 1 });
+          }
+        }
+        rows = [...totals.values()]
+          .sort((a, b) => Number(b.total) - Number(a.total))
+          .map((row) => ({ ...row, weight_kg: row.total, reps: 1 }));
+      }
       if (!rows.length) return rows.map((row) => ({ ...row, has_video: false }));
       const { data: evidence, error: evidenceError } = await supabase
         .from("lifts")
