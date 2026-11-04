@@ -59,7 +59,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       }
       const ids = [...new Set((battles ?? []).flatMap((b: Battle) => [b.challenger_crew_id,b.opponent_crew_id]))];
       const [{ data: crews, error: crewError }, { data: rivalCrews, error: rivalError }] = await Promise.all([
-        (supabase as any).from("crews").select("id,name,emblem,accent_color").in("id", ids),
+        (supabase as any).from("crews").select("id,name").in("id", ids),
         (supabase as any).from("crews").select("id,name").neq("id",crewId).order("name"),
       ]);
       if (crewError) throw crewError;
