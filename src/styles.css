@@ -176,3 +176,13 @@
 .motion-cross { position:absolute; color:#ff303c; font:300 28px/1 monospace; opacity:.75; }.motion-cross-one { top:22%; right:18%; }.motion-cross-two { top:55%; left:12%; }
 @keyframes repunit-spin { to { rotate:360deg; } }
 @media (prefers-reduced-motion:reduce) { .motion-ring,.motion-orbit { animation:none; } }
+
+/* Kinetic REPUNIT brand insignia */
+.repunit-mark { overflow:visible; filter:drop-shadow(0 0 8px rgba(255,48,60,.18)); }
+.repunit-mark .mark-orbit { transform-origin:24px 24px; animation:repunit-mark-orbit 9s linear infinite; }
+.repunit-mark .mark-shell { transform-origin:24px 24px; transition:filter .25s ease; }
+.repunit-mark .mark-flare { transform-origin:36.5px 11.5px; animation:repunit-mark-pulse 2.8s ease-in-out infinite; }
+.group:hover .repunit-mark { filter:drop-shadow(0 0 12px rgba(255,48,60,.55)); }
+@keyframes repunit-mark-orbit { to { rotate:360deg; } }
+@keyframes repunit-mark-pulse { 0%,100% { opacity:.55; transform:scale(.8); } 50% { opacity:1; transform:scale(1.15); } }
+@media (prefers-reduced-motion:reduce) { .repunit-mark .mark-orbit,.repunit-mark .mark-flare { animation:none; } }
