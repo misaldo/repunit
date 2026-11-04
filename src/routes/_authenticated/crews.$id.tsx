@@ -8,6 +8,7 @@ import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium, RankList } from "@/components/leaderboard-list";
 import { EXERCISES, type Exercise } from "@/lib/lifts";
+import { AvatarChip } from "@/components/avatar-chip";
 
 export const Route = createFileRoute("/_authenticated/crews/$id")({
   head: () => ({ meta: [{ property: "og:title", content: "Crew — REPUNIT" }, { property: "og:description", content: "Crew leaderboard." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Crew — REPUNIT" }, { name: "description", content: "Crew leaderboard." }] }),
@@ -28,7 +29,7 @@ function Crew() {
       if (error) throw error;
       const { data: code, error: codeError } = await supabase.rpc("crew_invite_code", { _crew: id });
       if (codeError) throw codeError;
-      const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name)").eq("crew_id", id).order("joined_at");
+      const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name, avatar_url)").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
       return { c, code, members: members ?? [] };
     },
@@ -42,6 +43,11 @@ function Crew() {
   async function changeCapacity(value: number) { setSaving(true); try { const { error } = await supabase.rpc("update_crew_capacity" as any, { _crew: id, _max_members: value }); if (error) throw error; toast.success("Crew capacity updated"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not update capacity."); } finally { setSaving(false); } }
   async function rotateInvite() { if (!window.confirm("Create a new invite code? The old link will stop working.")) return; setSaving(true); try { const { error } = await supabase.rpc("rotate_crew_invite" as any, { _crew: id }); if (error) throw error; toast.success("Invite code refreshed"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not refresh invite."); } finally { setSaving(false); } }
   async function removeMember(memberId: string, username: string) { if (!window.confirm(`Remove @${username} from this crew?`)) return; setSaving(true); try { const { error } = await supabase.rpc("remove_crew_member" as any, { _crew: id, _member: memberId }); if (error) throw error; toast.success("Member removed"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not remove member."); } finally { setSaving(false); } }
+  async function copyCode() {
+    if (!data?.code) return;
+    try { await navigator.clipboard.writeText(String(data.code)); toast.success("Crew code copied"); }
+    catch { toast.error("Could not copy the code."); }
+  }
   async function copyInvite() {
     if (!data?.code) return;
     try {
@@ -76,7 +82,8 @@ function Crew() {
       </div>
       {data.code && (
         <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-border py-4">
-          <span className="text-sm">Invite code: <b className="font-mono">{data.code}</b></span>
+          <div className="flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Crew code</span><b className="font-mono text-sm tracking-widest">{data.code}</b></div>
+          <Button size="sm" variant="line" onClick={copyCode}><Copy />Copy code</Button>
           <Button size="sm" variant="line" onClick={copyInvite}><Copy />Copy invite link</Button>{isAdmin && <Button size="sm" variant="ghost" disabled={saving} onClick={rotateInvite}><RefreshCw className="mr-1 h-4 w-4"/>Refresh code</Button>}
         </div>
       )}
@@ -91,7 +98,7 @@ function Crew() {
       <div className="mt-10 flex items-end justify-between"><div><p className="eyebrow">THE LINEUP</p><h2 className="font-stat mt-1 text-3xl uppercase">Members ({count})</h2></div><Users className="h-6 w-6 text-primary"/></div>
       <ul className="mt-3 divide-y divide-border">
         {data.members.map((member) => <li key={member.user_id} className="flex items-center justify-between py-3">
-          <div className="min-w-0">{member.profiles && <><Link to="/u/$username" params={{ username: member.profiles.username }} className="font-semibold">{member.profiles.display_name || member.profiles.username}</Link><p className="text-xs text-muted-foreground">@{member.profiles.username}</p></>}</div>
+          <div className="flex min-w-0 items-center gap-3">{member.profiles && <><AvatarChip name={member.profiles.username} url={member.profiles.avatar_url} className="h-10 w-10 shrink-0"/><div className="min-w-0"><Link to="/u/$username" params={{ username: member.profiles.username }} className="font-semibold">{member.profiles.display_name || member.profiles.username}</Link><p className="text-xs text-muted-foreground">@{member.profiles.username}</p></div></>}</div>
           <div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest ${member.role === "admin" ? "bg-primary/10 text-primary" : "bg-elevated text-muted-foreground"}`}>{member.role === "admin" ? "Admin" : "Member"}</span>{isAdmin && member.role !== "admin" && <Button size="icon" variant="ghost" disabled={saving} onClick={() => removeMember(member.user_id, member.profiles?.username ?? "member")}><UserMinus className="h-4 w-4"/></Button>}</div>
         </li>)}
       </ul>
