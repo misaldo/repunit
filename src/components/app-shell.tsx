@@ -35,7 +35,7 @@ export function SiteHeader() {
         <Wordmark />
         <nav className="hidden items-center gap-7 text-[13px] font-semibold text-muted-foreground lg:flex">
           {user && <Link to="/feed" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Feed</Link>}
-          <Link to="/leaderboards" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Ranks</Link>
+          <Link to="/leaderboards" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Top</Link>
           {user && <Link to="/workouts" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Workouts</Link>}
           {user && <Link to="/crews" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Crews</Link>}
           <Link to="/pricing" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Pricing</Link>
@@ -74,9 +74,9 @@ export function MobileNav() {
     <Link to="/feed" className={item} activeProps={active}><Rss className="h-5 w-5" />Feed</Link>
     <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5" />Workouts</Link>
     <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5" />Crews</Link>
-    <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5" />Ranks</Link>
+    <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5" />Top</Link>
     {profile ? <Link to="/u/$username" params={{ username: profile.username }} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url ?? undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>Profile</Link> : <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>Profile</Link>}
   </div></nav>;
 }
 export function PageShell({ children }: { children: ReactNode }) { return <div className="min-h-screen pb-24 md:pb-0"><SiteHeader /><main className="mx-auto max-w-7xl px-4 py-7 md:px-6 md:py-10">{children}</main><MobileNav /><InstallPrompt /></div>; }
-export function SiteFooter() { return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark /><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">Ranks</Link><Link to="/pricing" className="hover:text-foreground">Pricing</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
+export function SiteFooter() { return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark /><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">Top</Link><Link to="/pricing" className="hover:text-foreground">Pricing</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
