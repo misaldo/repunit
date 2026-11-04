@@ -28,10 +28,10 @@ function Crew() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
-      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, total_xp, emblem, accent_color, is_public").eq("id", id).maybeSingle();
+      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, total_xp, emblem, accent_color, is_public, invite_code").eq("id", id).maybeSingle();
       if (error) throw error;
-      const { data: code, error: codeError } = await supabase.rpc("crew_invite_code", { _crew: id });
-      if (codeError) throw codeError;
+      // Invite codes are stored directly on the crew row. There is no crew_invite_code RPC in the applied migrations.
+      const code = c?.invite_code ?? null;
       const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name, avatar_url)").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
       const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([
