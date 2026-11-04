@@ -29,6 +29,8 @@ import { Route as AuthenticatedCrewsIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedCrewsIdRouteImport } from './routes/_authenticated/crews.$id'
 import { Route as AuthenticatedCrewsNewRouteImport } from './routes/_authenticated/crews.new'
 import { Route as AuthenticatedRecordsNewRouteImport } from './routes/_authenticated/records.new'
+import { Route as AuthenticatedBattlesIndexRouteImport } from './routes/_authenticated/battles.index'
+import { Route as AuthenticatedBattlesIdRouteImport } from './routes/_authenticated/battles.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +126,16 @@ const AuthenticatedCrewsNewRoute = AuthenticatedCrewsNewRouteImport.update({
   path: '/crews/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBattlesIndexRoute = AuthenticatedBattlesIndexRouteImport.update({
+  id: '/battles/',
+  path: '/battles',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBattlesIdRoute = AuthenticatedBattlesIdRouteImport.update({
+  id: '/battles/$id',
+  path: '/battles/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRecordsNewRoute = AuthenticatedRecordsNewRouteImport.update({
   id: '/records/new',
   path: '/records/new',
@@ -150,6 +162,8 @@ export interface FileRoutesByFullPath {
   '/crews/new': typeof AuthenticatedCrewsNewRoute
   '/records/new': typeof AuthenticatedRecordsNewRoute
   '/crews/': typeof AuthenticatedCrewsIndexRoute
+  '/battles/': typeof AuthenticatedBattlesIndexRoute
+  '/battles/$id': typeof AuthenticatedBattlesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -171,6 +185,8 @@ export interface FileRoutesByTo {
   '/crews/new': typeof AuthenticatedCrewsNewRoute
   '/records/new': typeof AuthenticatedRecordsNewRoute
   '/crews': typeof AuthenticatedCrewsIndexRoute
+  '/battles': typeof AuthenticatedBattlesIndexRoute
+  '/battles/$id': typeof AuthenticatedBattlesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -194,6 +210,8 @@ export interface FileRoutesById {
   '/_authenticated/crews/new': typeof AuthenticatedCrewsNewRoute
   '/_authenticated/records/new': typeof AuthenticatedRecordsNewRoute
   '/_authenticated/crews/': typeof AuthenticatedCrewsIndexRoute
+  '/_authenticated/battles/': typeof AuthenticatedBattlesIndexRoute
+  '/_authenticated/battles/$id': typeof AuthenticatedBattlesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -217,6 +235,8 @@ export interface FileRouteTypes {
     | '/crews/new'
     | '/records/new'
     | '/crews/'
+    | '/battles/'
+    | '/battles/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -238,6 +258,8 @@ export interface FileRouteTypes {
     | '/crews/new'
     | '/records/new'
     | '/crews'
+    | '/battles'
+    | '/battles/$id'
   id:
     | '__root__'
     | '/'
@@ -260,6 +282,8 @@ export interface FileRouteTypes {
     | '/_authenticated/crews/new'
     | '/_authenticated/records/new'
     | '/_authenticated/crews/'
+    | '/_authenticated/battles/'
+    | '/_authenticated/battles/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -411,7 +435,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrewsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/records/new': {
+    '/_authenticated/battles/': {
+      id: '/_authenticated/battles/'
+      path: '/battles'
+      fullPath: '/battles/'
+      preLoaderRoute: typeof AuthenticatedBattlesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/battles/$id': {
+      id: '/_authenticated/battles/$id'
+      path: '/battles/$id'
+      fullPath: '/battles/$id'
+      preLoaderRoute: typeof AuthenticatedBattlesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/records/new':
       id: '/_authenticated/records/new'
       path: '/records/new'
       fullPath: '/records/new'
@@ -431,6 +469,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCrewsNewRoute: typeof AuthenticatedCrewsNewRoute
   AuthenticatedRecordsNewRoute: typeof AuthenticatedRecordsNewRoute
   AuthenticatedCrewsIndexRoute: typeof AuthenticatedCrewsIndexRoute
+  AuthenticatedBattlesIndexRoute: typeof AuthenticatedBattlesIndexRoute
+  AuthenticatedBattlesIdRoute: typeof AuthenticatedBattlesIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -443,6 +483,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCrewsNewRoute: AuthenticatedCrewsNewRoute,
   AuthenticatedRecordsNewRoute: AuthenticatedRecordsNewRoute,
   AuthenticatedCrewsIndexRoute: AuthenticatedCrewsIndexRoute,
+  AuthenticatedBattlesIndexRoute: AuthenticatedBattlesIndexRoute,
+  AuthenticatedBattlesIdRoute: AuthenticatedBattlesIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
