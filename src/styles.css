@@ -112,10 +112,27 @@
     color-scheme: dark;
   }
   body {
+    position: relative;
+    isolation: isolate;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -25%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 18% 24%, rgba(190, 18, 38, .20), transparent 34%),
+      radial-gradient(ellipse at 82% 68%, rgba(120, 10, 24, .18), transparent 38%),
+      radial-gradient(ellipse at 52% 48%, rgba(255, 42, 55, .07), transparent 48%),
+      linear-gradient(135deg, #080808 0%, #10090a 48%, #070707 100%);
+    background-size: 140% 140%;
+    animation: repunit-atmosphere 22s ease-in-out infinite alternate;
+    will-change: transform, background-position;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-heading);
@@ -230,3 +247,14 @@
 @keyframes repunit-mark-orbit { to { rotate:360deg; } }
 @keyframes repunit-mark-pulse { 0%,100% { opacity:.55; transform:scale(.8); } 50% { opacity:1; transform:scale(1.15); } }
 @media (prefers-reduced-motion:reduce) { .repunit-mark .mark-orbit,.repunit-mark .mark-flare { animation:none; } }
+
+
+/* Subtle animated red-on-black atmosphere shared across every route */
+@keyframes repunit-atmosphere {
+  0% { transform: translate3d(-1.5%, -1%, 0) scale(1); background-position: 0% 20%; }
+  50% { transform: translate3d(1%, 1.5%, 0) scale(1.035); background-position: 55% 70%; }
+  100% { transform: translate3d(2%, -1%, 0) scale(1.015); background-position: 100% 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}
