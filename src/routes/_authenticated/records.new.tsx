@@ -42,7 +42,7 @@ function NewRecord() {
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           const encodedPath = video_path!.split("/").map(encodeURIComponent).join("/");
-          xhr.open("POST", `${storageUrl.replace(/\\/+$/, "")}/storage/v1/object/lift-videos/${encodedPath}`);
+          xhr.open("POST", `${storageUrl.replace(/\/+$/, "")}/storage/v1/object/lift-videos/${encodedPath}`);
           xhr.setRequestHeader("apikey", publishableKey);
           xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
           xhr.setRequestHeader("Content-Type", file.type);
