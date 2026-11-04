@@ -5,7 +5,7 @@ begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
      and not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'user_achievements') then
     alter publication supabase_realtime add table public.user_achievements;
-  end if;
+  end if; 
 end $;
 -- All criteria use verified lifts only. Each unlock is unique and awards 10 bonus XP.
 create or replace function public.award_lift_achievements()
