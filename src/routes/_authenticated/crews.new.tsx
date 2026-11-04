@@ -25,12 +25,26 @@ function NewCrew() {
     const f = new FormData(e.currentTarget);
     setBusy(true);
     try {
-      const { data, error } = await (supabase as any).from("crews").insert({
+      // Keep the initial INSERT independent of the optional capacity column.
+      // Some PostgREST schema caches can lag behind an applied column migration.
+      const { data, error } = await supabase.from("crews").insert({
         name: String(f.get("name")).trim().slice(0, 40),
         description: String(f.get("description") || "").slice(0, 280) || null,
-        owner_id: user.id, max_members: Number(capacity),
+        owner_id: user.id,
       }).select("id").single();
       if (error) throw error;
+
+      // Capacity is changed through the database function so the browser does
+      // not need direct column-level INSERT permission for max_members.
+      const { error: capacityError } = await supabase.rpc("update_crew_capacity", {
+        _crew: data.id,
+        _max_members: Number(capacity),
+      });
+      if (capacityError) {
+        await supabase.from("crews").delete().eq("id", data.id).eq("owner_id", user.id);
+        throw capacityError;
+      }
+
       toast.success("Crew created — you're the admin");
       navigate({ to: "/crews/$id", params: { id: data.id } });
     } catch (err) {
