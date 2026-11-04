@@ -34,14 +34,25 @@ function Crew() {
       if (codeError) throw codeError;
       const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name, avatar_url)").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
-      const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([\n        (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),\n        (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", (members ?? []).map((m:any)=>m.user_id).length ? (members ?? []).map((m:any)=>m.user_id) : ["00000000-0000-0000-0000-000000000000"]).eq("status", "VERIFIED"),\n        (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed"),\n      ]);\n      return { c, code, members: members ?? [], badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), battleWins: battleWins?.length ?? 0 };
+      const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([
+        (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),
+        (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", (members ?? []).map((m:any)=>m.user_id).length ? (members ?? []).map((m:any)=>m.user_id) : ["00000000-0000-0000-0000-000000000000"]).eq("status", "VERIFIED"),
+        (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
+      ]);
+      return { c, code, members: members ?? [], badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), battleWins: battleWins?.length ?? 0 };
     },
   });
   const { data: rows = [], isLoading: ranksLoading, isError: ranksError } = useLeaderboard(ex, id);
-  const [saving, setSaving] = useState(false);\n  const [challengeCrew, setChallengeCrew] = useState("");\n  const [challengeCategory, setChallengeCategory] = useState<"bench"|"squat"|"deadlift">("bench");\n  const [challenging, setChallenging] = useState(false);\n  const { data: myAdminCrews = [] } = useQuery({ queryKey: ["my-admin-crews", user.id], queryFn: async () => { const { data, error } = await (supabase as any).from("crew_members").select("crew_id,crews(id,name)").eq("user_id", user.id).eq("role", "admin"); if (error) throw error; return (data ?? []).map((m:any)=>m.crews).filter(Boolean).filter((c:any)=>c.id!==id); } });
+  const [saving, setSaving] = useState(false);
+  const [challengeCrew, setChallengeCrew] = useState("");
+  const [challengeCategory, setChallengeCategory] = useState<"bench"|"squat"|"deadlift">("bench");
+  const [challenging, setChallenging] = useState(false);
+  const { data: myAdminCrews = [] } = useQuery({ queryKey: ["my-admin-crews", user.id], queryFn: async () => { const { data, error } = await (supabase as any).from("crew_members").select("crew_id,crews(id,name)").eq("user_id", user.id).eq("role", "admin"); if (error) throw error; return (data ?? []).map((m:any)=>m.crews).filter(Boolean).filter((c:any)=>c.id!==id); } });
   const isAdmin = data?.members?.some((m: any) => m.user_id === user.id && m.role === "admin") ?? false;
   const count = data?.members?.length ?? 0;
-  const cap = Number(data?.c?.max_members ?? 20);\n  const crewLevel = getLevel(Number(data?.c?.total_xp ?? 0));\n  async function sendCrewChallenge() { if (!challengeCrew || challenging) return; setChallenging(true); try { const { error } = await (supabase as any).rpc("challenge_crew", { _challenger: challengeCrew, _opponent: id, _category: challengeCategory }); if (error) throw error; toast.success("Challenge sent"); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not challenge this crew."); } finally { setChallenging(false); } }
+  const cap = Number(data?.c?.max_members ?? 20);
+  const crewLevel = getLevel(Number(data?.c?.total_xp ?? 0));
+  async function sendCrewChallenge() { if (!challengeCrew || challenging) return; setChallenging(true); try { const { error } = await (supabase as any).rpc("challenge_crew", { _challenger: challengeCrew, _opponent: id, _category: challengeCategory }); if (error) throw error; toast.success("Challenge sent"); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not challenge this crew."); } finally { setChallenging(false); } }
   async function refreshCrew() { await qc.invalidateQueries({ queryKey: ["crew", id] }); await qc.invalidateQueries({ queryKey: ["my-crews", user.id] }); }
   async function changeCapacity(value: number) { setSaving(true); try { const { error } = await supabase.rpc("update_crew_capacity" as any, { _crew: id, _max_members: value }); if (error) throw error; toast.success("Crew capacity updated"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not update capacity."); } finally { setSaving(false); } }
   async function rotateInvite() { if (!window.confirm("Create a new invite code? The old link will stop working.")) return; setSaving(true); try { const { error } = await supabase.rpc("rotate_crew_invite" as any, { _crew: id }); if (error) throw error; toast.success("Invite code refreshed"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not refresh invite."); } finally { setSaving(false); } }
