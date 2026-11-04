@@ -12,7 +12,7 @@ export const Route = createFileRoute("/leaderboards")({
 });
 
 function Boards() {
-  const [ex, setEx] = useState<Exercise>("bench");
+  const [ex, setEx] = useState<Exercise | "total">("total");
   const [range, setRange] = useState<"all" | "30" | "7">("all");
   const since = range === "all" ? null : new Date(Date.now() - Number(range) * 864e5).toISOString().slice(0, 10);
   const { data: rows = [], isLoading, isError, refetch } = useLeaderboard(ex, null, since);
@@ -23,12 +23,12 @@ function Boards() {
       <p className="eyebrow">Global</p>
       <h1 className="font-stat mt-2 text-6xl uppercase">Leaderboards</h1>
       <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-        {EXERCISES.map((e) => <Button key={e.id} variant="ghost" size="sm" className={chip(e.id === ex)} onClick={() => setEx(e.id)}>{e.short}</Button>)}
+        {[{ id: "total" as const, short: "TOTAL" }, ...EXERCISES].map((e) => <Button key={e.id} variant="ghost" size="sm" className={chip(e.id === ex)} onClick={() => setEx(e.id)}>{e.short}</Button>)}
       </div>
       <div className="mt-2 flex gap-2">
         {([["all", "All time"], ["30", "Monthly"], ["7", "Weekly"]] as const).map(([k, l]) => <Button key={k} variant="ghost" size="sm" className={chip(range === k)} onClick={() => setRange(k)}>{l}</Button>)}
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">Standard: {meta?.standard} Ranked by heaviest weight, then reps.</p>
+      <p className="mt-4 text-xs text-muted-foreground">{ex === "total" ? "Combined total of each lifter’s best verified lifts across Bench, Squat, Deadlift, OHP and Pull-ups." : `Standard: ${meta?.standard} Ranked by heaviest weight, then reps.`}</p>
       <div className="mt-8 space-y-6">
         {isLoading ? <p className="text-muted-foreground">Loading…</p> : isError ? <div><p>Could not load the leaderboard.</p><Button variant="line" className="mt-3" onClick={() => refetch()}>Try again</Button></div> : rows.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">No lifts yet in this category.</p>
