@@ -28,10 +28,15 @@ function Crew() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
-      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, total_xp, emblem, accent_color, is_public, invite_code").eq("id", id).maybeSingle();
+      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, is_public").eq("id", id).maybeSingle();
       if (error) throw error;
-      // Invite codes are stored directly on the crew row. There is no crew_invite_code RPC in the applied migrations.
-      const code = c?.invite_code ?? null;
+      // Extra crew columns are protected by column-level grants. Retrieve the invite code through the member-only RPC.
+      let code: string | null = null;
+      if (c) {
+        const { data: inviteCode, error: inviteError } = await (supabase as any).rpc("crew_invite_code", { _crew: id });
+        if (inviteError) throw inviteError;
+        code = inviteCode ?? null;
+      }
       const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name, avatar_url)").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
       const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([
@@ -52,7 +57,7 @@ function Crew() {
   const isAdmin = data?.members?.some((m: any) => m.user_id === user.id && m.role === "admin") ?? false;
   const count = data?.members?.length ?? 0;
   const cap = Number(data?.c?.max_members ?? 20);
-  const crewLevel = getLevel(Number(data?.c?.total_xp ?? 0));
+  const crewLevel = getLevel(Number((data?.c as any)?.total_xp ?? 0));
   async function joinPublicCrew() { setSaving(true); try { const { error } = await (supabase as any).rpc("join_public_crew", { _crew: id }); if (error) throw error; toast.success("You joined the crew"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not join this crew."); } finally { setSaving(false); } }
   async function toggleVisibility() { setSaving(true); try { const { error } = await (supabase as any).rpc("set_crew_visibility", { _crew: id, _public: !data?.c?.is_public }); if (error) throw error; toast.success(data?.c?.is_public ? "Crew is now private" : "Crew is now public"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not update visibility."); } finally { setSaving(false); } }
   async function sendCrewChallenge() { if (!challengeCrew || challenging) return; setChallenging(true); try { const { error } = await (supabase as any).rpc("challenge_crew", { _challenger: challengeCrew, _opponent: id, _category: challengeCategory }); if (error) throw error; toast.success("Challenge sent"); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not challenge this crew."); } finally { setChallenging(false); } }
@@ -98,7 +103,7 @@ function Crew() {
         <div className="mt-6 grid max-w-xl grid-cols-2 gap-3"><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{count}<span className="text-lg text-muted-foreground">/{cap}</span></p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Members</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,count/cap*100)}%`}}/></div></div><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{Math.max(0,cap-count)}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Open spots</p></div></div></div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Zap className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Crew level</span></div><p className="font-stat mt-1 text-2xl">{crewLevel.icon} {crewLevel.name}</p><p className="text-[10px] text-muted-foreground">{Number(data.c.total_xp ?? 0).toLocaleString()} XP</p></div>
+        <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Zap className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Crew level</span></div><p className="font-stat mt-1 text-2xl">{crewLevel.icon} {crewLevel.name}</p><p className="text-[10px] text-muted-foreground">{Number((data.c as any).total_xp ?? 0).toLocaleString()} XP</p></div>
         <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Trophy className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Total tonnage</span></div><p className="font-stat mt-1 text-2xl">{Math.round(data.tonnage).toLocaleString()} kg</p><p className="text-[10px] text-muted-foreground">Verified volume</p></div>
         <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Swords className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Battle wins</span></div><p className="font-stat mt-1 text-2xl">{data.battleWins}</p><p className="text-[10px] text-muted-foreground">Completed weekly battles</p></div>
         <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Medal className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Crew badges</span></div><p className="font-stat mt-1 text-2xl">{data.badges.length}</p><p className="text-[10px] text-muted-foreground">Achievements earned</p></div>
