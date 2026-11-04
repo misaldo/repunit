@@ -20,9 +20,18 @@ function Crews() {
   const { data = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["my-crews", user.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("crew_members").select("crew_id, role, crews(id, name, description, max_members)").eq("user_id", user.id).order("joined_at", { ascending: false });
+      const { data: memberships, error } = await (supabase as any).from("crew_members")
+        .select("crew_id, role, joined_at").eq("user_id", user.id).order("joined_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const crewIds = (memberships ?? []).map((m: any) => m.crew_id);
+      if (!crewIds.length) return [];
+      const { data: crews, error: crewsError } = await (supabase as any).from("crews")
+        .select("id, name, description, max_members").in("id", crewIds);
+      if (crewsError) throw crewsError;
+      const crewById = new Map((crews ?? []).map((crew: any) => [crew.id, crew]));
+      return (memberships ?? []).map((membership: any) => ({
+        ...membership, crews: crewById.get(membership.crew_id) ?? null,
+      }));
     },
   });
   async function join(e: FormEvent<HTMLFormElement>) {
