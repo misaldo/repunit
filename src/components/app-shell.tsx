@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trophy, Users, LogOut, Rss, Dumbbell, Settings, Crown, ChevronDown, Flame, UserRound } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
@@ -8,10 +8,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { InstallPrompt } from "./install-prompt";
+import { ProgressionCard } from "./progression-card";
 
 export function SiteHeader() {
   const { user, ready } = useUser();
   const { data: profile } = useMyProfile(user?.id);
+  const { data: progress } = useQuery({
+    queryKey: ["user-progression", user?.id], enabled: !!user?.id,
+    queryFn: async () => {
+      const [{ data: stats }, { data: badges }] = await Promise.all([
+        (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", user!.id).maybeSingle(),
+        (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", user!.id),
+      ]);
+      return { xp: Number(stats?.xp ?? 0), streak: stats?.current_streak ?? 0, longest: stats?.longest_streak ?? 0, achievements: (badges ?? []).map((x: {achievement_key:string}) => x.achievement_key) };
+    },
+  });
   const qc = useQueryClient();
   const navigate = useNavigate();
   async function signOut() {
@@ -40,9 +51,7 @@ export function SiteHeader() {
             <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-2xl shadow-black/40">
               <div className="border-b border-border px-3 py-3">
                 <p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p>
-                <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider"><span className="text-primary">Rookie · Level 1</span><span className="text-muted-foreground">0 / 100 XP</span></div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-elevated"><div className="h-full w-0 rounded-full bg-primary" /></div>
-                <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5 text-primary" /> 0 day streak</p>
+                <div className="mt-3"><ProgressionCard xp={progress?.xp ?? 0} streak={progress?.streak ?? 0} longestStreak={progress?.longest ?? 0} achievements={progress?.achievements ?? []} compact /></div>
               </div>
               {profile && <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-elevated"><UserRound className="h-4 w-4" /> My Profile</Link>}
               <Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-elevated"><Settings className="h-4 w-4" /> Settings</Link>
