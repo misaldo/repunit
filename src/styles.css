@@ -105,12 +105,8 @@
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-  html {
-    color-scheme: dark;
-  }
+  * { border-color: var(--color-border); }
+  html { color-scheme: dark; }
   body {
     position: relative;
     isolation: isolate;
@@ -122,17 +118,16 @@
   body::before {
     content: "";
     position: fixed;
-    inset: -25%;
+    inset: 0;
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(ellipse at 18% 24%, rgba(190, 18, 38, .20), transparent 34%),
-      radial-gradient(ellipse at 82% 68%, rgba(120, 10, 24, .18), transparent 38%),
-      radial-gradient(ellipse at 52% 48%, rgba(255, 42, 55, .07), transparent 48%),
-      linear-gradient(135deg, #080808 0%, #10090a 48%, #070707 100%);
-    background-size: 140% 140%;
-    animation: repunit-atmosphere 22s ease-in-out infinite alternate;
-    will-change: transform, background-position;
+      radial-gradient(ellipse at 12% 8%, rgba(150, 18, 34, .12), transparent 38%),
+      radial-gradient(ellipse at 88% 82%, rgba(105, 12, 27, .10), transparent 42%),
+      linear-gradient(145deg, #090909 0%, #0c090a 52%, #080808 100%);
+    opacity: .88;
+    animation: repunit-glow-breathe 24s ease-in-out infinite;
+    will-change: opacity;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-heading);
@@ -154,27 +149,27 @@
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }
-@utility bg-gradient-red {
-  background-image: var(--gradient-red);
-}
-@utility shadow-glow {
-  box-shadow: var(--shadow-glow);
-}
+@utility bg-gradient-red { background-image: var(--gradient-red); }
+@utility shadow-glow { box-shadow: var(--shadow-glow); }
 @utility grid-lines {
   background-image:
     linear-gradient(to right, color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px),
     linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 5%, transparent) 1px, transparent 1px);
   background-size: 48px 48px;
 }
-@utility rise {
-  animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
+@utility rise { animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
 }
+
+@keyframes repunit-glow-breathe {
+  0%, 100% { opacity: .78; }
+  50% { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  body::before { animation: none; }
 }
 
 /* REPUNIT editorial hero — restrained, industrial and typography-led */
@@ -247,14 +242,3 @@
 @keyframes repunit-mark-orbit { to { rotate:360deg; } }
 @keyframes repunit-mark-pulse { 0%,100% { opacity:.55; transform:scale(.8); } 50% { opacity:1; transform:scale(1.15); } }
 @media (prefers-reduced-motion:reduce) { .repunit-mark .mark-orbit,.repunit-mark .mark-flare { animation:none; } }
-
-
-/* Subtle animated red-on-black atmosphere shared across every route */
-@keyframes repunit-atmosphere {
-  0% { transform: translate3d(-1.5%, -1%, 0) scale(1); background-position: 0% 20%; }
-  50% { transform: translate3d(1%, 1.5%, 0) scale(1.035); background-position: 55% 70%; }
-  100% { transform: translate3d(2%, -1%, 0) scale(1.015); background-position: 100% 30%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; }
-}
