@@ -26,7 +26,7 @@ function timeLeft(target: number, now: number) {
   return days ? `${days}d ${hours}h ${minutes}m` : `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${secs.toString().padStart(2,"0")}`;
 }
 
-export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userId: string; isAdmin: boolean }) {
+export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId: string; userId: string; isAdmin: boolean; focusBattleId?: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [now, setNow] = useState(Date.now());
@@ -99,8 +99,9 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
     },
   });
 
-  const current = data?.battles.filter(({battle}) => battle.status === "pending" || (battle.status !== "cancelled" && now < new Date(battle.ends_at).getTime())) ?? [];
-  const history = data?.battles.filter(({battle}) => battle.status === "completed" || battle.status === "cancelled" || now >= new Date(battle.ends_at).getTime()) ?? [];
+  const visibleBattles = data?.battles.filter(({battle}) => !focusBattleId || battle.id === focusBattleId) ?? [];
+  const current = visibleBattles.filter(({battle}) => battle.status === "pending" || (battle.status !== "cancelled" && now < new Date(battle.ends_at).getTime()));
+  const history = visibleBattles.filter(({battle}) => battle.status === "completed" || battle.status === "cancelled" || now >= new Date(battle.ends_at).getTime());
 
   async function refresh() {
     await qc.invalidateQueries({ queryKey:["crew-battles",crewId,userId] });
