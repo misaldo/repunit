@@ -26,7 +26,7 @@ function periodStart(period:Period) {
   return monday.toISOString().slice(0,10);
 }
 async function scoreCrews(exercise:Exercise|"total",from:string|null,to:string|null) {
-  const {data:crews,error}=await (supabase as any).from("crews").select("id,name,emblem,accent_color").order("name");
+  const {data:crews,error}=await (supabase as any).from("crews").select("id,name").order("name");
   if(error)throw error;
   if(!crews?.length)return [];
   const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id,profiles(country_code)").in("crew_id",crews.map((c:any)=>c.id));
