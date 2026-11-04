@@ -25,8 +25,8 @@ function NewCrew() {
     const f = new FormData(e.currentTarget);
     setBusy(true);
     try {
-      // Keep the initial INSERT independent of the optional capacity column.
-      // Some PostgREST schema caches can lag behind an applied column migration.
+      // Create the crew without sending max_members in the REST payload.
+      // This avoids failures when PostgREST has a stale schema cache.
       const { data, error } = await supabase.from("crews").insert({
         name: String(f.get("name")).trim().slice(0, 40),
         description: String(f.get("description") || "").slice(0, 280) || null,
@@ -34,15 +34,15 @@ function NewCrew() {
       }).select("id").single();
       if (error) throw error;
 
-      // Capacity is changed through the database function so the browser does
-      // not need direct column-level INSERT permission for max_members.
+      // Capacity is optional: if its RPC is temporarily unavailable, keep the
+      // crew and its database default (20) instead of deleting a valid crew.
       const { error: capacityError } = await supabase.rpc("update_crew_capacity", {
         _crew: data.id,
         _max_members: Number(capacity),
       });
       if (capacityError) {
-        await supabase.from("crews").delete().eq("id", data.id).eq("owner_id", user.id);
-        throw capacityError;
+        console.warn("Crew created with default capacity because capacity update failed:", capacityError.message);
+        toast.message("Crew created with the default capacity of 20 members.");
       }
 
       toast.success("Crew created — you're the admin");
