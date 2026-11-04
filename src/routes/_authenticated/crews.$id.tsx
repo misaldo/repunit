@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium, RankList } from "@/components/leaderboard-list";
 import { EXERCISES, type Exercise } from "@/lib/lifts";
 import { AvatarChip } from "@/components/avatar-chip";
+import { getLevel } from "@/lib/progression";
+import { Zap, Medal, Swords } from "lucide-react";
 import { CrewBattles } from "@/components/crew-battles";
 
 export const Route = createFileRoute("/_authenticated/crews/$id")({
@@ -26,20 +28,20 @@ function Crew() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
-      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members").eq("id", id).maybeSingle();
+      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, total_xp, emblem, accent_color").eq("id", id).maybeSingle();
       if (error) throw error;
       const { data: code, error: codeError } = await supabase.rpc("crew_invite_code", { _crew: id });
       if (codeError) throw codeError;
       const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name, avatar_url)").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
-      return { c, code, members: members ?? [] };
+      const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([\n        (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),\n        (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", (members ?? []).map((m:any)=>m.user_id).length ? (members ?? []).map((m:any)=>m.user_id) : ["00000000-0000-0000-0000-000000000000"]).eq("status", "VERIFIED"),\n        (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed"),\n      ]);\n      return { c, code, members: members ?? [], badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), battleWins: battleWins?.length ?? 0 };
     },
   });
   const { data: rows = [], isLoading: ranksLoading, isError: ranksError } = useLeaderboard(ex, id);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);\n  const [challengeCrew, setChallengeCrew] = useState("");\n  const [challengeCategory, setChallengeCategory] = useState<"bench"|"squat"|"deadlift">("bench");\n  const [challenging, setChallenging] = useState(false);\n  const { data: myAdminCrews = [] } = useQuery({ queryKey: ["my-admin-crews", user.id], queryFn: async () => { const { data, error } = await (supabase as any).from("crew_members").select("crew_id,crews(id,name)").eq("user_id", user.id).eq("role", "admin"); if (error) throw error; return (data ?? []).map((m:any)=>m.crews).filter(Boolean).filter((c:any)=>c.id!==id); } });
   const isAdmin = data?.members?.some((m: any) => m.user_id === user.id && m.role === "admin") ?? false;
   const count = data?.members?.length ?? 0;
-  const cap = Number(data?.c?.max_members ?? 20);
+  const cap = Number(data?.c?.max_members ?? 20);\n  const crewLevel = getLevel(Number(data?.c?.total_xp ?? 0));\n  async function sendCrewChallenge() { if (!challengeCrew || challenging) return; setChallenging(true); try { const { error } = await (supabase as any).rpc("challenge_crew", { _challenger: challengeCrew, _opponent: id, _category: challengeCategory }); if (error) throw error; toast.success("Challenge sent"); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not challenge this crew."); } finally { setChallenging(false); } }
   async function refreshCrew() { await qc.invalidateQueries({ queryKey: ["crew", id] }); await qc.invalidateQueries({ queryKey: ["my-crews", user.id] }); }
   async function changeCapacity(value: number) { setSaving(true); try { const { error } = await supabase.rpc("update_crew_capacity" as any, { _crew: id, _max_members: value }); if (error) throw error; toast.success("Crew capacity updated"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not update capacity."); } finally { setSaving(false); } }
   async function rotateInvite() { if (!window.confirm("Create a new invite code? The old link will stop working.")) return; setSaving(true); try { const { error } = await supabase.rpc("rotate_crew_invite" as any, { _crew: id }); if (error) throw error; toast.success("Invite code refreshed"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not refresh invite."); } finally { setSaving(false); } }
@@ -81,6 +83,14 @@ function Crew() {
         {data.c.description && <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{data.c.description}</p>}
         <div className="mt-6 grid max-w-xl grid-cols-2 gap-3"><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{count}<span className="text-lg text-muted-foreground">/{cap}</span></p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Members</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,count/cap*100)}%`}}/></div></div><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{Math.max(0,cap-count)}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Open spots</p></div></div></div>
       </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Zap className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Crew level</span></div><p className="font-stat mt-1 text-2xl">{crewLevel.icon} {crewLevel.name}</p><p className="text-[10px] text-muted-foreground">{Number(data.c.total_xp ?? 0).toLocaleString()} XP</p></div>
+        <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Trophy className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Total tonnage</span></div><p className="font-stat mt-1 text-2xl">{Math.round(data.tonnage).toLocaleString()} kg</p><p className="text-[10px] text-muted-foreground">Verified volume</p></div>
+        <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Swords className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Battle wins</span></div><p className="font-stat mt-1 text-2xl">{data.battleWins}</p><p className="text-[10px] text-muted-foreground">Completed weekly battles</p></div>
+        <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Medal className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Crew badges</span></div><p className="font-stat mt-1 text-2xl">{data.badges.length}</p><p className="text-[10px] text-muted-foreground">Achievements earned</p></div>
+      </div>
+      {data.badges.length > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4"><p className="eyebrow">CREW COLLECTION</p><h2 className="font-stat mt-1 text-2xl uppercase">Badges</h2><div className="mt-3 flex flex-wrap gap-2">{data.badges.map((badge:any)=><span key={badge.id} className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-primary">{badge.achievement_key.startsWith("crew_battle_winner:")?"⚔️ Battle winner":badge.achievement_key.replace(/_/g," ")}</span>)}</div></section>}
+      {myAdminCrews.length > 0 && <section className="mt-5 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4"><div className="flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/><h2 className="font-bold">Challenge this crew</h2></div><p className="mt-1 text-xs text-muted-foreground">Send a seven-day battle from one of your crews.</p><div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]"><select value={challengeCrew} onChange={e=>setChallengeCrew(e.target.value)} className="h-10 min-w-0 rounded-lg border border-border bg-background px-3 text-sm"><option value="">Choose your crew</option>{myAdminCrews.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select><select value={challengeCategory} onChange={e=>setChallengeCategory(e.target.value as any)} className="h-10 rounded-lg border border-border bg-background px-3 text-sm"><option value="bench">Bench</option><option value="squat">Squat</option><option value="deadlift">Deadlift</option></select><Button variant="hero" disabled={!challengeCrew||challenging} onClick={sendCrewChallenge}>{challenging?"Sending…":"Challenge"}</Button></div></section>}
       {data.code && (
         <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-border py-4">
           <div className="flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Crew code</span><b className="font-mono text-sm tracking-widest">{data.code}</b></div>
