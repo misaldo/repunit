@@ -10,6 +10,7 @@ import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
+import { ProgressionCard } from "@/components/progression-card";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records and training activity of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records, community and training activity." }] }),
@@ -35,6 +36,17 @@ function Profile() {
       if (liftsError) throw liftsError;
       if (postsError) throw postsError;
       return { p, lifts: lifts ?? [], posts: posts ?? [] };
+    },
+  });
+
+  const { data: progression } = useQuery({
+    queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
+    queryFn: async () => {
+      const [{ data: stats }, { data: badges }] = await Promise.all([
+        (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", data!.p.id).maybeSingle(),
+        (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", data!.p.id),
+      ]);
+      return { xp: Number(stats?.xp ?? 0), streak: stats?.current_streak ?? 0, longest: stats?.longest_streak ?? 0, achievements: (badges ?? []).map((x: {achievement_key:string}) => x.achievement_key) };
     },
   });
 
@@ -104,6 +116,8 @@ function Profile() {
           <div><strong className="text-foreground">{lifts.length}</strong> <span className="text-muted-foreground">lift records</span></div>
         </div>
       </section>
+
+      <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>
 
       <div className="mt-8">
         <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Personal records</h2></div>
