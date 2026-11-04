@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Users, Video, ShieldCheck, Trophy, Zap } from "lucide-react";
+import { ArrowRight, Users, Video, ShieldCheck, Trophy, Zap, Dumbbell } from "lucide-react";
 import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium } from "@/components/leaderboard-list";
@@ -45,9 +45,16 @@ function Landing() {
               Who is the<br />strongest in your <span className="text-primary">crew?</span>
             </h1>
             <p className="rise mt-6 max-w-md text-base text-muted-foreground md:text-lg">Build your crew. Prove your strength. Own your rank.</p>
-            <div className="rise mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" variant="hero" className="h-12"><Link to="/crews/new">Create your crew <ArrowRight /></Link></Button>
-              <Button asChild size="lg" variant="line" className="h-12"><Link to="/leaderboards">Explore leaderboards</Link></Button>
+            <div className="rise mt-8 flex max-w-sm flex-col gap-3">
+              <Button asChild size="lg" variant="hero" className="h-14 w-full justify-center text-base shadow-[0_0_32px_hsl(var(--primary)/0.22)]">
+                <Link to="/records/new"><Dumbbell className="mr-2 h-5 w-5" />Submit a lift<ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="sm" variant="line" className="h-10 w-full justify-center border-white/15 bg-background/35 text-sm">
+                <Link to="/crews"><Users className="mr-2 h-4 w-4" />Join a crew</Link>
+              </Button>
+              <Button asChild size="lg" variant="line" className="h-12 w-full justify-center">
+                <Link to="/crews/new">Create your crew<ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
             </div>
           </div>
           <div className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/10 pt-5 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
