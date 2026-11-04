@@ -11,10 +11,14 @@ export function AchievementUnlockBanner() {
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let channel: ReturnType<typeof supabase.channel> | undefined;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!alive || !data.user) return;
-      channel = supabase.channel(`achievement-unlocks-${data.user.id}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "user_achievements", filter: `user_id=eq.${data.user.id}` }, (payload) => {
+    let activeUserId: string | null = null;
+    const connect = (userId: string | null) => {
+      if (userId === activeUserId) return;
+      activeUserId = userId;
+      if (channel) { void supabase.removeChannel(channel); channel = undefined; }
+      if (!userId || !alive) return;
+      channel = supabase.channel(`achievement-unlocks-${userId}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "user_achievements", filter: `user_id=eq.${userId}` }, (payload) => {
           const key = String((payload.new as { achievement_key?: string }).achievement_key ?? "");
           const item = ACHIEVEMENTS[key];
           if (!item || !alive) return;
@@ -22,8 +26,15 @@ export function AchievementUnlockBanner() {
           if (timer) clearTimeout(timer);
           timer = setTimeout(() => setUnlock(null), 8500);
         }).subscribe();
-    });
-    return () => { alive = false; if (timer) clearTimeout(timer); if (channel) void supabase.removeChannel(channel); };
+    };
+    supabase.auth.getSession().then(({ data }) => connect(data.session?.user.id ?? null));
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => connect(session?.user.id ?? null));
+    return () => {
+      alive = false;
+      authListener.subscription.unsubscribe();
+      if (timer) clearTimeout(timer);
+      if (channel) void supabase.removeChannel(channel);
+    };
   }, []);
   if (!unlock) return null;
   return <>
