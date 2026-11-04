@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Users, LogOut, Rss, Dumbbell, Settings, Crown, ChevronDown, Flame, UserRound } from "lucide-react";
+import { Trophy, Users, LogOut, Dumbbell, Settings, Crown, ChevronDown, UserRound } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -34,7 +34,6 @@ export function SiteHeader() {
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 md:px-6">
         <Wordmark />
         <nav className="hidden items-center gap-7 text-[13px] font-semibold text-muted-foreground lg:flex">
-          {user && <Link to="/feed" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Feed</Link>}
           <Link to="/leaderboards" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Top</Link>
           {user && <Link to="/workouts" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Workouts</Link>}
           {user && <Link to="/crews" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Crews</Link>}
@@ -71,10 +70,9 @@ export function MobileNav() {
   const item = "flex min-w-0 flex-1 flex-col items-center gap-1 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground transition-colors";
   const active = { className: "text-primary" };
   return <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl"><div className="mx-auto flex max-w-xl items-center px-1">
-    <Link to="/feed" className={item} activeProps={active}><Rss className="h-5 w-5" />Feed</Link>
+    <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5" />Top</Link>
     <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5" />Workouts</Link>
     <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5" />Crews</Link>
-    <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5" />Top</Link>
     {profile ? <Link to="/u/$username" params={{ username: profile.username }} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url ?? undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>Profile</Link> : <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>Profile</Link>}
   </div></nav>;
 }
