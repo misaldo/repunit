@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Crown } from "lucide-react";
+import { Crown, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Exercise } from "@/lib/lifts";
 import { StatusBadge } from "./status-badge";
@@ -16,7 +16,15 @@ export function useLeaderboard(exercise: Exercise, crew?: string | null, since?:
       if (since) args._since = since;
       const { data, error } = await supabase.rpc("leaderboard", args);
       if (error) throw error;
-      return data ?? [];
+      const rows = data ?? [];
+      if (!rows.length) return rows.map((row) => ({ ...row, has_video: false }));
+      const { data: evidence, error: evidenceError } = await supabase
+        .from("lifts")
+        .select("id, video_path")
+        .in("id", rows.map((row) => row.lift_id));
+      if (evidenceError) throw evidenceError;
+      const videoIds = new Set((evidence ?? []).filter((lift) => Boolean(lift.video_path)).map((lift) => lift.id));
+      return rows.map((row) => ({ ...row, has_video: videoIds.has(row.lift_id) }));
     },
   });
 }
@@ -33,17 +41,21 @@ export function Podium({ rows }: { rows: Row[] }) {
         if (!r) return <div key={i} />;
         const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
         return (
-          <Link key={r.user_id} to="/u/$username" params={{ username: r.username }}
-            className={cn("rise flex flex-col items-center rounded-xl border border-border bg-card p-3 text-center transition hover:border-foreground/30",
-              rank === 1 && "border-primary/50 bg-gradient-to-b from-primary/15 to-card pb-8 shadow-glow")}>
+          <div key={r.user_id} className={cn("rise flex min-w-0 flex-col items-center rounded-xl border border-border bg-card p-3 text-center transition hover:border-foreground/30",
+            rank === 1 && "border-primary/50 bg-gradient-to-b from-primary/15 to-card pb-5 shadow-glow")}>
             {rank === 1 && <Crown className="mb-1 h-5 w-5 text-gold" />}
-            <AvatarChip name={r.username} url={r.avatar_url} className={rank === 1 ? "h-14 w-14" : "h-11 w-11"} />
-            <p className="mt-2 w-full truncate text-xs font-semibold">@{r.username}</p>
-            <p className={cn("font-stat mt-1", rank === 1 ? "text-5xl" : "text-3xl")}>{Number(r.weight_kg)}<span className="text-base text-muted-foreground">kg</span></p>
-            {r.reps > 1 && <p className="text-[10px] text-muted-foreground">× {r.reps} reps</p>}
-            <p className={cn("font-stat mt-2 text-2xl", PODIUM[rank - 1])}>#{rank}</p>
+            <Link to="/u/$username" params={{ username: r.username }} className="flex w-full flex-col items-center">
+              <AvatarChip name={r.username} url={r.avatar_url} className={rank === 1 ? "h-14 w-14" : "h-11 w-11"} />
+              <p className="mt-2 w-full truncate text-xs font-semibold">@{r.username}</p>
+              <p className={cn("font-stat mt-1", rank === 1 ? "text-5xl" : "text-3xl")}>{Number(r.weight_kg)}<span className="text-base text-muted-foreground">kg</span></p>
+              {r.reps > 1 && <p className="text-[10px] text-muted-foreground">× {r.reps} reps</p>}
+              <p className={cn("font-stat mt-2 text-2xl", PODIUM[rank - 1])}>#{rank}</p>
+            </Link>
             <StatusBadge status={r.status} className="mt-2" />
-          </Link>
+            <Link to="/records/$id" params={{ id: r.lift_id }} className="mt-3 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:bg-primary/20 sm:text-xs">
+              {r.has_video ? <><Play className="h-3 w-3 fill-current" /> Watch video</> : "View result"}
+            </Link>
+          </div>
         );
       })}
     </div>
@@ -55,24 +67,23 @@ export function RankList({ rows, start = 0 }: { rows: Row[]; start?: number }) {
     <ol className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
       {rows.map((r, i) => {
         const rank = start + i + 1;
-        const prev = i > 0 ? rows[i - 1] : start > 0 ? null : null;
+        const prev = i > 0 ? rows[i - 1] : null;
         const gap = prev ? Number(prev.weight_kg) - Number(r.weight_kg) : null;
         return (
-          <li key={r.user_id}>
-            <Link to="/records/$id" params={{ id: r.lift_id }} className="flex items-center gap-3 px-4 py-3 hover:bg-elevated">
-              <span className="font-stat w-8 text-2xl text-muted-foreground">{rank}</span>
-              <AvatarChip name={r.username} url={r.avatar_url} className="h-9 w-9" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">@{r.username}</p>
-                <StatusBadge status={r.status} className="mt-0.5" />
-              </div>
-              <div className="text-right">
-                <p className="font-stat text-3xl">{Number(r.weight_kg)}<span className="text-sm text-muted-foreground">kg</span></p>
-                <p className="text-[10px] text-muted-foreground">
-                  {r.reps > 1 ? `× ${r.reps} · ` : ""}{gap !== null ? `−${gap.toFixed(1)} kg` : "leader"}
-                </p>
-              </div>
-            </Link>
+          <li key={r.user_id} className="flex items-center gap-3 px-4 py-3 transition hover:bg-elevated">
+            <span className="font-stat w-8 shrink-0 text-2xl text-muted-foreground">{rank}</span>
+            <AvatarChip name={r.username} url={r.avatar_url} className="h-9 w-9" />
+            <div className="min-w-0 flex-1">
+              <Link to="/u/$username" params={{ username: r.username }} className="truncate text-sm font-semibold hover:text-primary">@{r.username}</Link>
+              <div className="mt-0.5"><StatusBadge status={r.status} /></div>
+            </div>
+            <div className="text-right">
+              <p className="font-stat text-3xl">{Number(r.weight_kg)}<span className="text-sm text-muted-foreground">kg</span></p>
+              <p className="text-[10px] text-muted-foreground">{r.reps > 1 ? `× ${r.reps} · ` : ""}{gap !== null ? `−${gap.toFixed(1)} kg` : "leader"}</p>
+              <Link to="/records/$id" params={{ id: r.lift_id }} className="mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline">
+                {r.has_video ? <><Play className="h-3 w-3 fill-current" /> Watch video</> : "View result"}
+              </Link>
+            </div>
           </li>
         );
       })}
