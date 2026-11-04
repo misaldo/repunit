@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ function timeLeft(target: number, now: number) {
 
 export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userId: string; isAdmin: boolean }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [now, setNow] = useState(Date.now());
   const [opponent, setOpponent] = useState("");
   const [category, setCategory] = useState<Category>("bench");
@@ -135,15 +137,14 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
     const isPending=battle.status==="pending";
     const isEnded=past;
     const target=new Date(battle.ends_at).getTime();
-    return <article key={battle.id} className={`relative overflow-hidden rounded-2xl border ${isEnded?"border-border bg-card/70":"border-primary/30 bg-card shadow-[0_0_35px_-18px_hsl(var(--primary)/.35)]"} p-4 md:p-5`}>
+    return <article key={battle.id} role="link" tabIndex={0} onClick={()=>navigate({to:"/battles/$id",params:{id:battle.id}})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate({to:"/battles/$id",params:{id:battle.id}});}}} className={`relative cursor-pointer overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 active:scale-[.995] ${isEnded?"border-border bg-card/70":"border-primary/30 bg-card shadow-[0_0_35px_-18px_hsl(var(--primary)/.35)]"} p-4 md:p-5`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-primary"><Swords className="h-3.5 w-3.5"/>{battle.is_weekly?"Weekly battle":"Crew challenge"}<span className="text-muted-foreground">· {categoryName[battle.category]}</span></div>
         <span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground">{isPending?"Awaiting response":isEnded?"Finished":"Live"}</span>
       </div>
       <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-5">
         {[{crew:left,total:leftTotal,won:leftWon},{crew:right,total:rightTotal,won:rightWon}].map((side,i)=><div key={i} className={`min-w-0 text-center ${side.won?"text-primary":""}`}>
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-elevated text-2xl">{side.crew?.emblem||"🏋️"}</div>
-          <p className="mt-2 truncate text-xs font-black uppercase tracking-wide md:text-sm">{side.crew?.name??"Crew"}</p>
+          <Link to="/crews/$id" params={{id:side.crew?.id??""}} onClick={e=>e.stopPropagation()} className="group/crew inline-flex max-w-full flex-col items-center rounded-xl p-1 transition hover:bg-elevated active:scale-95"><div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-elevated text-2xl transition group-hover/crew:border-primary/50">{side.crew?.emblem||"🏋️"}</div><p className="mt-2 max-w-full truncate text-xs font-black uppercase tracking-wide transition group-hover/crew:text-primary md:text-sm">{side.crew?.name??"Crew"}</p></Link>
           <p className="font-stat mt-1 text-3xl md:text-4xl">{side.total.toLocaleString("en-US")}<span className="ml-1 text-xs text-muted-foreground">kg</span></p>
           {side.won&&<span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black uppercase text-primary"><Trophy className="h-3 w-3"/>Winner</span>}
         </div>)}
@@ -154,9 +155,9 @@ export function CrewBattles({ crewId, userId, isAdmin }: { crewId: string; userI
         <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-700" style={{width:`${rightTotal/max*100}%`}}/></div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
-        {[leftScore.contributors,rightScore.contributors].map((list,i)=><div key={i}><p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Top contributors</p>{list.length?list.map((p,n)=><div key={p.user_id} className="flex items-center justify-between gap-2 py-1 text-xs"><span className="truncate"><span className="mr-1 text-primary">{n+1}.</span>{p.display_name||p.username}</span><b className="shrink-0 tabular-nums">{p.weight} kg</b></div>):<p className="text-xs text-muted-foreground">No verified lifts yet</p>}</div>)}
+        {[leftScore.contributors,rightScore.contributors].map((list,i)=><div key={i}><p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Top contributors</p>{list.length?list.map((p,n)=><Link key={p.user_id} to="/u/$username" params={{username:p.username}} onClick={e=>e.stopPropagation()} className="flex items-center justify-between gap-2 rounded-md py-1 text-xs transition hover:bg-elevated hover:text-primary"><span className="truncate"><span className="mr-1 text-primary">{n+1}.</span>{p.display_name||p.username}</span><b className="shrink-0 tabular-nums">{p.weight} kg</b></Link>):<p className="text-xs text-muted-foreground">No verified lifts yet</p>}</div>)}
       </div>
-      {isPending && battle.opponent_crew_id===crewId && isAdmin && <div className="mt-4 flex gap-2 border-t border-border pt-3"><Button size="sm" variant="hero" disabled={busy} onClick={()=>respond(battle.id,true)}><Check className="mr-1 h-3.5 w-3.5"/>Accept battle</Button><Button size="sm" variant="line" disabled={busy} onClick={()=>respond(battle.id,false)}><X className="mr-1 h-3.5 w-3.5"/>Decline</Button></div>}
+      {isPending && battle.opponent_crew_id===crewId && isAdmin && <div className="mt-4 flex gap-2 border-t border-border pt-3"><Button size="sm" variant="hero" disabled={busy} onClick={e=>{e.stopPropagation();respond(battle.id,true)}}><Check className="mr-1 h-3.5 w-3.5"/>Accept battle</Button><Button size="sm" variant="line" disabled={busy} onClick={e=>{e.stopPropagation();respond(battle.id,false)}}><X className="mr-1 h-3.5 w-3.5"/>Decline</Button></div>}
       <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         <span>{isEnded ? (leftWon||rightWon?"Victory secured":"Battle ended in a draw") : isPending?"Waiting for the rival crew":"Time remaining"}</span>
         {!isEnded&&!isPending&&<span className="inline-flex items-center gap-1.5 text-primary tabular-nums"><Clock3 className="h-3 w-3"/>{timeLeft(target,now)}</span>}
