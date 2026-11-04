@@ -160,22 +160,66 @@
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* REPUNIT animated red/black hero artwork */
-.repunit-motion { background: radial-gradient(ellipse at 50% 38%, rgba(255,48,60,.19), transparent 42%), linear-gradient(145deg,#080808 5%,#111 52%,#080808 100%); }
-.motion-grid { position:absolute; inset:0; opacity:.18; background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px); background-size:54px 54px; mask-image:linear-gradient(to bottom,black,transparent 90%); }
-.motion-core { position:absolute; width:min(58vw,480px); aspect-ratio:1; left:50%; top:37%; transform:translate(-50%,-50%); border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle,rgba(255,48,60,.22),rgba(255,48,60,.04) 48%,transparent 70%); box-shadow:0 0 120px rgba(255,48,60,.12); }
-.motion-core-inner { width:48%; aspect-ratio:1; display:grid; place-items:center; color:rgba(255,255,255,.82); border:1px solid rgba(255,48,60,.45); border-radius:30%; background:linear-gradient(145deg,rgba(255,48,60,.17),rgba(10,10,10,.92)); box-shadow:0 0 65px rgba(255,48,60,.2),inset 0 0 40px rgba(255,48,60,.12); transform:rotate(-12deg); }
-.motion-ring { position:absolute; left:50%; top:37%; width:min(72vw,610px); aspect-ratio:1; border:1px solid rgba(255,48,60,.25); border-radius:50%; transform:translate(-50%,-50%); }
-.motion-ring-one { animation:repunit-spin 28s linear infinite; border-style:dashed; }
-.motion-ring-two { width:min(88vw,760px); border-color:rgba(255,255,255,.1); animation:repunit-spin 42s linear infinite reverse; }
-.motion-orbit { position:absolute; left:50%; top:37%; width:min(66vw,550px); aspect-ratio:1; transform:translate(-50%,-50%) rotate(-28deg); border:2px solid transparent; border-top-color:rgba(255,48,60,.8); border-bottom-color:rgba(255,48,60,.24); border-radius:50%; filter:drop-shadow(0 0 12px rgba(255,48,60,.6)); }
-.motion-orbit-one { animation:repunit-spin 12s linear infinite; }
-.motion-orbit-two { width:min(82vw,690px); transform:translate(-50%,-50%) rotate(48deg); border-top-color:rgba(255,255,255,.3); border-bottom-color:transparent; animation:repunit-spin 18s linear infinite reverse; }
-.motion-label { position:absolute; font:600 9px/1 monospace; letter-spacing:.24em; color:rgba(255,255,255,.42); }
-.motion-label-top { top:18%; left:5%; }.motion-label-bottom { top:48%; right:5%; }
-.motion-cross { position:absolute; color:#ff303c; font:300 28px/1 monospace; opacity:.75; }.motion-cross-one { top:22%; right:18%; }.motion-cross-two { top:55%; left:12%; }
-@keyframes repunit-spin { to { rotate:360deg; } }
-@media (prefers-reduced-motion:reduce) { .motion-ring,.motion-orbit { animation:none; } }
+/* REPUNIT editorial hero — restrained, industrial and typography-led */
+.repunit-motion {
+  background:
+    linear-gradient(90deg, transparent 0 49.9%, rgba(255,255,255,.035) 50%, transparent 50.1%),
+    linear-gradient(180deg, #101010 0%, #090909 72%, #080808 100%);
+}
+.repunit-motion::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .12;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+}
+.hero-mark-panel {
+  position: absolute;
+  top: 12%;
+  right: max(4%, calc((100vw - 1152px) / 2));
+  width: clamp(210px, 34vw, 430px);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.13);
+  background: linear-gradient(145deg, rgba(255,255,255,.035), transparent 58%);
+  transform: rotate(7deg);
+}
+.hero-mark-panel::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255,48,60,.28);
+}
+.hero-mark-letter {
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255,255,255,.16);
+  font: 900 clamp(190px, 30vw, 390px)/.8 "Space Grotesk", sans-serif;
+  letter-spacing: -.12em;
+  transform: translateX(-.06em);
+}
+.hero-mark-index {
+  position: absolute;
+  right: 18px;
+  bottom: 17px;
+  color: rgba(255,255,255,.48);
+  font: 600 9px/1 monospace;
+  letter-spacing: .2em;
+}
+.hero-mark-rule {
+  position: absolute;
+  top: 0;
+  left: 22px;
+  width: 2px;
+  height: 34%;
+  background: #ff303c;
+}
+@media (max-width: 767px) {
+  .hero-mark-panel { top: 12%; right: -48px; width: 210px; opacity: .55; }
+  .hero-mark-letter { font-size: 190px; }
+}
 
 /* Kinetic REPUNIT brand insignia */
 .repunit-mark { overflow:visible; filter:drop-shadow(0 0 8px rgba(255,48,60,.18)); }
