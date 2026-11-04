@@ -22,6 +22,7 @@ type Plan = {
 };
 type PlanExercise = { id: string; plan_id: string; exercise_name: string; sets: number; reps: string; rest_seconds: number; notes: string | null; position: number };
 type CatalogExercise = { name: string; category: string; popularity: number; image: string };
+type ExerciseDbEntry = { id: string; name: string; images?: string[]; primaryMuscles?: string[]; category?: string };
 
 const CATALOG: CatalogExercise[] = [
   { name: "Barbell Bench Press", category: "Chest", popularity: 100, image: "Barbell_Bench_Press_-_Medium_Grip" },
@@ -101,6 +102,15 @@ const CATALOG: CatalogExercise[] = [
   { name: "Superman", category: "Back", popularity: 26, image: "Superman" },
   { name: "Push-up", category: "Chest", popularity: 25, image: "Push-Up" }
 ].map((item) => ({ ...item, image: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${item.image}/0.jpg` }));
+const EXERCISE_DB_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
+const IMAGE_BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+const MUSCLE_CATEGORY: Record<string, string> = {
+  chest: "Chest", pectorals: "Chest", lats: "Back", "middle back": "Back", "lower back": "Back", traps: "Back",
+  shoulders: "Shoulders", deltoids: "Shoulders", biceps: "Arms", triceps: "Arms", forearms: "Arms",
+  quadriceps: "Legs", hamstrings: "Legs", glutes: "Legs", calves: "Legs", abductors: "Legs", adductors: "Legs",
+  abdominals: "Core", obliques: "Core",
+};
+
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const CATEGORIES = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"];
@@ -126,6 +136,16 @@ function WorkoutsPage() {
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [category, setCategory] = useState("All");
 
+  const exerciseDbQuery = useQuery({
+    queryKey: ["repunit-exercise-library"],
+    staleTime: 1000 * 60 * 60 * 24,
+    queryFn: async () => {
+      const response = await fetch(EXERCISE_DB_URL);
+      if (!response.ok) throw new Error("Exercise library could not be loaded.");
+      return await response.json() as ExerciseDbEntry[];
+    },
+  });
+
   const plansQuery = useQuery({
     queryKey: ["workout-plans", user.id],
     queryFn: async () => {
@@ -144,10 +164,29 @@ function WorkoutsPage() {
     },
   });
 
-  const filteredCatalog = useMemo(() => CATALOG
+  const fullCatalog = useMemo(() => {
+    const source = exerciseDbQuery.data;
+    if (!source?.length) return CATALOG;
+    const featured = CATALOG.flatMap((item) => {
+      const match = source.find((exercise) => exercise.id === item.image);
+      if (!match?.images?.[0]) return [];
+      const muscle = (match.primaryMuscles ?? [])[0]?.toLowerCase() ?? "";
+      return [{ name: match.name, category: MUSCLE_CATEGORY[muscle] ?? item.category, popularity: item.popularity, image: IMAGE_BASE + match.images[0] }];
+    });
+    const featuredNames = new Set(featured.map((item) => item.name));
+    const additional = source
+      .filter((exercise) => exercise.category === "strength" && exercise.images?.[0] && !featuredNames.has(exercise.name))
+      .map((exercise) => {
+        const muscle = (exercise.primaryMuscles ?? [])[0]?.toLowerCase() ?? "";
+        return { name: exercise.name, category: MUSCLE_CATEGORY[muscle] ?? "Other", popularity: 0, image: IMAGE_BASE + exercise.images![0] };
+      });
+    return [...featured, ...additional];
+  }, [exerciseDbQuery.data]);
+
+  const filteredCatalog = useMemo(() => fullCatalog
     .filter((item) => category === "All" || item.category === category)
     .filter((item) => item.name.toLowerCase().includes(exerciseSearch.toLowerCase()))
-    .sort((a, b) => b.popularity - a.popularity), [category, exerciseSearch]);
+    .sort((a, b) => b.popularity - a.popularity || a.name.localeCompare(b.name)), [fullCatalog, category, exerciseSearch]);
 
   function addExercise(name: string) {
     const setCount = Number(sets);
@@ -226,7 +265,7 @@ function WorkoutsPage() {
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-h-[88vh] max-w-2xl overflow-hidden p-0">
-          <DialogHeader className="border-b border-border p-5 pb-3"><DialogTitle className="text-left text-xl">Exercise library</DialogTitle><p className="text-left text-sm text-muted-foreground">Most popular exercises first. Choose one to add it to your workout.</p></DialogHeader>
+          <DialogHeader className="border-b border-border p-5 pb-3"><DialogTitle className="text-left text-xl">Exercise library</DialogTitle><p className="text-left text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercise library…" : `${filteredCatalog.length} exercises · most popular first`}. Choose one to add it to your workout.</p></DialogHeader>
           <div className="space-y-3 px-5 pt-3">
             <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={exerciseSearch} onChange={(e) => setExerciseSearch(e.target.value)} placeholder="Search exercises…" className="pl-9" /></div>
             <div className="flex gap-2 overflow-x-auto pb-1">{CATEGORIES.map((item) => <button key={item} onClick={() => setCategory(item)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${category === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{item}</button>)}</div>
@@ -237,7 +276,7 @@ function WorkoutsPage() {
               <span className="min-w-0 flex-1"><span className="block font-semibold">{item.name}</span><span className="mt-1 block text-xs text-muted-foreground">{item.category}</span><span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary">{index < 5 ? <Flame className="h-3 w-3" /> : null}{index < 5 ? "Popular" : "Exercise"}</span></span>
               <Plus className="mr-2 h-5 w-5 shrink-0 text-primary" />
             </button>)}
-            {filteredCatalog.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">No exercises found. Try another search.</p>}
+            {filteredCatalog.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercises…" : "No exercises found. Try another search."}</p>}
           </div>
         </DialogContent>
       </Dialog>
