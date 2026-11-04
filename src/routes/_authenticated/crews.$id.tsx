@@ -62,7 +62,19 @@ function Crew() {
   const [challengeCrew, setChallengeCrew] = useState("");
   const [challengeCategory, setChallengeCategory] = useState<"bench"|"squat"|"deadlift">("bench");
   const [challenging, setChallenging] = useState(false);
-  const { data: myAdminCrews = [] } = useQuery({ queryKey: ["my-admin-crews", user.id], queryFn: async () => { const { data, error } = await (supabase as any).from("crew_members").select("crew_id,crews(id,name)").eq("user_id", user.id).eq("role", "admin"); if (error) throw error; return (data ?? []).map((m:any)=>m.crews).filter(Boolean).filter((c:any)=>c.id!==id); } });
+  const { data: myAdminCrews = [] } = useQuery({
+    queryKey: ["my-admin-crews", user.id],
+    queryFn: async () => {
+      const { data: memberships, error } = await (supabase as any).from("crew_members")
+        .select("crew_id").eq("user_id", user.id).eq("role", "admin");
+      if (error) throw error;
+      const ids = (memberships ?? []).map((m: any) => m.crew_id).filter((crewId: string) => crewId !== id);
+      if (!ids.length) return [];
+      const { data: crews, error: crewsError } = await (supabase as any).from("crews").select("id,name").in("id", ids);
+      if (crewsError) throw crewsError;
+      return crews ?? [];
+    },
+  });
   const isMember = data?.members?.some((m: any) => m.user_id === user.id) ?? false;
   const isAdmin = data?.members?.some((m: any) => m.user_id === user.id && m.role === "admin") ?? false;
   const count = data?.members?.length ?? 0;
