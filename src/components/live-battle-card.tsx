@@ -46,5 +46,5 @@ export function LiveBattleCard() {
       <div className="min-w-0 text-center"><Link to="/crews/$id" params={{id:right?.id??""}} onClick={e=>e.stopPropagation()} className="inline-flex flex-col items-center rounded-xl p-1 transition hover:bg-elevated"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-2xl">{right?.emblem||"🏋️"}</span><p className="mt-2 truncate text-xs font-black uppercase hover:text-primary">{right?.name||"Crew"}</p></Link></div>
     </div>:<div className="relative mt-4 flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background"><Trophy className="h-5 w-5 text-primary"/></span><div><p className="text-sm font-bold">No live battle right now</p><p className="mt-0.5 text-xs text-muted-foreground">Check upcoming matchups or challenge another crew.</p></div></div>}
     <div className="relative mt-4 flex items-center justify-between border-t border-border/80 pt-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground"><span>{battle?.is_weekly?"Weekly showdown":"Crew challenge"}</span><span className="inline-flex items-center gap-1 text-primary transition group-hover:gap-2">Open battle <ArrowUpRight className="h-3.5 w-3.5"/></span></div>
-  </Link>;
+  </div>;
 }
