@@ -39,6 +39,7 @@ begin
   foreach achievement_key in array array[
     'first_pr',
     'bench_100',
+    'volume_1000',
     'sessions_1',
     'sessions_2',
     'sessions_3',
