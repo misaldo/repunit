@@ -36,8 +36,8 @@ function NewRecord() {
         if (sessionError) throw sessionError;
         const accessToken = sessionData.session?.access_token;
         if (!accessToken) throw new Error("Your session expired. Please sign in again.");
-        const storageUrl = import.meta.env.VITE_SUPABASE_URL;
-        const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const storageUrl = import.meta.env["VITE_SUPABASE_URL"];
+        const publishableKey = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         if (!storageUrl || !publishableKey) throw new Error("Storage is not configured.");
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();

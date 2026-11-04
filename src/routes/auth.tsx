@@ -88,7 +88,7 @@ function AuthPage() {
   }
 
 async function google() {
-  sessionStorage.setItem("post_auth", safeAuthPath(redirect));
+  sessionStorage.setItem("post_auth", safeAuthPath(redirect, window.location.origin));
 
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",

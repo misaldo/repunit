@@ -9,8 +9,8 @@ export const LEVELS = [
 
 export function getLevel(xp: number) {
   const safeXp = Math.max(0, xp || 0);
-  const index = LEVELS.findIndex((level, i) => i === LEVELS.length - 1 || safeXp < LEVELS[i + 1].min);
-  const current = LEVELS[Math.max(0, index)];
+  const index = LEVELS.findIndex((level, i) => i === LEVELS.length - 1 || safeXp < LEVELS[i + 1]!.min);
+  const current = LEVELS[Math.max(0, index)] ?? LEVELS[0];
   const next = LEVELS[index + 1];
   const progress = next ? Math.min(100, Math.max(0, ((safeXp - current.min) / (next.min - current.min)) * 100)) : 100;
   return { ...current, next, progress, intoLevel: safeXp - current.min, needed: next ? next.min - safeXp : 0 };

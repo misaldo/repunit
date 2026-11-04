@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+// Workout tables are not in the generated types yet.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
 
 type Plan = {
   id: string;
@@ -39,7 +42,7 @@ function WorkoutsPage() {
   const plansQuery = useQuery({
     queryKey: ["workout-plans", user.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("workout_plans").select("*").order("created_at", { ascending: false });
+      const { data, error } = await db.from("workout_plans").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Plan[];
     },
@@ -48,7 +51,7 @@ function WorkoutsPage() {
     queryKey: ["workout-plan-exercises", expanded],
     enabled: !!expanded,
     queryFn: async () => {
-      const { data, error } = await supabase.from("workout_plan_exercises").select("*").eq("plan_id", expanded!).order("position");
+      const { data, error } = await db.from("workout_plan_exercises").select("*").eq("plan_id", expanded!).order("position");
       if (error) throw error;
       return (data ?? []) as PlanExercise[];
     },
@@ -73,15 +76,15 @@ function WorkoutsPage() {
     }
     setSaving(true);
     try {
-      const { data: plan, error } = await supabase.from("workout_plans").insert({
+      const { data: plan, error } = await db.from("workout_plans").insert({
         user_id: user.id, title: title.trim(), description: description.trim() || null, visibility,
       }).select("id").single();
       if (error) throw error;
-      const { error: exerciseError } = await supabase.from("workout_plan_exercises").insert(
+      const { error: exerciseError } = await db.from("workout_plan_exercises").insert(
         draftExercises.map((item, index) => ({ ...item, plan_id: plan.id, position: index }))
       );
       if (exerciseError) {
-        await supabase.from("workout_plans").delete().eq("id", plan.id);
+        await db.from("workout_plans").delete().eq("id", plan.id);
         throw exerciseError;
       }
       setTitle(""); setDescription(""); setDraftExercises([]); setVisibility("private");
@@ -94,7 +97,7 @@ function WorkoutsPage() {
 
   async function deletePlan(plan: Plan) {
     if (!window.confirm("Delete this workout plan?")) return;
-    const { error } = await supabase.from("workout_plans").delete().eq("id", plan.id).eq("user_id", user.id);
+    const { error } = await db.from("workout_plans").delete().eq("id", plan.id).eq("user_id", user.id);
     if (error) toast.error(error.message);
     else { await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] }); toast.success("Plan deleted."); }
   }
