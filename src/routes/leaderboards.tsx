@@ -59,7 +59,7 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region) {
       const [current,previous,battleResult,authResult]=await Promise.all([
         scoreCrews(exercise,from,null),
         scoreCrews(exercise,new Date(Date.now()-14*864e5).toISOString().slice(0,10),new Date(Date.now()-7*864e5).toISOString().slice(0,10)),
-        (supabase as any).from("crew_battles").select("winner_crew_id").eq("status","completed").not("winner_crew_id","is",null),
+        (supabase as any).from("crew_battles").select("winner_crew_id").eq("status","completed").eq("is_weekly",true).not("winner_crew_id","is",null),
         supabase.auth.getUser(),
       ]);
       if(battleResult.error)throw battleResult.error;
