@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_members: {
         Row: {
           crew_id: string
@@ -91,6 +130,39 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifts: {
         Row: {
           created_at: string
@@ -141,69 +213,24 @@ export type Database = {
           },
         ]
       }
-      profiles: {      posts: {
-        Row: {
-          id: string
-          user_id: string
-          content: string | null
-          lift_id: string | null
-          media_path: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          content?: string | null
-          lift_id?: string | null
-          media_path?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          content?: string | null
-          lift_id?: string | null
-          media_path?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_lift_id_fkey"
-            columns: ["lift_id"]
-            isOneToOne: false
-            referencedRelation: "lifts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       likes: {
         Row: {
+          created_at: string
           id: string
           post_id: string
           user_id: string
-          created_at: string
         }
         Insert: {
+          created_at?: string
           id?: string
           post_id: string
           user_id: string
-          created_at?: string
         }
         Update: {
+          created_at?: string
           id?: string
           post_id?: string
           user_id?: string
-          created_at?: string
         }
         Relationships: [
           {
@@ -222,38 +249,44 @@ export type Database = {
           },
         ]
       }
-      comments: {
+      posts: {
         Row: {
-          id: string
-          post_id: string
-          user_id: string
-          content: string
+          content: string | null
           created_at: string
+          id: string
+          lift_id: string | null
+          media_path: string | null
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          post_id: string
-          user_id: string
-          content: string
+          content?: string | null
           created_at?: string
+          id?: string
+          lift_id?: string | null
+          media_path?: string | null
+          updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          post_id?: string
-          user_id?: string
-          content?: string
+          content?: string | null
           created_at?: string
+          id?: string
+          lift_id?: string | null
+          media_path?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "comments_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: "posts_lift_id_fkey"
+            columns: ["lift_id"]
             isOneToOne: false
-            referencedRelation: "posts"
+            referencedRelation: "lifts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comments_user_id_fkey"
+            foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -261,39 +294,7 @@ export type Database = {
           },
         ]
       }
-      follows: {
-        Row: {
-          follower_id: string
-          following_id: string
-          created_at: string
-        }
-        Insert: {
-          follower_id: string
-          following_id: string
-          created_at?: string
-        }
-        Update: {
-          follower_id?: string
-          following_id?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "follows_follower_id_fkey"
-            columns: ["follower_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "follows_following_id_fkey"
-            columns: ["following_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
@@ -343,7 +344,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_lifts: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          exercise: Database["public"]["Enums"]["exercise"] | null
+          lifted_on: string | null
+          position: number | null
+          reps: number | null
+          user_id: string | null
+          username: string | null
+          weight_kg: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_totals: {
+        Row: {
+          avatar_url: string | null
+          bench_kg: number | null
+          deadlift_kg: number | null
+          display_name: string | null
+          position: number | null
+          squat_kg: number | null
+          total_kg: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lifts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       crew_invite_code: { Args: { _crew: string }; Returns: string }
