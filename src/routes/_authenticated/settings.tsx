@@ -25,8 +25,8 @@ function Settings() {
     const f = new FormData(e.currentTarget);
     const username = String(f.get("username")).trim().toLowerCase();
     if (!USERNAME_RE.test(username)) { toast.error("Username: 3–20 lowercase letters, numbers or _."); return; }
-    const { error } = await supabase.from("profiles").update({
-      username, display_name: String(f.get("display_name")).slice(0, 40) || null, bio: String(f.get("bio")).slice(0, 280) || null,
+    const { error } = await (supabase as any).from("profiles").update({
+      username, display_name: String(f.get("display_name")).slice(0, 40) || null, bio: String(f.get("bio")).slice(0, 280) || null, country_code: String(f.get("country_code") || "") || null,
     }).eq("id", user.id);
     if (error) { toast.error(error.code === "23505" ? "Username taken" : error.message); return; }
     toast.success("Saved");
@@ -39,7 +39,7 @@ function Settings() {
       <form onSubmit={save} className="mt-6 max-w-md space-y-4">
         <div className="space-y-1.5"><Label htmlFor="username">Username</Label><Input id="username" name="username" defaultValue={p.username} required /></div>
         <div className="space-y-1.5"><Label htmlFor="display_name">Display name</Label><Input id="display_name" name="display_name" defaultValue={p.display_name ?? ""} maxLength={40} /></div>
-        <div className="space-y-1.5"><Label htmlFor="bio">Bio</Label><Textarea id="bio" name="bio" defaultValue={p.bio ?? ""} maxLength={280} /></div>
+        <div className="space-y-1.5"><Label htmlFor="bio">Bio</Label><Textarea id="bio" name="bio" defaultValue={p.bio ?? ""} maxLength={280} /></div>\n        <div className="space-y-1.5"><Label htmlFor="country_code">Country</Label><select id="country_code" name="country_code" defaultValue={(p as any).country_code ?? ""} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="">Select your country</option><option value="CZ">Czechia</option><option value="SK">Slovakia</option><option value="UA">Ukraine</option><option value="PL">Poland</option><option value="DE">Germany</option><option value="AT">Austria</option><option value="GB">United Kingdom</option><option value="US">United States</option><option value="OTHER">Other</option></select><p className="text-xs text-muted-foreground">Used to show crew rankings in your country.</p></div>
         <Button variant="hero">Save</Button>
       </form>
     </PageShell>
