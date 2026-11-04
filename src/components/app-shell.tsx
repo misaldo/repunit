@@ -35,7 +35,7 @@ export function SiteHeader() {
         <Wordmark />
         <nav className="hidden items-center gap-7 text-[13px] font-semibold text-muted-foreground lg:flex">
           <Link to="/leaderboards" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Top</Link>
-          {user && <Link to="/workouts" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Workouts</Link>}
+          {user && <Link to="/workouts" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Split</Link>}
           {user && <Link to="/crews" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Crews</Link>}
           <Link to="/pricing" className="transition-colors hover:text-foreground" activeProps={{ className: "text-foreground" }}>Pricing</Link>
         </nav>
@@ -71,7 +71,7 @@ export function MobileNav() {
   const active = { className: "text-primary" };
   return <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl"><div className="mx-auto flex max-w-xl items-center px-1">
     <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5" />Top</Link>
-    <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5" />Workouts</Link>
+    <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5" />Split</Link>
     <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5" />Crews</Link>
     {profile ? <Link to="/u/$username" params={{ username: profile.username }} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url ?? undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>Profile</Link> : <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>Profile</Link>}
   </div></nav>;
