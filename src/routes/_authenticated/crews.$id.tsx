@@ -25,7 +25,7 @@ function Crew() {
   const qc = useQueryClient();
   const [leaving, setLeaving] = useState(false);
   const [ex, setEx] = useState<Exercise>("bench");
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error: crewLoadError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
       const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, is_public").eq("id", id).maybeSingle();
@@ -113,7 +113,7 @@ function Crew() {
     finally { setLeaving(false); }
   }
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
-  if (isError) return <PageShell><p>Could not load this crew.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
+  if (isError) return <PageShell><p>Could not load this crew.</p><p className="mt-2 break-words text-xs text-muted-foreground">{crewLoadError instanceof Error ? crewLoadError.message : "A database request failed."}</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data?.c) return <PageShell><p>Crew not found.</p></PageShell>;
   return (
     <PageShell>
