@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ function Profile() {
   const { user } = useUser();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const [showWorkouts, setShowWorkouts] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
@@ -60,13 +59,13 @@ function Profile() {
         .eq("user_id", data!.p.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return plans ?? [];
+      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || user?.id === data!.p.id);
     },
   });
 
   const workoutExercises = useQuery({
     queryKey: ["profile-workout-exercises", workoutPlans.map((plan: {id:string}) => plan.id)],
-    enabled: showWorkouts && workoutPlans.length > 0,
+    enabled: workoutPlans.length > 0,
     queryFn: async () => {
       const { data: exercises, error } = await (supabase as any).from("workout_plan_exercises")
         .select("id,plan_id,exercise_name,sets,reps,rest_seconds,position")
@@ -135,7 +134,7 @@ function Profile() {
           ) : (
             <Button asChild variant="hero"><Link to="/auth">Sign in to follow</Link></Button>
           )}
-          {(workoutPlans.length > 0 || isOwnProfile) && <Button variant="line" onClick={() => setShowWorkouts((value) => !value)}><Dumbbell className="mr-2 h-4 w-4" />{showWorkouts ? "Hide workouts" : "View workouts"}{showWorkouts ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}</Button>}
+          {workoutPlans.length > 0 && <Button asChild variant="line"><a href="#training-split"><Dumbbell className="mr-2 h-4 w-4" />View training split</a></Button>}
           </div>
         </div>
         {p.bio && <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-6">{p.bio}</p>}
@@ -149,9 +148,9 @@ function Profile() {
 
       <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>
 
-      {showWorkouts && <section className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-6">
+      {workoutPlans.length > 0 && <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Training split</h2></div>
-        {workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No workouts shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>}
+        <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>
       </section>}
 
       <div className="mt-8">
