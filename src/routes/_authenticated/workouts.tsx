@@ -16,7 +16,7 @@ type Plan = {
   id: string;
   user_id: string;
   title: string;
-  workout_day: string;
+  workout_day?: string;
   visibility: "public" | "private" | "followers";
   created_at: string;
 };
@@ -207,9 +207,18 @@ function WorkoutsPage() {
     }
     setSaving(true);
     try {
-      const { data: plan, error } = await db.from("workout_plans").insert({
+      let planResult = await db.from("workout_plans").insert({
         user_id: user.id, title: title.trim(), workout_day: workoutDay, visibility,
       }).select("id").single();
+
+      // If PostgREST has not refreshed the optional weekday column yet, retry
+      // with the database default so saving a split is not blocked by its cache.
+      if (planResult.error && /workout_day.*(schema cache|column)|column.*workout_day/i.test(planResult.error.message ?? "")) {
+        planResult = await db.from("workout_plans").insert({
+          user_id: user.id, title: title.trim(), visibility,
+        }).select("id").single();
+      }
+      const { data: plan, error } = planResult;
       if (error) throw error;
       const { error: exerciseError } = await db.from("workout_plan_exercises").insert(
         draftExercises.map((item, index) => ({ ...item, plan_id: plan.id, position: index }))
@@ -288,7 +297,7 @@ function WorkoutsPage() {
         <h2 className="mb-4 text-xl font-bold">Your splits</h2>
         {plansQuery.isLoading ? <p className="text-muted-foreground">Loading splits…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Split database is not ready yet.</p><p className="mt-1 text-sm text-muted-foreground">The workout tables or weekday column are missing, or access is not configured. Database setup is needed before workouts can be saved.</p><p className="mt-2 break-words font-mono text-xs text-muted-foreground">{plansQuery.error && typeof plansQuery.error === "object" && "message" in plansQuery.error ? String((plansQuery.error as { message: unknown }).message) : plansQuery.error instanceof Error ? plansQuery.error.message : "Unknown database error"}</p></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No splits yet. Create your first one above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Training day not set"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete split" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
+            <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete split" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
             <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility}</div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
             {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading ? <p className="text-sm">Loading…</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
