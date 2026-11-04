@@ -137,6 +137,16 @@ async function google() {
                 <>
                   <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" /></div>
                   <Button variant="outline" className="h-11 w-full" onClick={google}>Continue with Google</Button>
+                  {mode === "in" && (
+                    <>
+                      <Button type="button" variant="ghost" className="mt-2 h-11 w-full" onClick={() => navigate({ to: "/leaderboards" })}>
+                        Continue as guest
+                      </Button>
+                      <p className="mt-2 text-center text-xs text-muted-foreground">
+                        Browse public leaderboards without an account. Create an account to join crews and submit lifts.
+                      </p>
+                    </>
+                  )}
                 </>
               )}
             </>
