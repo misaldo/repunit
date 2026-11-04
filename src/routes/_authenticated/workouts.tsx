@@ -104,7 +104,13 @@ function WorkoutsPage() {
     .sort((a, b) => b.popularity - a.popularity), [category, exerciseSearch]);
 
   function addExercise(name: string) {
-    setDraftExercises((items) => [...items, { exercise_name: name, sets: Number(sets) || 3, reps: reps.trim() || "8-12", rest_seconds: Number(rest) || 90 }]);
+    const setCount = Number(sets);
+    const restSeconds = Number(rest);
+    if (!Number.isInteger(setCount) || setCount < 1 || setCount > 30 || !reps.trim() || !Number.isInteger(restSeconds) || restSeconds < 0 || restSeconds > 1800) {
+      toast.error("Use 1–30 sets, enter reps and set rest between 0 and 1800 seconds.");
+      return;
+    }
+    setDraftExercises((items) => [...items, { exercise_name: name, sets: setCount, reps: reps.trim(), rest_seconds: restSeconds }]);
     setPickerOpen(false);
     setExerciseSearch("");
   }
@@ -169,7 +175,7 @@ function WorkoutsPage() {
           <Button type="button" variant="hero" className="w-full" onClick={() => setPickerOpen(true)}><Plus className="mr-2 h-4 w-4" />Add exercise</Button>
           {draftExercises.length > 0 ? <ol className="mt-4 space-y-2">{draftExercises.map((item, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"><span className="min-w-0"><b>{i + 1}. {item.exercise_name}</b><span className="block text-xs text-muted-foreground">{item.sets} sets × {item.reps} · {item.rest_seconds}s rest</span></span><button onClick={() => setDraftExercises((all) => all.filter((_, index) => index !== i))} aria-label="Remove exercise" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button></li>)}</ol> : <p className="mt-4 rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">Your exercise list is empty. Tap “Add exercise” to get started.</p>}
         </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">You can edit visibility at any time by recreating the plan.</p><Button variant="hero" disabled={saving} onClick={createPlan}>{saving ? "Saving…" : "Save workout"}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your workout will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving} onClick={createPlan}>{saving ? "Saving…" : "Save workout"}</Button></div>
       </section>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
