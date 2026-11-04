@@ -74,7 +74,7 @@ begin
   insert into public.crew_battles(
     challenger_crew_id, opponent_crew_id, category, starts_at, ends_at,
     status, created_by, is_weekly
-  ) values (_challenger,_opponent,_category,now(),now()+interval '7 days','pending',auth.uid(),false)
+  ) values (_challenger,_opponent,_category,date_trunc('day',now()),date_trunc('day',now())+interval '7 days','pending',auth.uid(),false)
   returning id into battle_id;
   return battle_id;
 end $$;
@@ -92,7 +92,7 @@ begin
     raise exception 'Only the challenged crew admins can respond';
   end if;
   if _accept then
-    update public.crew_battles set status='active', starts_at=now(), ends_at=now()+interval '7 days' where id=_battle;
+    update public.crew_battles set status='active', starts_at=date_trunc('day',now()), ends_at=date_trunc('day',now())+interval '7 days' where id=_battle;
   else
     update public.crew_battles set status='cancelled' where id=_battle;
   end if;
