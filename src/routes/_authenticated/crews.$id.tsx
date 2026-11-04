@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, LogOut } from "lucide-react";
+import { Copy, LogOut, Users, ShieldCheck, RefreshCw, UserMinus, Crown, Trophy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,16 +24,24 @@ function Crew() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
-      const { data: c, error } = await supabase.from("crews").select("id, name, description, owner_id").eq("id", id).maybeSingle();
+      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members").eq("id", id).maybeSingle();
       if (error) throw error;
       const { data: code, error: codeError } = await supabase.rpc("crew_invite_code", { _crew: id });
       if (codeError) throw codeError;
-      const { data: members, error: membersError } = await supabase.from("crew_members").select("user_id, role, profiles(username)").eq("crew_id", id).order("joined_at");
+      const { data: members, error: membersError } = await (supabase as any).from("crew_members").select("user_id, role, profiles(username, display_name)").eq("crew_id", id).order("joined_at");
       if (membersError) throw membersError;
       return { c, code, members: members ?? [] };
     },
   });
   const { data: rows = [], isLoading: ranksLoading, isError: ranksError } = useLeaderboard(ex, id);
+  const [saving, setSaving] = useState(false);
+  const isAdmin = data?.members?.some((m: any) => m.user_id === user.id && m.role === "admin") ?? false;
+  const count = data?.members?.length ?? 0;
+  const cap = Number(data?.c?.max_members ?? 20);
+  async function refreshCrew() { await qc.invalidateQueries({ queryKey: ["crew", id] }); await qc.invalidateQueries({ queryKey: ["my-crews", user.id] }); }
+  async function changeCapacity(value: number) { setSaving(true); try { const { error } = await supabase.rpc("update_crew_capacity" as any, { _crew: id, _max_members: value }); if (error) throw error; toast.success("Crew capacity updated"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not update capacity."); } finally { setSaving(false); } }
+  async function rotateInvite() { if (!window.confirm("Create a new invite code? The old link will stop working.")) return; setSaving(true); try { const { error } = await supabase.rpc("rotate_crew_invite" as any, { _crew: id }); if (error) throw error; toast.success("Invite code refreshed"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not refresh invite."); } finally { setSaving(false); } }
+  async function removeMember(memberId: string, username: string) { if (!window.confirm(`Remove @${username} from this crew?`)) return; setSaving(true); try { const { error } = await supabase.rpc("remove_crew_member" as any, { _crew: id, _member: memberId }); if (error) throw error; toast.success("Member removed"); await refreshCrew(); } catch (err) { toast.error(err instanceof Error ? err.message : "Could not remove member."); } finally { setSaving(false); } }
   async function copyInvite() {
     if (!data?.code) return;
     try {
@@ -59,29 +67,35 @@ function Crew() {
   if (!data?.c) return <PageShell><p>Crew not found.</p></PageShell>;
   return (
     <PageShell>
-      <p className="eyebrow">{data.members.length} members</p>
-      <h1 className="font-stat mt-2 text-6xl uppercase">{data.c.name}</h1>
-      {data.c.description && <p className="mt-2 text-muted-foreground">{data.c.description}</p>}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-5 md:p-8">
+        <div className="absolute -right-12 -top-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl"/>
+        <div className="relative"><div className="flex items-center justify-between"><Link to="/crews" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">← All crews</Link>{isAdmin && <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-black uppercase text-primary"><ShieldCheck className="h-3.5 w-3.5"/>Admin</span>}</div>
+        <p className="eyebrow mt-6 text-primary">REPUNIT CREW</p><h1 className="font-stat mt-2 break-words text-5xl uppercase md:text-7xl">{data.c.name}</h1>
+        {data.c.description && <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{data.c.description}</p>}
+        <div className="mt-6 grid max-w-xl grid-cols-2 gap-3"><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{count}<span className="text-lg text-muted-foreground">/{cap}</span></p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Members</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,count/cap*100)}%`}}/></div></div><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{Math.max(0,cap-count)}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Open spots</p></div></div></div>
+      </div>
       {data.code && (
         <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-border py-4">
           <span className="text-sm">Invite code: <b className="font-mono">{data.code}</b></span>
-          <Button size="sm" variant="line" onClick={copyInvite}><Copy />Copy invite link</Button>
+          <Button size="sm" variant="line" onClick={copyInvite}><Copy />Copy invite link</Button>{isAdmin && <Button size="sm" variant="ghost" disabled={saving} onClick={rotateInvite}><RefreshCw className="mr-1 h-4 w-4"/>Refresh code</Button>}
         </div>
       )}
-      <div className="mt-6 flex gap-2 overflow-x-auto">
+      {isAdmin && <section className="mt-5 rounded-2xl border border-border bg-card p-4"><div className="flex items-center gap-2"><Crown className="h-4 w-4 text-primary"/><h2 className="font-bold">Admin settings</h2></div><p className="mt-1 text-xs text-muted-foreground">Change the maximum number of members. The limit cannot go below the current member count.</p><div className="mt-3 flex flex-wrap gap-2">{[5,10,20,30,40,50,75,100].filter(n=>n>=count).map(n=><Button key={n} size="sm" variant={cap===n?"hero":"line"} disabled={saving||cap===n} onClick={()=>changeCapacity(n)}>{n} members</Button>)}</div></section>}
+      <div className="mt-8 flex items-center justify-between"><div><p className="eyebrow">SQUAD PERFORMANCE</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew leaderboard</h2></div><Trophy className="h-6 w-6 text-primary"/></div>
+      <div className="mt-4 flex gap-2 overflow-x-auto">
         {EXERCISES.map((e) => <Button key={e.id} size="sm" variant={e.id === ex ? "hero" : "line"} onClick={() => setEx(e.id)}>{e.short}</Button>)}
       </div>
       <div className="mt-6 space-y-6">
         {ranksLoading ? <p>Loading leaderboard…</p> : ranksError ? <p>Could not load the leaderboard.</p> : rows.length === 0 ? <p className="text-muted-foreground">No lifts from this crew yet.</p> : <><Podium rows={rows.slice(0, 3)} />{rows.length > 3 && <RankList rows={rows.slice(3)} start={3} />}</>}
       </div>
-      <h2 className="mt-10 text-xl font-bold">Members</h2>
+      <div className="mt-10 flex items-end justify-between"><div><p className="eyebrow">THE LINEUP</p><h2 className="font-stat mt-1 text-3xl uppercase">Members ({count})</h2></div><Users className="h-6 w-6 text-primary"/></div>
       <ul className="mt-3 divide-y divide-border">
         {data.members.map((member) => <li key={member.user_id} className="flex items-center justify-between py-3">
-          {member.profiles && <Link to="/u/$username" params={{ username: member.profiles.username }}>@{member.profiles.username}</Link>}
-          <span className="text-xs uppercase text-muted-foreground">{member.role}</span>
+          <div className="min-w-0">{member.profiles && <><Link to="/u/$username" params={{ username: member.profiles.username }} className="font-semibold">{member.profiles.display_name || member.profiles.username}</Link><p className="text-xs text-muted-foreground">@{member.profiles.username}</p></>}</div>
+          <div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest ${member.role === "admin" ? "bg-primary/10 text-primary" : "bg-elevated text-muted-foreground"}`}>{member.role === "admin" ? "Admin" : "Member"}</span>{isAdmin && member.role !== "admin" && <Button size="icon" variant="ghost" disabled={saving} onClick={() => removeMember(member.user_id, member.profiles?.username ?? "member")}><UserMinus className="h-4 w-4"/></Button>}</div>
         </li>)}
       </ul>
-      {data.members.some((m) => m.user_id === user.id && m.role !== "owner") && <Button variant="line" className="mt-6" disabled={leaving} onClick={leave}><LogOut />{leaving ? "Leaving…" : "Leave crew"}</Button>}
+      {!isAdmin && <Button variant="line" className="mt-6" disabled={leaving} onClick={leave}><LogOut />{leaving ? "Leaving…" : "Leave crew"}</Button>}
     </PageShell>
   );
 }
