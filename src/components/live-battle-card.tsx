@@ -29,7 +29,7 @@ export function LiveBattleCard() {
       const battle=(battles??[]).find((b:any)=>b.status==="pending"||new Date(b.ends_at).getTime()>Date.now());
       if(!battle)return null;
       const crewIds=[battle.challenger_crew_id,battle.opponent_crew_id];
-      const {data:crews,error:crewError}=await (supabase as any).from("crews").select("id,name,emblem").in("id",crewIds);
+      const {data:crews,error:crewError}=await (supabase as any).from("crews").select("id,name").in("id",crewIds);
       if(crewError)throw crewError;
       return {battle,crews:crews??[]};
     }
