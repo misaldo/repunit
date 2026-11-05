@@ -57,6 +57,11 @@ begin
     raise exception 'Join this crew to view its battles';
   end if;
   perform pg_advisory_xact_lock(hashtext('repunit-weekly-crew-battles'));
+  -- Promote scheduled weekly matchups as soon as a crew member opens the battle area.
+  update public.crew_battles
+    set status = 'active'
+    where is_weekly = true and status = 'scheduled'
+      and starts_at <= now() and ends_at > now();
   if exists(select 1 from public.crew_battles where is_weekly = true and week_start = monday) then
     return;
   end if;
