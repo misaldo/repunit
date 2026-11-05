@@ -234,7 +234,7 @@ begin
 
   insert into public.user_xp_events(user_id, actor_id, event_type, source_id, xp)
   values(recipient, new.user_id, event_kind, source, 2)
-  on conflict(user_id, event_type, source_id) do nothing;
+  on conflict(user_id, event_type, source_id, actor_id) do nothing;
 
   if found then
     insert into public.user_progress(user_id, xp, current_streak, longest_streak, last_activity_on)
@@ -287,6 +287,22 @@ for each row execute function public.repunit_notify_lift_engagement();
 drop trigger if exists lift_likes_award_xp on public.lift_likes;
 create trigger lift_likes_award_xp after insert on public.lift_likes
 for each row execute function public.award_like_xp();
+
+-- Backfill milestone badges for crews that already meet the thresholds.
+insert into public.crew_achievements(crew_id, achievement_key)
+select crew_id, 'iron_squad'
+from public.crew_members
+group by crew_id
+having count(*) >= 5
+on conflict(crew_id, achievement_key) do nothing;
+
+insert into public.crew_achievements(crew_id, achievement_key)
+select cm.crew_id, '100_ton_club'
+from public.crew_members cm
+join public.lifts l on l.user_id = cm.user_id and l.status = 'VERIFIED'
+group by cm.crew_id
+having sum(l.weight_kg * coalesce(l.reps,1)) >= 100000
+on conflict(crew_id, achievement_key) do nothing;
 
 commit;
 notify pgrst, 'reload schema';
