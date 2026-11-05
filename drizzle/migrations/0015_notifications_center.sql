@@ -101,13 +101,13 @@ begin
         where mutual.follower_id = new.user_id and mutual.following_id = f.follower_id
       )
   loop
-    perform public.repunit_create_notification(
-      friend.user_id, new.user_id, 'lift',
-      case when is_pr then 'New personal record' else 'A friend logged a lift' end,
-      actor_name || ' logged ' || new.weight_kg::text || ' kg ' || lift_label ||
-        case when is_pr then ' — a new PR!' else '' end,
-      '/u/' || (select username from public.profiles where id = new.user_id)
-    );
+    if tg_op = 'INSERT' then
+      perform public.repunit_create_notification(
+        friend.user_id, new.user_id, 'lift', 'A friend logged a lift',
+        actor_name || ' logged ' || new.weight_kg::text || ' kg ' || lift_label || '.',
+        '/u/' || (select username from public.profiles where id = new.user_id)
+      );
+    end if;
     if is_pr then
       perform public.repunit_create_notification(
         friend.user_id, new.user_id, 'pr', 'New personal record',
