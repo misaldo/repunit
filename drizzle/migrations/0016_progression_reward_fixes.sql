@@ -66,6 +66,15 @@ begin
     on conflict(user_id) do update
       set xp = public.user_progress.xp + 50,
           updated_at = now();
+
+    if public.repunit_notification_enabled(new.user_id, 'pr') then
+      insert into public.notifications(user_id, actor_id, kind, title, body, href)
+      values(
+        new.user_id, new.user_id, 'pr', 'New personal record!',
+        'You just set a new ' || new.exercise::text || ' PR at ' || new.weight_kg::text || ' kg. +50 XP earned.',
+        '/records/' || new.id::text
+      );
+    end if;
   end if;
   return new;
 end;
