@@ -13,6 +13,7 @@ import { ProgressionCard } from "./progression-card";
 const nav = [
   { to: "/dashboard" as const, label: "Home", icon: Home },
   { to: "/leaderboards" as const, label: "Ranks", icon: Trophy },
+  { to: "/challenges" as const, label: "Challenges", icon: Swords },
   { to: "/battles" as const, label: "Battles", icon: Swords },
   { to: "/crews" as const, label: "Crews", icon: Users },
 ];
@@ -87,6 +88,7 @@ export function MobileNav() {
   return <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden"><div className="mx-auto flex max-w-xl items-end px-1">
     <Link to="/dashboard" className={item} activeProps={active}><Home className="h-5 w-5"/>Home</Link>
     <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5"/>Ranks</Link>
+    <Link to="/challenges" className={item} activeProps={active}><Swords className="h-5 w-5"/>Challenges</Link>
     <Link to="/battles" className="relative -mt-5 flex min-w-0 flex-1 flex-col items-center gap-1 py-1 text-[9px] font-black uppercase tracking-[.08em] text-primary transition-transform active:scale-90" activeProps={{className:"text-primary"}}>
       <span className="flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-background bg-primary text-primary-foreground shadow-[0_0_28px_hsl(var(--primary)/.5)]"><Swords className="h-6 w-6"/></span>Battles
     </Link>
