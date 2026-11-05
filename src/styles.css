@@ -286,3 +286,13 @@
 @media (prefers-reduced-motion:reduce) {
   .battle-enter,.battle-vs,.battle-winner,.battle-hero::after { animation:none !important; }
 }
+
+
+/* One-to-one call-out cards */
+@keyframes repunit-challenge-enter {
+  from { opacity: 0; transform: translateY(14px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.challenge-enter { animation: repunit-challenge-enter .48s cubic-bezier(.2,.8,.2,1) both; }
+.challenge-enter:hover { border-color: rgba(255,48,60,.38); box-shadow: 0 12px 36px -24px rgba(255,48,60,.42); transition: border-color .2s ease, box-shadow .2s ease; }
+@media (prefers-reduced-motion: reduce) { .challenge-enter { animation: none !important; } }
