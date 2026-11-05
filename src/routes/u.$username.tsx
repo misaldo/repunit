@@ -32,7 +32,7 @@ function Profile() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
     queryFn: async () => {
-      const { data: p, error } = await supabase.from("profiles").select("id, username, display_name, bio, avatar_url, created_at, profile_theme").eq("username", username).maybeSingle();
+      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at, profile_theme").eq("username", username).maybeSingle();
       if (error) throw error;
       if (!p) return null;
       const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
