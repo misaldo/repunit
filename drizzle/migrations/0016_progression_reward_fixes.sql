@@ -71,7 +71,7 @@ for each row execute function public.award_verified_pr_xp();
 
 -- Award every participant 20 XP once when a crew battle is completed.
 create or replace function public.award_crew_battle_xp()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $repunit$
 begin
   if new.status <> 'completed' or old.status = 'completed' then return new; end if;
 
@@ -85,15 +85,13 @@ begin
 
   return new;
 end;
-$;
+$repunit$;
 
 drop trigger if exists crew_battles_award_xp on public.crew_battles;
 create trigger crew_battles_award_xp
 after update of status on public.crew_battles
 for each row execute function public.award_crew_battle_xp();
 
-commit;
-notify pgrst, 'reload schema';
 
 
 -- Lift-video engagement tables used by the video dialog.
@@ -142,7 +140,7 @@ alter table public.user_xp_events enable row level security;
 revoke all on public.user_xp_events from anon, authenticated;
 
 create or replace function public.award_like_xp()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $repunit$
 declare
   recipient uuid;
   source uuid;
@@ -175,7 +173,7 @@ begin
   end if;
   return new;
 end;
-$;
+$repunit$;
 
 drop trigger if exists likes_award_xp on public.likes;
 create trigger likes_award_xp after insert on public.likes
@@ -183,7 +181,7 @@ for each row execute function public.award_like_xp();
 
 -- Notify lift owners when their evidence receives engagement.
 create or replace function public.repunit_notify_lift_engagement()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $repunit$
 declare
   lift_owner uuid;
   actor_name text;
@@ -206,7 +204,7 @@ begin
   perform public.repunit_create_notification(lift_owner, new.user_id, event_kind, event_title, event_body, '/records/' || new.lift_id::text);
   return new;
 end;
-$;
+$repunit$;
 drop trigger if exists lift_likes_notify_owner on public.lift_likes;
 create trigger lift_likes_notify_owner after insert on public.lift_likes
 for each row execute function public.repunit_notify_lift_engagement();
@@ -218,3 +216,5 @@ drop trigger if exists lift_likes_award_xp on public.lift_likes;
 create trigger lift_likes_award_xp after insert on public.lift_likes
 for each row execute function public.award_like_xp();
 
+commit;
+notify pgrst, 'reload schema';
