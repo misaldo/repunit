@@ -42,5 +42,32 @@ begin
 end;
 $$;
 
+-- Fallback for projects without pg_cron: check the signed-in user's streak on app open.
+create or replace function public.repunit_check_my_streak_loss()
+returns void language plpgsql security definer set search_path = public as $
+declare
+  progress_row public.user_progress%rowtype;
+begin
+  if auth.uid() is null then return; end if;
+  select * into progress_row from public.user_progress where user_id = auth.uid() for update;
+  if not found or progress_row.current_streak <= 0 or progress_row.last_activity_on is null then return; end if;
+
+  if progress_row.last_activity_on < current_date - 1 then
+    update public.user_progress
+      set current_streak = 0, updated_at = now()
+      where user_id = auth.uid() and current_streak > 0;
+    if public.repunit_notification_enabled(auth.uid(), 'streak') then
+      insert into public.notifications(user_id, kind, title, body, href)
+      values(
+        auth.uid(), 'streak', 'Your streak ended',
+        'Your ' || progress_row.current_streak::text || '-day streak has ended. Start a new one today.',
+        '/dashboard'
+      );
+    end if;
+  end if;
+end;
+$;
+grant execute on function public.repunit_check_my_streak_loss() to authenticated;
+
 commit;
 notify pgrst, 'reload schema';
