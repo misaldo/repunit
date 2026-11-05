@@ -35,7 +35,7 @@ create table if not exists public.push_subscriptions (
   unique(user_id, endpoint)
 );
 alter table public.push_subscriptions enable row level security;
-grant select, insert, delete on public.push_subscriptions to authenticated;
+grant select, insert, update, delete on public.push_subscriptions to authenticated;
 drop policy if exists "users manage own push subscriptions" on public.push_subscriptions;
 create policy "users manage own push subscriptions" on public.push_subscriptions for all to authenticated
 using (user_id = auth.uid()) with check (user_id = auth.uid());
