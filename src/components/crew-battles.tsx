@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-type Category = "bench" | "squat" | "deadlift";
+type Category = "bench" | "squat" | "deadlift" | "volume";
 type Battle = {
   id: string; challenger_crew_id: string; opponent_crew_id: string; category: Category;
   starts_at: string; ends_at: string; status: string; winner_crew_id: string | null;
@@ -16,7 +16,7 @@ type Battle = {
 type Crew = { id: string; name: string; emblem?: string | null; accent_color?: string | null };
 type Contributor = { user_id: string; username: string; display_name: string | null; weight: number };
 
-const categoryName: Record<Category, string> = { bench: "Bench press", squat: "Squat", deadlift: "Deadlift" };
+const categoryName: Record<Category, string> = { bench: "Bench press", squat: "Squat", deadlift: "Deadlift", volume: "Total volume" };
 
 function timeLeft(target: number, now: number) {
   const seconds = Math.max(0, Math.floor((target - now) / 1000));
@@ -86,13 +86,18 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         const withProfiles = (members:any[]) => members.map((m:any)=>({...m,profiles:profilesById.get(m.user_id)??null}));
         const from = battle.starts_at.slice(0,10);
         const to = battle.ends_at.slice(0,10);
-        const { data: lifts, error: liftError } = await (supabase as any).from("lifts")
-          .select("user_id,weight_kg").in("user_id",memberIds.length?memberIds:["00000000-0000-0000-0000-000000000000"])
-          .eq("exercise",battle.category).eq("status","VERIFIED")
-          .gte("lifted_on",from).lt("lifted_on",to);
+        let liftQuery = (supabase as any).from("lifts")
+          .select("user_id,weight_kg,reps,exercise").in("user_id",memberIds.length?memberIds:["00000000-0000-0000-0000-000000000000"])
+          .eq("status","VERIFIED").gte("lifted_on",from).lt("lifted_on",to);
+        if (battle.category === "volume") liftQuery = liftQuery.in("exercise",["bench","squat","deadlift","ohp","pullup"]);
+        else liftQuery = liftQuery.eq("exercise",battle.category);
+        const { data: lifts, error: liftError } = await liftQuery;
         if (liftError) throw liftError;
         const best = new Map<string,number>();
-        for (const lift of lifts ?? []) best.set(lift.user_id,Math.max(best.get(lift.user_id) ?? 0,Number(lift.weight_kg)));
+        for (const lift of lifts ?? []) {
+          const score = battle.category === "volume" ? Number(lift.weight_kg) * Number(lift.reps ?? 1) : Number(lift.weight_kg);
+          best.set(lift.user_id,battle.category === "volume" ? (best.get(lift.user_id) ?? 0) + score : Math.max(best.get(lift.user_id) ?? 0,score));
+        }
         const makeSide = (members:any[]) => {
           const contributors: Contributor[] = members.map((m:any)=>({
             user_id:m.user_id, username:m.profiles?.username ?? "lifter",
@@ -153,7 +158,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-5">
         {[{crew:left,total:leftTotal,won:leftWon},{crew:right,total:rightTotal,won:rightWon}].map((side,i)=><div key={i} className={`min-w-0 text-center ${side.won?"text-primary":""}`}>
           <Link to="/crews/$id" params={{id:side.crew?.id??""}} onClick={e=>e.stopPropagation()} className="group/crew inline-flex max-w-full flex-col items-center rounded-xl p-1 transition hover:bg-elevated active:scale-95"><div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-elevated text-2xl transition group-hover/crew:border-primary/50">{side.crew?.emblem||"🏋️"}</div><p className="mt-2 max-w-full truncate text-xs font-black uppercase tracking-wide transition group-hover/crew:text-primary md:text-sm">{side.crew?.name??"Crew"}</p></Link>
-          <p className="font-stat mt-1 text-3xl md:text-4xl">{side.total.toLocaleString("en-US")}<span className="ml-1 text-xs text-muted-foreground">kg</span></p>
+          <p className="font-stat mt-1 text-3xl md:text-4xl">{side.total.toLocaleString("en-US")}<span className="ml-1 text-xs text-muted-foreground">{battle.category==="volume"?"kg vol":"kg"}</span></p>
           {side.won&&<span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black uppercase text-primary"><Trophy className="h-3 w-3"/>Winner</span>}
         </div>)}
         <div className="col-start-2 row-start-1 text-center"><span className="battle-vs inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-background font-stat text-sm text-primary shadow-[0_0_22px_-8px_hsl(var(--primary)/.8)]">VS</span></div>
@@ -163,7 +168,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-700" style={{width:`${rightTotal/max*100}%`}}/></div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
-        {[leftScore.contributors,rightScore.contributors].map((list,i)=><div key={i}><p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Top contributors</p>{list.length?list.map((p,n)=><Link key={p.user_id} to="/u/$username" params={{username:p.username}} onClick={e=>e.stopPropagation()} className="flex items-center justify-between gap-2 rounded-md py-1 text-xs transition hover:bg-elevated hover:text-primary"><span className="truncate"><span className="mr-1 text-primary">{n+1}.</span>{p.display_name||p.username}</span><b className="shrink-0 tabular-nums">{p.weight} kg</b></Link>):<p className="text-xs text-muted-foreground">No verified lifts yet</p>}</div>)}
+        {[leftScore.contributors,rightScore.contributors].map((list,i)=><div key={i}><p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Top contributors</p>{list.length?list.map((p,n)=><Link key={p.user_id} to="/u/$username" params={{username:p.username}} onClick={e=>e.stopPropagation()} className="flex items-center justify-between gap-2 rounded-md py-1 text-xs transition hover:bg-elevated hover:text-primary"><span className="truncate"><span className="mr-1 text-primary">{n+1}.</span>{p.display_name||p.username}</span><b className="shrink-0 tabular-nums">{p.weight.toLocaleString("en-US")} {battle.category==="volume"?"kg vol":"kg"}</b></Link>):<p className="text-xs text-muted-foreground">No verified lifts yet</p>}</div>)}
       </div>
       {isPending && battle.opponent_crew_id===crewId && isAdmin && <div className="mt-4 flex gap-2 border-t border-border pt-3"><Button size="sm" variant="hero" disabled={busy} onClick={e=>{e.stopPropagation();respond(battle.id,true)}}><Check className="mr-1 h-3.5 w-3.5"/>Accept battle</Button><Button size="sm" variant="line" disabled={busy} onClick={e=>{e.stopPropagation();respond(battle.id,false)}}><X className="mr-1 h-3.5 w-3.5"/>Decline</Button></div>}
       <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -181,7 +186,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       <p className="text-xs font-black uppercase tracking-widest">Challenge a crew</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
         <select value={opponent} onChange={e=>setOpponent(e.target.value)} className="h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-sm"><option value="">Choose rival crew</option>{data.adminCrews.map((c:Crew)=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
-        <select value={category} onChange={e=>setCategory(e.target.value as Category)} className="h-11 rounded-xl border border-border bg-background px-3 text-sm">{(["bench","squat","deadlift"] as Category[]).map(c=><option key={c} value={c}>{categoryName[c]}</option>)}</select>
+        <select value={category} onChange={e=>setCategory(e.target.value as Category)} className="h-11 rounded-xl border border-border bg-background px-3 text-sm">{(["bench","squat","deadlift","volume"] as Category[]).map(c=><option key={c} value={c}>{categoryName[c]}</option>)}</select>
         <Button variant="hero" disabled={!opponent||busy} onClick={challenge}><Zap className="mr-1 h-4 w-4"/>Challenge</Button>
       </div>
     </div>}
