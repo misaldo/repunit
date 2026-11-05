@@ -21,12 +21,12 @@ function Crews() {
     queryKey: ["my-crews", user.id],
     queryFn: async () => {
       const { data: memberships, error } = await (supabase as any).from("crew_members")
-        .select("crew_id, role, joined_at").eq("user_id", user.id).order("joined_at", { ascending: false });
+        .select("crew_id, role").eq("user_id", user.id);
       if (error) throw error;
       const crewIds = (memberships ?? []).map((m: any) => m.crew_id);
       if (!crewIds.length) return [];
       const { data: crews, error: crewsError } = await (supabase as any).from("crews")
-        .select("id, name, description, max_members").in("id", crewIds);
+        .select("id, name, description").in("id", crewIds);
       if (crewsError) throw crewsError;
       const crewById = new Map((crews ?? []).map((crew: any) => [crew.id, crew]));
       return (memberships ?? []).map((membership: any) => ({
@@ -53,7 +53,7 @@ function Crews() {
       <div className="relative mt-7 grid grid-cols-3 gap-2 border-t border-border/70 pt-5">
         <div><p className="font-stat text-3xl">{data.length}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your crews</p></div>
         <div><p className="font-stat text-3xl">{adminCount}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Admin roles</p></div>
-        <div><p className="font-stat text-3xl">{data.reduce((n:number,m:any)=>n+Number(m.crews?.max_members??0),0)}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total capacity</p></div>
+        <div><p className="font-stat text-3xl">{data.length}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Squads joined</p></div>
       </div>
     </div>
     <section className="mt-8 rounded-2xl border border-border bg-card p-4 md:p-5">
@@ -68,7 +68,7 @@ function Crews() {
       <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-primary/5 blur-2xl group-hover:bg-primary/15"/>
       <div className="relative flex items-start justify-between gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary"><Users className="h-6 w-6"/></div><span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${m.role==="admin"?"border-primary/30 bg-primary/10 text-primary":"border-border text-muted-foreground"}`}>{m.role==="admin"?"Admin":"Member"}</span></div>
       <div className="relative mt-4 flex items-center justify-between"><div><h3 className="text-xl font-black uppercase tracking-wide">{m.crews.name}</h3><p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{m.crews.description||"No crew bio yet."}</p></div><ArrowUpRight className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary"/></div>
-      <div className="relative mt-5 flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5"/>Squad capacity</span><span className="font-bold text-foreground">Up to {m.crews.max_members??20}</span></div>
+      <div className="relative mt-5 flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5"/>REPUNIT squad</span><span className="font-bold text-foreground">Joined</span></div>
     </Link>)}</div>
   </PageShell>;
 }
