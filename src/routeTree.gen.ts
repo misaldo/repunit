@@ -17,6 +17,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthenticatedChallengesRouteImport } from './routes/_authenticated/challenges'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated/feed'
 import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people'
@@ -25,12 +26,12 @@ import { Route as AuthenticatedWorkoutsRouteImport } from './routes/_authenticat
 import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as RecordsIdRouteImport } from './routes/records.$id'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as AuthenticatedBattlesIndexRouteImport } from './routes/_authenticated/battles.index'
+import { Route as AuthenticatedBattlesIdRouteImport } from './routes/_authenticated/battles.$id'
 import { Route as AuthenticatedCrewsIndexRouteImport } from './routes/_authenticated/crews.index'
 import { Route as AuthenticatedCrewsIdRouteImport } from './routes/_authenticated/crews.$id'
 import { Route as AuthenticatedCrewsNewRouteImport } from './routes/_authenticated/crews.new'
 import { Route as AuthenticatedRecordsNewRouteImport } from './routes/_authenticated/records.new'
-import { Route as AuthenticatedBattlesIndexRouteImport } from './routes/_authenticated/battles.index'
-import { Route as AuthenticatedBattlesIdRouteImport } from './routes/_authenticated/battles.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedChallengesRoute = AuthenticatedChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -111,6 +117,17 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedBattlesIndexRoute =
+  AuthenticatedBattlesIndexRouteImport.update({
+    id: '/battles/',
+    path: '/battles/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBattlesIdRoute = AuthenticatedBattlesIdRouteImport.update({
+  id: '/battles/$id',
+  path: '/battles/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCrewsIndexRoute = AuthenticatedCrewsIndexRouteImport.update({
   id: '/crews/',
   path: '/crews/',
@@ -124,16 +141,6 @@ const AuthenticatedCrewsIdRoute = AuthenticatedCrewsIdRouteImport.update({
 const AuthenticatedCrewsNewRoute = AuthenticatedCrewsNewRouteImport.update({
   id: '/crews/new',
   path: '/crews/new',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedBattlesIndexRoute = AuthenticatedBattlesIndexRouteImport.update({
-  id: '/battles/',
-  path: '/battles',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedBattlesIdRoute = AuthenticatedBattlesIdRouteImport.update({
-  id: '/battles/$id',
-  path: '/battles/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRecordsNewRoute = AuthenticatedRecordsNewRouteImport.update({
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/challenges': typeof AuthenticatedChallengesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/people': typeof AuthenticatedPeopleRoute
@@ -158,12 +166,12 @@ export interface FileRoutesByFullPath {
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/battles/$id': typeof AuthenticatedBattlesIdRoute
   '/crews/$id': typeof AuthenticatedCrewsIdRoute
   '/crews/new': typeof AuthenticatedCrewsNewRoute
   '/records/new': typeof AuthenticatedRecordsNewRoute
-  '/crews/': typeof AuthenticatedCrewsIndexRoute
   '/battles/': typeof AuthenticatedBattlesIndexRoute
-  '/battles/$id': typeof AuthenticatedBattlesIdRoute
+  '/crews/': typeof AuthenticatedCrewsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -173,6 +181,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/challenges': typeof AuthenticatedChallengesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/people': typeof AuthenticatedPeopleRoute
@@ -181,12 +190,12 @@ export interface FileRoutesByTo {
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/battles/$id': typeof AuthenticatedBattlesIdRoute
   '/crews/$id': typeof AuthenticatedCrewsIdRoute
   '/crews/new': typeof AuthenticatedCrewsNewRoute
   '/records/new': typeof AuthenticatedRecordsNewRoute
-  '/crews': typeof AuthenticatedCrewsIndexRoute
   '/battles': typeof AuthenticatedBattlesIndexRoute
-  '/battles/$id': typeof AuthenticatedBattlesIdRoute
+  '/crews': typeof AuthenticatedCrewsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,6 +207,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/challenges': typeof AuthenticatedChallengesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
   '/_authenticated/people': typeof AuthenticatedPeopleRoute
@@ -206,12 +216,12 @@ export interface FileRoutesById {
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/_authenticated/battles/$id': typeof AuthenticatedBattlesIdRoute
   '/_authenticated/crews/$id': typeof AuthenticatedCrewsIdRoute
   '/_authenticated/crews/new': typeof AuthenticatedCrewsNewRoute
   '/_authenticated/records/new': typeof AuthenticatedRecordsNewRoute
-  '/_authenticated/crews/': typeof AuthenticatedCrewsIndexRoute
   '/_authenticated/battles/': typeof AuthenticatedBattlesIndexRoute
-  '/_authenticated/battles/$id': typeof AuthenticatedBattlesIdRoute
+  '/_authenticated/crews/': typeof AuthenticatedCrewsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/challenges'
     | '/dashboard'
     | '/feed'
     | '/people'
@@ -231,12 +242,12 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
+    | '/battles/$id'
     | '/crews/$id'
     | '/crews/new'
     | '/records/new'
-    | '/crews/'
     | '/battles/'
-    | '/battles/$id'
+    | '/crews/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/challenges'
     | '/dashboard'
     | '/feed'
     | '/people'
@@ -254,12 +266,12 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
+    | '/battles/$id'
     | '/crews/$id'
     | '/crews/new'
     | '/records/new'
-    | '/crews'
     | '/battles'
-    | '/battles/$id'
+    | '/crews'
   id:
     | '__root__'
     | '/'
@@ -270,6 +282,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/_authenticated/challenges'
     | '/_authenticated/dashboard'
     | '/_authenticated/feed'
     | '/_authenticated/people'
@@ -278,12 +291,12 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
+    | '/_authenticated/battles/$id'
     | '/_authenticated/crews/$id'
     | '/_authenticated/crews/new'
     | '/_authenticated/records/new'
-    | '/_authenticated/crews/'
     | '/_authenticated/battles/'
-    | '/_authenticated/battles/$id'
+    | '/_authenticated/crews/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -358,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/challenges': {
+      id: '/_authenticated/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof AuthenticatedChallengesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -414,6 +434,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/battles/': {
+      id: '/_authenticated/battles/'
+      path: '/battles'
+      fullPath: '/battles/'
+      preLoaderRoute: typeof AuthenticatedBattlesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/battles/$id': {
+      id: '/_authenticated/battles/$id'
+      path: '/battles/$id'
+      fullPath: '/battles/$id'
+      preLoaderRoute: typeof AuthenticatedBattlesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/crews/': {
       id: '/_authenticated/crews/'
       path: '/crews'
@@ -435,20 +469,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrewsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/battles/': {
-      id: '/_authenticated/battles/'
-      path: '/battles'
-      fullPath: '/battles/'
-      preLoaderRoute: typeof AuthenticatedBattlesIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/battles/$id': {
-      id: '/_authenticated/battles/$id'
-      path: '/battles/$id'
-      fullPath: '/battles/$id'
-      preLoaderRoute: typeof AuthenticatedBattlesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/records/new': {
       id: '/_authenticated/records/new'
       path: '/records/new'
@@ -460,31 +480,33 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedChallengesRoute: typeof AuthenticatedChallengesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
   AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWorkoutsRoute: typeof AuthenticatedWorkoutsRoute
+  AuthenticatedBattlesIdRoute: typeof AuthenticatedBattlesIdRoute
   AuthenticatedCrewsIdRoute: typeof AuthenticatedCrewsIdRoute
   AuthenticatedCrewsNewRoute: typeof AuthenticatedCrewsNewRoute
   AuthenticatedRecordsNewRoute: typeof AuthenticatedRecordsNewRoute
-  AuthenticatedCrewsIndexRoute: typeof AuthenticatedCrewsIndexRoute
   AuthenticatedBattlesIndexRoute: typeof AuthenticatedBattlesIndexRoute
-  AuthenticatedBattlesIdRoute: typeof AuthenticatedBattlesIdRoute
+  AuthenticatedCrewsIndexRoute: typeof AuthenticatedCrewsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedChallengesRoute: AuthenticatedChallengesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,
   AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWorkoutsRoute: AuthenticatedWorkoutsRoute,
+  AuthenticatedBattlesIdRoute: AuthenticatedBattlesIdRoute,
   AuthenticatedCrewsIdRoute: AuthenticatedCrewsIdRoute,
   AuthenticatedCrewsNewRoute: AuthenticatedCrewsNewRoute,
   AuthenticatedRecordsNewRoute: AuthenticatedRecordsNewRoute,
-  AuthenticatedCrewsIndexRoute: AuthenticatedCrewsIndexRoute,
   AuthenticatedBattlesIndexRoute: AuthenticatedBattlesIndexRoute,
-  AuthenticatedBattlesIdRoute: AuthenticatedBattlesIdRoute,
+  AuthenticatedCrewsIndexRoute: AuthenticatedCrewsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
