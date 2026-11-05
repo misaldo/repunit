@@ -238,6 +238,11 @@ begin
     where up.current_streak > 0
       and up.last_activity_on < current_date - 1
   loop
+    update public.user_progress
+      set current_streak = 0, updated_at = now()
+      where user_id = item.user_id and current_streak > 0;
+    affected := affected + 1;
+
     if public.repunit_notification_enabled(item.user_id, 'streak') then
       insert into public.notifications(user_id, kind, title, body, href)
       select item.user_id, 'streak', 'Your streak ended',
@@ -249,10 +254,6 @@ begin
           and n.created_at::date = current_date
           and n.title = 'Your streak ended'
       );
-      if found then
-        update public.user_progress set current_streak = 0, updated_at = now() where user_id = item.user_id;
-        affected := affected + 1;
-      end if;
     end if;
   end loop;
   return affected;
