@@ -69,11 +69,11 @@ create trigger lifts_award_verified_pr_xp
 after insert or update of status on public.lifts
 for each row execute function public.award_verified_pr_xp();
 
--- Award every participant 20 XP once when a crew battle is completed.
+-- Award every participant 20 XP once when a crew battle goes live.
 create or replace function public.award_crew_battle_xp()
 returns trigger language plpgsql security definer set search_path = public as $repunit$
 begin
-  if new.status <> 'completed' or old.status = 'completed' then return new; end if;
+  if new.status <> 'active' or old.status = 'active' then return new; end if;
 
   insert into public.user_progress(user_id, xp, current_streak, longest_streak, last_activity_on)
   select distinct cm.user_id, 20, 0, 0, null
