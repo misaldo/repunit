@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { ThroneBanner } from "@/components/throne-banner";
 
 export const Route = createFileRoute("/_authenticated/feed")({
   head: () => ({ meta: [{ title: "Feed — REPUNIT" }, { name: "description", content: "The latest lifts and updates from your REPUNIT crew." }] }),
@@ -112,6 +113,7 @@ function FeedPage() {
         <Button variant="line" onClick={() => void feed.refetch()} disabled={feed.isFetching}><RefreshCw className={`mr-2 h-4 w-4 ${feed.isFetching ? "animate-spin" : ""}`}/>Refresh</Button>
       </div>
 
+      <div className="mt-6"><ThroneBanner/></div>
       <form onSubmit={publish} className="mt-7 rounded-2xl border border-border bg-card p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <Avatar className="h-10 w-10"><AvatarFallback className="bg-primary/15 text-primary">YOU</AvatarFallback></Avatar>
