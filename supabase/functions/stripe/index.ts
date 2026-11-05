@@ -56,15 +56,11 @@ async function getAuthenticatedUser(request: Request) {
 async function adminRest(path: string, init: RequestInit = {}) {
   const url = required("SUPABASE_URL").replace(/\/+$/, "");
   const key = required("SUPABASE_SERVICE_ROLE_KEY");
-  return await fetch(`${url}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
+  const headers = new Headers(init.headers);
+  headers.set("apikey", key);
+  headers.set("Authorization", `Bearer ${key}`);
+  headers.set("Content-Type", "application/json");
+  return await fetch(`${url}/rest/v1/${path}`, { ...init, headers });
 }
 
 function equalHex(a: string, b: string) {
