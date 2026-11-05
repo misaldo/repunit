@@ -165,7 +165,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/challenges': typeof AuthenticatedChallengesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/people': typeof AuthenticatedPeopleRoute
@@ -190,6 +189,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
   '/challenges': typeof AuthenticatedChallengesRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/people': typeof AuthenticatedPeopleRoute
