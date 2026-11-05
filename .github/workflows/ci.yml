@@ -37,7 +37,7 @@ jobs:
       - name: TypeScript
         run: npm run typecheck
       - name: Lint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0
       - name: Test
         run: npm test
       - name: Production build
