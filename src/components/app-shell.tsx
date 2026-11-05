@@ -12,7 +12,7 @@ import { InstallPrompt } from "./install-prompt";
 import { ProgressionCard } from "./progression-card";
 
 const nav = [
-  { to: "/dashboard" as const, label: "Feed", icon: Home },
+  { to: "/feed" as const, label: "Feed", icon: Home },
   { to: "/workouts" as const, label: "Workouts", icon: Dumbbell },
   { to: "/crews" as const, label: "Crews", icon: Users },
   { to: "/leaderboards" as const, label: "Ranks", icon: Trophy },
@@ -99,7 +99,7 @@ export function MobileNav() {
   const item = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground transition-all duration-200 active:scale-90";
   const active = { className: "!text-primary" };
   return <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden"><div className="mx-auto flex max-w-xl items-end px-1">
-    <Link to="/dashboard" className={item} activeProps={active}><Home className="h-5 w-5"/>Feed</Link>
+    <Link to="/feed" className={item} activeProps={active}><Home className="h-5 w-5"/>Feed</Link>
     <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>Workouts</Link>
     <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5"/>Crews</Link>
     <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5"/>Ranks</Link>
