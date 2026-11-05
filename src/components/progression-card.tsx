@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Flame, Sparkles, Lock, ChevronDown, ChevronUp } from "lucide-react";
 import { getLevel, ACHIEVEMENTS } from "@/lib/progression";
+import { AnimatedNumber } from "@/components/animated-number";
 
 type Props = { xp: number; streak: number; longestStreak?: number; achievements?: string[]; compact?: boolean };
 
@@ -19,8 +20,8 @@ export function ProgressionCard({ xp, streak, longestStreak = 0, achievements = 
   return (
     <section className={compact ? "rounded-xl bg-elevated/70 p-3" : "rounded-2xl border border-border bg-card p-5"}>
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2"><span className="text-2xl">{level.icon}</span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-primary">Level {level.name}</p><p className="text-xs text-muted-foreground">{xp.toLocaleString()} total XP</p></div></div>
-        <div className="text-right"><p className="flex items-center justify-end gap-1 font-stat text-2xl"><Flame className="h-5 w-5 text-primary" />{streak}</p><p className="text-[10px] uppercase tracking-wider text-muted-foreground">day streak</p></div>
+        <div className="flex items-center gap-2"><span className="text-2xl">{level.icon}</span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-primary">Level {level.name}</p><p className="text-xs text-muted-foreground"><AnimatedNumber value={xp} /> total XP</p></div></div>
+        <div className="text-right"><p className="flex items-center justify-end gap-1 font-stat text-2xl"><Flame className="h-5 w-5 text-primary" /><AnimatedNumber value={streak} /></p><p className="text-[10px] uppercase tracking-wider text-muted-foreground">day streak</p></div>
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-background" role="progressbar" aria-valuenow={Math.round(level.progress)} aria-valuemin={0} aria-valuemax={100} aria-label="XP progress to next level"><div className="h-full rounded-full bg-primary transition-all" style={{ width: level.progress + "%" }} /></div>
       <p className="mt-1.5 text-xs text-muted-foreground">{level.next ? `${level.needed.toLocaleString()} XP to ${level.next.name}` : "Maximum level reached"} · longest streak {longestStreak} days</p>
