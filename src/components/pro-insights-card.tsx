@@ -22,7 +22,7 @@ export function ProInsightsCard({ lifts }: { lifts: Lift[] }) {
       const date = new Date();
       date.setDate(1);
       date.setMonth(date.getMonth() - (5 - index));
-      const key = date.toISOString().slice(0, 7);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       const volume = verified.filter((lift) => String(lift.lifted_on).startsWith(key))
         .reduce((sum, lift) => sum + Number(lift.weight_kg) * Number(lift.reps ?? 1), 0);
       return { month: date.toLocaleDateString("en-US", { month: "short" }), volume: Math.round(volume), key };
