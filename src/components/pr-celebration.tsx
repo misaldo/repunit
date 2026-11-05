@@ -18,6 +18,13 @@ export function PrCelebration() {
 
   useEffect(() => {
     if (!user?.id) return;
+    void (supabase as any).rpc("repunit_check_my_streak_loss").then(({ error }: { error: unknown }) => {
+      if (error) console.warn("REPUNIT streak check unavailable", error);
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const channel = supabase.channel(`repunit-pr-celebrations-${user.id}`)
       .on("postgres_changes", {
