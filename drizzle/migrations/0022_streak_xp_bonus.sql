@@ -38,17 +38,6 @@ begin
     last_activity_on = today,
     updated_at = now();
 
-  insert into public.notifications(user_id,kind,title,body,href)
-  values(
-    new.user_id,
-    'lift',
-    case when streak_bonus > 0 then 'Streak milestone reached!' else 'Workout logged' end,
-    case when streak_bonus > 0
-      then 'You earned 25 workout XP and 50 streak bonus XP for a ' || next_streak::text || '-day streak.'
-      else 'You earned 25 XP for logging a lift.'
-    end,
-    '/records/' || new.id::text
-  );
   return new;
 end;
 $$;
