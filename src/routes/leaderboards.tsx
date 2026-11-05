@@ -8,6 +8,7 @@ import { EXERCISES, type Exercise } from "@/lib/lifts";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/hooks/use-session";
 import { Users, Trophy, ArrowUpRight, TrendingUp, TrendingDown, Minus, Crown, Swords, Globe2, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/leaderboards")({
@@ -86,8 +87,36 @@ function Boards() {
   const [ex,setEx]=useState<Exercise|"total">("total");
   const [period,setPeriod]=useState<Period>("all");
   const [region,setRegion]=useState<Region>("global");
+  const [scope,setScope]=useState<"global"|"friends"|"crew">("global");
+  const [weightClass,setWeightClass]=useState("all");
+  const {user}=useUser();
   const since=period==="all"?null:periodStart(period);
-  const {data:rows=[],isLoading,isError,refetch}=useLeaderboard(ex,null,since);
+  const audience=useQuery({
+    queryKey:["leaderboard-audience",scope,user?.id],
+    enabled:!!user?.id&&scope!=="global",
+    queryFn:async()=>{
+      if(scope==="friends"){
+        const {data:following,error:followingError}=await (supabase as any).from("follows").select("following_id").eq("follower_id",user!.id);
+        if(followingError)throw followingError;
+        const candidates=(following??[]).map((row:any)=>row.following_id);
+        if(!candidates.length)return [user!.id];
+        const {data:mutual,error:mutualError}=await (supabase as any).from("follows").select("follower_id").eq("following_id",user!.id).in("follower_id",candidates);
+        if(mutualError)throw mutualError;
+        return [...new Set([user!.id,...(mutual??[]).map((row:any)=>row.follower_id)])];
+      }
+      const {data:mine,error:mineError}=await (supabase as any).from("crew_members").select("crew_id").eq("user_id",user!.id);
+      if(mineError)throw mineError;
+      const crewIds=(mine??[]).map((row:any)=>row.crew_id);
+      if(!crewIds.length)return [];
+      const {data:members,error:membersError}=await (supabase as any).from("crew_members").select("user_id").in("crew_id",crewIds);
+      if(membersError)throw membersError;
+      return [...new Set((members??[]).map((row:any)=>row.user_id))];
+    },
+  });
+  const audienceIds=scope==="global"?undefined:(audience.data??[]);
+  const classFilter=weightClass==="all"?null:weightClass;
+  const {data:rows=[],isLoading,isError,refetch}=useLeaderboard(ex,null,since,audienceIds,classFilter);
+  const myRank=user?.id?rows.findIndex((row:any)=>row.user_id===user.id)+1:0;
   const {data:crewData,isLoading:crewsLoading,isError:crewsError,refetch:refetchCrews}=useCrewRanks(ex,period,region);
   const crewRows:CrewRank[]=crewData?.rows??[];
   const ownRank=crewRows.findIndex(c=>crewData?.myCrewIds.includes(c.id))+1;
@@ -101,13 +130,19 @@ function Boards() {
       <button onClick={()=>setTab("crews")} className={cn("flex items-center gap-2 rounded-lg px-5 py-2.5 text-xs font-black uppercase tracking-widest transition",tab==="crews"?"bg-primary text-primary-foreground shadow-glow":"text-muted-foreground hover:text-foreground")}><Users className="h-4 w-4"/>Crews</button>
     </div>
     <div className="mt-6 flex gap-2 overflow-x-auto pb-2">{[{id:"total" as const,short:"TOTAL"},...EXERCISES.filter(e=>["bench","squat","deadlift"].includes(e.id))].map(e=><Button key={e.id} variant="ghost" size="sm" className={chip(e.id===ex)} onClick={()=>setEx(e.id)}>{e.short}</Button>)}</div>
+    {tab==="lifters"&&<div className="mt-3 flex flex-wrap items-center gap-2">
+      {(["global","friends","crew"] as const).map((key)=><Button key={key} size="sm" variant={scope===key?"hero":"line"} disabled={key!=="global"&&!user?.id} onClick={()=>setScope(key)}>{key==="crew"?"My Crew":key==="friends"?"Friends":"Global"}</Button>)}
+      <select aria-label="Lifter weight class" value={weightClass} onChange={(event)=>setWeightClass(event.target.value)} className="h-8 rounded-full border border-border bg-card px-3 text-xs text-foreground">
+        <option value="all">All weight classes</option><option value="u60">Under 60 kg</option><option value="60_75">60–74.9 kg</option><option value="75_90">75–89.9 kg</option><option value="90_105">90–104.9 kg</option><option value="105_plus">105 kg+</option><option value="unclassified">No bodyweight set</option>
+      </select>
+    </div>}
     <div className="mt-2 flex flex-wrap gap-2">{([["week","This week"],["month","This month"],["all","All time"]] as const).map(([k,l])=><Button key={k} variant="ghost" size="sm" className={chip(period===k)} onClick={()=>setPeriod(k)}>{l}</Button>)}</div>
     {tab==="crews"&&<div className="mt-3 flex gap-2">
       <Button size="sm" variant={region==="global"?"hero":"line"} onClick={()=>setRegion("global")}><Globe2 className="mr-1 h-3.5 w-3.5"/>Global</Button>
       <Button size="sm" variant={region==="country"?"hero":"line"} onClick={()=>setRegion("country")}><MapPin className="mr-1 h-3.5 w-3.5"/>Country</Button>
     </div>}
     <p className="mt-4 text-xs text-muted-foreground">{tab==="lifters"?(ex==="total"?"Combined best verified lifts across the main strength disciplines.":`Standard: ${meta?.standard} Ranked by heaviest verified weight.`):"Crew tonnage = verified weight × reps from all crew members in the selected period."}</p>
-    {tab==="lifters"?<div className="mt-8 space-y-6">{isLoading?<p className="text-muted-foreground">Loading…</p>:isError?<div><p>Could not load the leaderboard.</p><Button variant="line" className="mt-3" onClick={()=>refetch()}>Try again</Button></div>:rows.length===0?<p className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">No lifts yet in this category.</p>:<><Podium rows={rows.slice(0,3)}/>{rows.length>3&&<RankList rows={rows.slice(3)} start={3}/>}</>}</div>:
+    {tab==="lifters"?<div className="mt-8 space-y-6">{scope!=="global"&&audience.isLoading?<p className="text-muted-foreground">Finding your lifters…</p>:scope!=="global"&&audience.isError?<div><p>Could not load this leaderboard group.</p><Button variant="line" className="mt-3" onClick={()=>void audience.refetch()}>Try again</Button></div>:isLoading?<p className="text-muted-foreground">Loading…</p>:isError?<div><p>Could not load the leaderboard.</p><Button variant="line" className="mt-3" onClick={()=>refetch()}>Try again</Button></div>:rows.length===0?<p className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">{scope==="friends"?"No verified lifts from your friends yet.":scope==="crew"?"Your crews have no verified lifts in this category yet.":"No lifts yet in this category."}</p>:<>{myRank>0&&<div className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"><span className="text-xs font-black uppercase tracking-widest text-primary">You are #{myRank}</span><Crown className="h-4 w-4 text-primary"/></div>}<Podium rows={rows.slice(0,3)} currentUserId={user?.id}/>{rows.length>3&&<RankList rows={rows.slice(3)} start={3} currentUserId={user?.id}/>}</>}</div>:
       <div className="mt-7">
         {crewsLoading?<p className="text-muted-foreground">Loading crew rankings…</p>:crewsError?<div><p>Could not load crew rankings.</p><Button variant="line" className="mt-3" onClick={()=>refetchCrews()}>Try again</Button></div>:region==="country"&&!crewData?.countryCode?<div className="rounded-2xl border border-dashed border-border p-7 text-center"><MapPin className="mx-auto h-7 w-7 text-muted-foreground"/><p className="mt-2 font-bold">Add your country to your profile</p><p className="mt-1 text-xs text-muted-foreground">Country rankings become available once your profile has a country set.</p><Link to="/settings" className="mt-3 inline-flex text-xs font-bold uppercase text-primary hover:underline">Edit profile</Link></div>:crewRows.length===0?<p className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">No verified crew lifts in this category yet.</p>:<>
           {ownRank>0&&<div className="mb-4 flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"><span className="text-xs font-black uppercase tracking-widest text-primary">Your crew is #{ownRank}</span><Crown className="h-4 w-4 text-primary"/></div>}
