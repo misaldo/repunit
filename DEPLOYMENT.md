@@ -50,6 +50,7 @@ The existing project has already used migrations through `0011_complete_backend_
 - `0020_lift_video_engagement.sql`
 - `0021_volume_crew_battles.sql`
 - `0022_streak_xp_bonus.sql`
+- `0023_crew_achievement_awards.sql`
 
 Run each pending SQL file in the Supabase SQL Editor. These repair migrations are designed to be repeatable, but do not skip ahead in the sequence.
 
