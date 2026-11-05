@@ -41,10 +41,11 @@ create policy "users manage own push subscriptions" on public.push_subscriptions
 using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 create or replace function public.repunit_notification_enabled(_user uuid, _kind text)
-returns boolean language plpgsql stable security definer set search_path = public as $$
+returns boolean language plpgsql volatile security definer set search_path = public as $
 declare enabled_value boolean;
 begin
-  if _kind not in ('lift','pr','like','comment','challenge','rank','battle','streak','system') then return false; end if;
+  if _kind = 'system' then return true; end if;
+  if _kind not in ('lift','pr','like','comment','challenge','rank','battle','streak') then return false; end if;
   insert into public.notification_preferences(user_id) values (_user) on conflict (user_id) do nothing;
   execute format('select %I from public.notification_preferences where user_id = $1', _kind)
     into enabled_value using _user;
