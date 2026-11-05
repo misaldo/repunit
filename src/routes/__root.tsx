@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { AchievementUnlockBanner } from "@/components/achievement-unlock-banner";
+import { PrCelebration } from "@/components/pr-celebration";
 import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
@@ -127,6 +128,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <AchievementUnlockBanner />
+      <PrCelebration />
       <Toaster theme="dark" position="top-center" />
     </QueryClientProvider>
   );
