@@ -263,3 +263,26 @@
 @keyframes repunit-mark-orbit { to { rotate:360deg; } }
 @keyframes repunit-mark-pulse { 0%,100% { opacity:.55; transform:scale(.8); } 50% { opacity:1; transform:scale(1.15); } }
 @media (prefers-reduced-motion:reduce) { .repunit-mark .mark-orbit,.repunit-mark .mark-flare { animation:none; } }
+
+/* REPUNIT motion system — restrained entrance, hover depth and battle energy */
+@keyframes repunit-battle-enter {
+  from { opacity: 0; transform: translateY(18px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes repunit-battle-vs {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,48,60,0), 0 0 18px -8px rgba(255,48,60,.65); transform: scale(1); }
+  50% { box-shadow: 0 0 0 7px rgba(255,48,60,.035), 0 0 26px -5px rgba(255,48,60,.8); transform: scale(1.06); }
+}
+@keyframes repunit-battle-winner {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,48,60,0); }
+  50% { box-shadow: 0 0 26px -12px rgba(255,48,60,.65); }
+}
+.battle-enter { animation: repunit-battle-enter .55s cubic-bezier(.2,.8,.2,1) both; }
+.battle-vs { animation: repunit-battle-vs 2.8s ease-in-out infinite; }
+.battle-winner { animation: repunit-battle-winner 2.4s ease-in-out infinite; }
+.battle-hero { isolation:isolate; }
+.battle-hero::after { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.2; background:linear-gradient(115deg,transparent 20%,rgba(255,48,60,.12) 48%,transparent 72%); background-size:220% 100%; animation:repunit-battle-sheen 8s ease-in-out infinite; }
+@keyframes repunit-battle-sheen { 0%,100% { background-position:100% 0; } 50% { background-position:0 0; } }
+@media (prefers-reduced-motion:reduce) {
+  .battle-enter,.battle-vs,.battle-winner,.battle-hero::after { animation:none !important; }
+}
