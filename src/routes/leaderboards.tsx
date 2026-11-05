@@ -113,10 +113,11 @@ function Boards() {
       return [...new Set((members??[]).map((row:any)=>row.user_id))];
     },
   });
-  const audienceIds=scope==="global"?undefined:(audience.data??[]);
+  const audienceIds=scope==="global"?null:(audience.data??[]);
   const classFilter=weightClass==="all"?null:weightClass;
   const {data:rows=[],isLoading,isError,refetch}=useLeaderboard(ex,null,since,audienceIds,classFilter);
-  const myRank=user?.id?rows.findIndex((row:any)=>row.user_id===user.id)+1:0;
+  const myRow=user?.id?rows.find((row:any)=>row.user_id===user.id):null;
+  const myRank=myRow?(myRow.rank_position??rows.findIndex((row:any)=>row.user_id===user.id)+1):0;
   const {data:crewData,isLoading:crewsLoading,isError:crewsError,refetch:refetchCrews}=useCrewRanks(ex,period,region);
   const crewRows:CrewRank[]=crewData?.rows??[];
   const ownRank=crewRows.findIndex(c=>crewData?.myCrewIds.includes(c.id))+1;
