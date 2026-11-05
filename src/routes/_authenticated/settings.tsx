@@ -66,12 +66,13 @@ function Settings() {
       return { ...defaults, ...(data ?? {}) };
     },
   });
-  async function setPreference(key: string, value: boolean) {
+  async function setPreference(key: string, value: boolean, showToast = true): Promise<boolean> {
     const { error } = await (supabase as any).from("notification_preferences")
       .upsert({ user_id: user.id, [key]: value, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (error) { toast.error("Could not save notification setting: " + error.message); return; }
+    if (error) { toast.error("Could not save notification setting: " + error.message); return false; }
     await qc.invalidateQueries({ queryKey: ["notification-preferences", user.id] });
-    toast.success("Notification setting saved");
+    if (showToast) toast.success("Notification setting saved");
+    return true;
   }
   async function toggleWebPush() {
     if (!pushSupported) { toast.error("Web push is not supported or VAPID is not configured."); return; }
@@ -84,7 +85,7 @@ function Settings() {
           .eq("user_id", user.id).eq("endpoint", existing.endpoint);
         if (error) throw error;
         await existing.unsubscribe();
-        await setPreference("push_enabled", false);
+        if (!(await setPreference("push_enabled", false, false))) throw new Error("Could not save the push setting.");
         setPushSubscription(false);
         toast.success("Web push notifications disabled");
       } else {
@@ -102,7 +103,7 @@ function Settings() {
           user_id: user.id, endpoint: subscription.endpoint, p256dh: keys.p256dh, auth: keys.auth,
         }, { onConflict: "user_id,endpoint" });
         if (error) { await subscription.unsubscribe(); throw error; }
-        await setPreference("push_enabled", true);
+        if (!(await setPreference("push_enabled", true, false))) { await subscription.unsubscribe(); throw new Error("Could not save the push setting."); }
         setPushSubscription(true);
         toast.success("Web push notifications enabled");
       }
