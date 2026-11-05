@@ -216,7 +216,10 @@ begin
           and n.created_at::date = current_date
           and n.title = 'Your streak ended'
       );
-      if found then affected := affected + 1; end if;
+      if found then
+        update public.user_progress set current_streak = 0, updated_at = now() where user_id = item.user_id;
+        affected := affected + 1;
+      end if;
     end if;
   end loop;
   return affected;
