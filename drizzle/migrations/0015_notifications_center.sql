@@ -197,7 +197,7 @@ for each row execute function public.repunit_notify_battle_status();
 
 -- Notify post owners when another lifter likes or comments on their posts.
 create or replace function public.repunit_notify_post_engagement()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $$
 declare
   post_owner uuid;
   actor_name text;
@@ -219,7 +219,7 @@ begin
   perform public.repunit_create_notification(post_owner, new.user_id, event_kind, event_title, event_body, '/feed');
   return new;
 end;
-$;
+$$;
 drop trigger if exists repunit_notify_post_like on public.likes;
 create trigger repunit_notify_post_like after insert on public.likes
 for each row execute function public.repunit_notify_post_engagement();
