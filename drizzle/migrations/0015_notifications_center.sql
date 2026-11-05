@@ -285,7 +285,7 @@ end $$;
 
 -- Keep challenge notifications under the same per-type preference switch.
 create or replace function public.notify_lifter_challenge()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $$
 declare
   actor_name text;
   source_exercise text;
@@ -320,7 +320,7 @@ begin
   );
   return new;
 end;
-$;
+$$;
 
 -- Internal security-definer helpers must only be callable by trusted trigger functions.
 revoke all on function public.repunit_notification_enabled(uuid,text) from public, anon, authenticated;
