@@ -20,7 +20,11 @@ export function formatLiftVolume(kg: number) {
 
 export function getFunComparison(kg: number, index = 0) {
   if (!Number.isFinite(kg) || kg <= 0) return null;
-  const ordered = [...COMPARISONS].sort((a, b) => Math.abs(kg / a.kg - 1) - Math.abs(kg / b.kg - 1));
+  const ordered = [...COMPARISONS].sort((a, b) => {
+    const countA = Math.max(1, Math.round(kg / a.kg));
+    const countB = Math.max(1, Math.round(kg / b.kg));
+    return Math.abs(kg - countA * a.kg) / kg - Math.abs(kg - countB * b.kg) / kg;
+  });
   const comparison = ordered[((index % ordered.length) + ordered.length) % ordered.length];
   const count = Math.max(1, Math.round(kg / comparison.kg));
   return { ...comparison, count, label: `${count.toLocaleString()} ${comparison.name}` };
