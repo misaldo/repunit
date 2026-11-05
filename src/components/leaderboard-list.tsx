@@ -6,12 +6,30 @@ import type { Exercise } from "@/lib/lifts";
 import { AvatarChip } from "./avatar-chip";
 import { cn } from "@/lib/utils";
 
-export function useLeaderboard(exercise: Exercise | "total", crew?: string | null, since?: string | null) {
+export function useLeaderboard(
+  exercise: Exercise | "total",
+  crew?: string | null,
+  since?: string | null,
+  userIds?: string[],
+  weightClass?: string | null,
+) {
+  const scoped = userIds !== undefined || Boolean(weightClass);
   return useQuery({
-    queryKey: ["leaderboard", exercise, crew ?? null, since ?? null],
+    queryKey: ["leaderboard", exercise, crew ?? null, since ?? null, userIds ?? null, weightClass ?? null],
     queryFn: async () => {
       const exercises: Exercise[] = exercise === "total" ? ["bench", "squat", "deadlift", "ohp", "pullup"] : [exercise];
       const results = await Promise.all(exercises.map(async (_exercise) => {
+        if (scoped) {
+          const { data, error } = await (supabase as any).rpc("leaderboard_scoped", {
+            _exercise,
+            _crew: crew ?? null,
+            _since: since ?? null,
+            _user_ids: userIds ?? null,
+            _weight_class: weightClass ?? null,
+          });
+          if (error) throw error;
+          return data ?? [];
+        }
         const args: { _exercise: Exercise; _crew?: string; _since?: string } = { _exercise };
         if (crew) args._crew = crew;
         if (since) args._since = since;
