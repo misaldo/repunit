@@ -63,8 +63,8 @@ function NotificationsPage() {
       }
     }
     const href = typeof item.href === "string" && item.href.startsWith("/") ? item.href : "/notifications";
-    if (href.startsWith("/u/")) window.location.assign(href);
-    else if (href.startsWith("/battles/")) window.location.assign(href);
+    if (href.startsWith("/u/") || href.startsWith("/battles/") || href.startsWith("/records/")) window.location.assign(href);
+    else if (href === "/feed") void navigate({ to: "/feed" });
     else if (href === "/challenges") void navigate({ to: "/challenges" });
     else if (href === "/leaderboards") void navigate({ to: "/leaderboards" });
     else void navigate({ to: "/dashboard" });
