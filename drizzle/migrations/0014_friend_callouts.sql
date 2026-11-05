@@ -58,7 +58,9 @@ security definer
 set search_path = public
 as $$
 begin
-  if new.weight_kg < 600 then
+  if new.status = 'VERIFIED'
+     and (tg_op = 'INSERT' or old.status is distinct from new.status)
+     and new.weight_kg < 600 then
     insert into public.lifter_challenges(
       challenger_id, challenged_id, exercise, target_weight_kg, source_lift_id, due_at
     )
@@ -79,7 +81,7 @@ $$;
 
 drop trigger if exists lifts_create_friend_callouts on public.lifts;
 create trigger lifts_create_friend_callouts
-after insert on public.lifts
+after insert or update of status on public.lifts
 for each row execute function public.create_friend_lift_callouts();
 
 -- When a verified lift beats the target, close the accepted challenge and record its winner.
