@@ -29,6 +29,7 @@ function ChallengesPage() {
     queryKey: ["lifter-challenges", user.id],
     queryFn: async () => {
       await (supabase as any).rpc("expire_lifter_challenges");
+      await (supabase as any).from("notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).eq("kind", "challenge").is("read_at", null);
       const { data, error } = await (supabase as any).from("lifter_challenges").select("*")
         .or(`challenger_id.eq.${user.id},challenged_id.eq.${user.id}`)
         .order("created_at", { ascending: false });
