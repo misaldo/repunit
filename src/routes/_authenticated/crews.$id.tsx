@@ -12,6 +12,7 @@ import { AvatarChip } from "@/components/avatar-chip";
 import { getLevel } from "@/lib/progression";
 import { Zap, Medal, Swords } from "lucide-react";
 import { CrewBattles } from "@/components/crew-battles";
+import { FunStatsCard } from "@/components/fun-stats";
 
 export const Route = createFileRoute("/_authenticated/crews/$id")({
   head: () => ({ meta: [{ property: "og:title", content: "Crew — REPUNIT" }, { property: "og:description", content: "Crew leaderboard." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Crew — REPUNIT" }, { name: "description", content: "Crew leaderboard." }] }),
@@ -51,10 +52,10 @@ function Crew() {
       const safeIds = memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"];
       const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([
         (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),
-        (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", safeIds).eq("status", "VERIFIED"),
+        (supabase as any).from("lifts").select("weight_kg,reps,lifted_on").in("user_id", safeIds).eq("status", "VERIFIED"),
         (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
       ]);
-      return { c, code, members, badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), battleWins: battleWins?.length ?? 0 };
+      const monthKey = new Date().toISOString().slice(0, 7);\n      const monthTonnage = (lifts ?? []).filter((lift: any) => String(lift.lifted_on ?? "").startsWith(monthKey)).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0);\n      return { c, code, members, badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), monthTonnage, battleWins: battleWins?.length ?? 0 };
     },
   });
   const { data: rows = [], isLoading: ranksLoading, isError: ranksError } = useLeaderboard(ex, id);
@@ -130,7 +131,7 @@ function Crew() {
         <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Swords className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Battle wins</span></div><p className="font-stat mt-1 text-2xl">{data.battleWins}</p><p className="text-[10px] text-muted-foreground">Completed weekly battles</p></div>
         <div className="rounded-xl border border-border bg-card p-3"><div className="flex items-center gap-1.5 text-primary"><Medal className="h-4 w-4"/><span className="text-[9px] font-black uppercase tracking-widest">Crew badges</span></div><p className="font-stat mt-1 text-2xl">{data.badges.length}</p><p className="text-[10px] text-muted-foreground">Achievements earned</p></div>
       </div>
-      {data.badges.length > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4"><p className="eyebrow">CREW COLLECTION</p><h2 className="font-stat mt-1 text-2xl uppercase">Badges</h2><div className="mt-3 flex flex-wrap gap-2">{data.badges.map((badge:any)=><span key={badge.id} className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-primary">{badge.achievement_key.startsWith("crew_battle_winner:")?"⚔️ Battle winner":badge.achievement_key.replace(/_/g," ")}</span>)}</div></section>}
+      <FunStatsCard kg={data.monthTonnage} headline="THIS MONTH · CREW POWER" prefix={`${data.c.name} lifted`} />\n      {data.badges.length > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4"><p className="eyebrow">CREW COLLECTION</p><h2 className="font-stat mt-1 text-2xl uppercase">Badges</h2><div className="mt-3 flex flex-wrap gap-2">{data.badges.map((badge:any)=><span key={badge.id} className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-primary">{badge.achievement_key.startsWith("crew_battle_winner:")?"⚔️ Battle winner":badge.achievement_key.replace(/_/g," ")}</span>)}</div></section>}
       {myAdminCrews.length > 0 && <section className="mt-5 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4"><div className="flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/><h2 className="font-bold">Challenge this crew</h2></div><p className="mt-1 text-xs text-muted-foreground">Send a seven-day battle from one of your crews.</p><div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]"><select value={challengeCrew} onChange={e=>setChallengeCrew(e.target.value)} className="h-10 min-w-0 rounded-lg border border-border bg-background px-3 text-sm"><option value="">Choose your crew</option>{myAdminCrews.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select><select value={challengeCategory} onChange={e=>setChallengeCategory(e.target.value as any)} className="h-10 rounded-lg border border-border bg-background px-3 text-sm"><option value="bench">Bench</option><option value="squat">Squat</option><option value="deadlift">Deadlift</option></select><Button variant="hero" disabled={!challengeCrew||challenging} onClick={sendCrewChallenge}>{challenging?"Sending…":"Challenge"}</Button></div></section>}
       {!isMember && data.c.is_public && <Button className="mt-4" variant="hero" disabled={saving} onClick={joinPublicCrew}><Users className="mr-1 h-4 w-4"/>{saving ? "Joining…" : "Join this crew"}</Button>}
       {isAdmin && <Button className="mt-4" size="sm" variant="line" disabled={saving} onClick={toggleVisibility}>{data.c.is_public ? "Make crew private" : "Make crew public"}</Button>}
