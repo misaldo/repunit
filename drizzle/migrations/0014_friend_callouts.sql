@@ -56,7 +56,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if new.weight_kg < 600 then
     insert into public.lifter_challenges(
@@ -75,7 +75,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists lifts_create_friend_callouts on public.lifts;
 create trigger lifts_create_friend_callouts
