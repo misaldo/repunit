@@ -154,7 +154,8 @@ function Profile() {
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts, posts } = data;
   const isOwnProfile = user?.id === p.id;
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthlyVolume = lifts.filter((lift: any) => lift.status === "VERIFIED" && String(lift.lifted_on ?? "").startsWith(currentMonth)).reduce((sum: number, lift: any) => sum + Number(lift.weight_kg) * Number(lift.reps ?? 1), 0);
 
   return (
