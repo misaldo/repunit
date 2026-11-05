@@ -3,3 +3,7 @@ project_id = "sfumcokjwvhxwuanlofw"
 # Stripe verifies its webhook signature and validates user tokens inside the function.
 [functions.stripe]
 verify_jwt = false
+
+# Notifications are invoked by a secured Supabase Database Webhook.
+[functions.send-push]
+verify_jwt = false
