@@ -71,7 +71,7 @@ for each row execute function public.award_verified_pr_xp();
 
 -- Award every participant 20 XP once when a crew battle is completed.
 create or replace function public.award_crew_battle_xp()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public as $
 begin
   if new.status <> 'completed' or old.status = 'completed' then return new; end if;
 
@@ -85,7 +85,7 @@ begin
 
   return new;
 end;
-$$;
+$;
 
 drop trigger if exists crew_battles_award_xp on public.crew_battles;
 create trigger crew_battles_award_xp
@@ -94,3 +94,62 @@ for each row execute function public.award_crew_battle_xp();
 
 commit;
 notify pgrst, 'reload schema';
+
+
+-- Reward post and lift owners for each unique like, without allowing unlike/re-like XP farming.
+create table if not exists public.user_xp_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  event_type text not null,
+  source_id uuid not null,
+  xp integer not null check (xp > 0),
+  created_at timestamptz not null default now(),
+  unique(user_id, event_type, source_id)
+);
+alter table public.user_xp_events enable row level security;
+revoke all on public.user_xp_events from anon, authenticated;
+
+create or replace function public.award_like_xp()
+returns trigger language plpgsql security definer set search_path = public as $
+declare
+  recipient uuid;
+  source uuid;
+  event_kind text;
+begin
+  if tg_table_name = 'likes' then
+    select user_id into recipient from public.posts where id = new.post_id;
+    source := new.post_id;
+    event_kind := 'post_like';
+  elsif tg_table_name = 'lift_likes' then
+    select user_id into recipient from public.lifts where id = new.lift_id;
+    source := new.lift_id;
+    event_kind := 'lift_like';
+  else
+    return new;
+  end if;
+
+  if recipient is null or recipient = new.user_id then return new; end if;
+
+  insert into public.user_xp_events(user_id, event_type, source_id, xp)
+  values(recipient, event_kind, source, 2)
+  on conflict(user_id, event_type, source_id) do nothing;
+
+  if found then
+    insert into public.user_progress(user_id, xp, current_streak, longest_streak, last_activity_on)
+    values(recipient, 2, 0, 0, null)
+    on conflict(user_id) do update
+      set xp = public.user_progress.xp + 2,
+          updated_at = now();
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists likes_award_xp on public.likes;
+create trigger likes_award_xp after insert on public.likes
+for each row execute function public.award_like_xp();
+
+drop trigger if exists lift_likes_award_xp on public.lift_likes;
+create trigger lift_likes_award_xp after insert on public.lift_likes
+for each row execute function public.award_like_xp();
+
