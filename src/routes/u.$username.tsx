@@ -159,7 +159,7 @@ function Profile() {
 
   return (
     <PageShell>
-      <section className={`profile-theme profile-theme-${p.profile_theme ?? "default"} rounded-2xl border border-border bg-card p-5 sm:p-7`}>
+      <section className={`profile-theme profile-theme-${isProProfile ? (p.profile_theme ?? "default") : "default"} rounded-2xl border border-border bg-card p-5 sm:p-7`}>
         <div className="flex flex-wrap items-center gap-4">
           <AvatarChip name={p.username} url={p.avatar_url} className="h-20 w-20 text-xl" />
           <div className="min-w-0 flex-1">
