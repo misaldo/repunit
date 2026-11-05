@@ -288,25 +288,26 @@ create or replace function public.notify_lifter_challenge()
 returns trigger language plpgsql security definer set search_path = public as $
 declare
   actor_name text;
-  source_lift record;
+  source_exercise text;
+  source_weight numeric;
   message text;
 begin
   select coalesce(display_name, username) into actor_name
   from public.profiles where id = new.challenger_id;
 
   if new.source_lift_id is not null then
-    select exercise, weight_kg into source_lift
+    select exercise::text, weight_kg into source_exercise, source_weight
     from public.lifts where id = new.source_lift_id;
   end if;
 
-  if source_lift.exercise is not null then
+  if source_exercise is not null then
     message := coalesce(actor_name, 'A friend') || ' just ' ||
-      case source_lift.exercise::text
+      case source_exercise
         when 'bench' then 'benched'
         when 'squat' then 'squatted'
         when 'deadlift' then 'deadlifted'
         else 'lifted'
-      end || ' ' || source_lift.weight_kg::text || ' kg. Think you can do ' ||
+      end || ' ' || source_weight::text || ' kg. Think you can do ' ||
       new.target_weight_kg::text || ' kg?';
   else
     message := coalesce(actor_name, 'A friend') || ' challenged you to ' ||
