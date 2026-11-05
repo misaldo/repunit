@@ -144,8 +144,8 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
     const isPending=battle.status==="pending";
     const isEnded=past;
     const target=new Date(battle.ends_at).getTime();
-    return <article key={battle.id} role="link" tabIndex={0} onClick={()=>navigate({to:"/battles/$id",params:{id:battle.id}})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate({to:"/battles/$id",params:{id:battle.id}});}}} className={`relative cursor-pointer overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 active:scale-[.995] ${isEnded?"border-border bg-card/70":"border-primary/30 bg-card shadow-[0_0_35px_-18px_hsl(var(--primary)/.35)]"} p-4 md:p-5`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    return <article key={battle.id} role="link" tabIndex={0} onClick={()=>navigate({to:"/battles/$id",params:{id:battle.id}})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate({to:"/battles/$id",params:{id:battle.id}});}}} className={`battle-enter group relative cursor-pointer overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-[0_18px_55px_-24px_hsl(var(--primary)/.55)] active:scale-[.995] ${isEnded?"border-border bg-card/70":"border-primary/30 bg-card shadow-[0_0_35px_-18px_hsl(var(--primary)/.35)]"} p-4 md:p-5`}>
+      <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl transition-all duration-700 group-hover:bg-primary/25 group-hover:scale-125"/>\n      <div className="relative flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-primary"><Swords className="h-3.5 w-3.5"/>{battle.is_weekly?"Weekly battle":"Crew challenge"}<span className="text-muted-foreground">· {categoryName[battle.category]}</span></div>
         <span className="rounded-full border border-border px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-muted-foreground">{isPending?"Awaiting response":isEnded?"Finished":"Live"}</span>
       </div>
@@ -155,10 +155,10 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
           <p className="font-stat mt-1 text-3xl md:text-4xl">{side.total.toLocaleString("en-US")}<span className="ml-1 text-xs text-muted-foreground">kg</span></p>
           {side.won&&<span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black uppercase text-primary"><Trophy className="h-3 w-3"/>Winner</span>}
         </div>)}
-        <div className="col-start-2 row-start-1 text-center"><span className="font-stat text-xl text-muted-foreground">VS</span></div>
+        <div className="col-start-2 row-start-1 text-center"><span className="battle-vs inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-background font-stat text-sm text-primary shadow-[0_0_22px_-8px_hsl(var(--primary)/.8)]">VS</span></div>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-2">
-        <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-700" style={{width:`${leftTotal/max*100}%`}}/></div>
+        <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-gradient-red transition-all duration-1000 ease-out" style={{width:`${leftTotal/max*100}%`}}/></div>
         <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-700" style={{width:`${rightTotal/max*100}%`}}/></div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
@@ -170,12 +170,12 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         {!isEnded&&!isPending&&<span className="inline-flex items-center gap-1.5 text-primary tabular-nums"><Clock3 className="h-3 w-3"/>{timeLeft(target,now)}</span>}
         {isEnded&&(leftWon||rightWon)&&<span className="inline-flex items-center gap-1 text-primary"><ShieldCheck className="h-3.5 w-3.5"/>Crew badge earned</span>}
       </div>
-      {isEnded&&(leftWon||rightWon)&&<div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-xs font-black uppercase tracking-widest text-primary animate-pulse"><Trophy className="h-4 w-4"/> {leftWon?left?.name:right?.name} wins the battle!</div>}
+      {isEnded&&(leftWon||rightWon)&&<div className="battle-winner mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-xs font-black uppercase tracking-widest text-primary"><Trophy className="h-4 w-4"/> {leftWon?left?.name:right?.name} wins the battle!</div>}
     </article>;
   };
 
   return <section className="mt-10">
-    <div className="flex items-end justify-between gap-3"><div><p className="eyebrow text-primary">THE WEEKLY SHOWDOWN</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew battles</h2><p className="mt-1 text-xs text-muted-foreground">Verified lifts only · One category every week</p></div><Swords className="mb-1 h-6 w-6 text-primary"/></div>
+    <div className="flex items-end justify-between gap-3"><div><p className="eyebrow text-primary">THE WEEKLY SHOWDOWN</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew battles</h2><p className="mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">Build your rivalry. Stack verified kilos. Earn your place at the top.</p><p className="mt-1 text-xs text-muted-foreground">Verified lifts only · One category every week</p></div><Swords className="mb-1 h-6 w-6 text-primary"/></div>
     {isAdmin&&data?.adminCrews.length>0&&<div className="mt-4 rounded-2xl border border-border bg-card p-4">
       <p className="text-xs font-black uppercase tracking-widest">Challenge a crew</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
