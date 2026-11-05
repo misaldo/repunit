@@ -36,11 +36,8 @@ async function stripeRequest(path: string, params: URLSearchParams) {
 }
 
 function safeAppUrl(request: Request) {
-  const configured = Deno.env.get("APP_URL");
-  if (configured) return configured.replace(/\/+$/, "");
-  const origin = request.headers.get("origin");
-  if (origin && /^https?:\/\//i.test(origin)) return origin.replace(/\/+$/, "");
-  throw new Error("Set APP_URL in Supabase Edge Function secrets.");
+  const configured = required("APP_URL");
+  return configured.replace(/\/+$/, "");
 }
 
 async function getAuthenticatedUser(request: Request) {
