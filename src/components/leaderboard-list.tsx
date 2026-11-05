@@ -12,7 +12,7 @@ export function useLeaderboard(
   exercise: Exercise | "total",
   crew?: string | null,
   since?: string | null,
-  userIds?: string[],
+  userIds?: string[] | null,
   weightClass?: string | null,
 ) {
   const scoped = userIds !== undefined || Boolean(weightClass);
@@ -48,7 +48,7 @@ export function useLeaderboard(
           else totals.set(row.user_id, { ...row, total: Number(row.weight_kg), lifts_count: 1 });
         }
         rows = [...totals.values()].sort((a, b) => Number(b.total) - Number(a.total))
-          .map((row) => ({ ...row, weight_kg: row.total, reps: 1 }));
+          .map((row, index) => ({ ...row, weight_kg: row.total, reps: 1, rank_position: index + 1 }));
       }
       if (!rows.length) return rows.map((row) => ({ ...row, has_video: false }));
       const { data: evidence, error: evidenceError } = await supabase.from("lifts").select("id, video_path").in("id", rows.map((row) => row.lift_id));
@@ -59,7 +59,7 @@ export function useLeaderboard(
   });
 }
 
-type Row = NonNullable<ReturnType<typeof useLeaderboard>["data"]>[number];
+type Row = NonNullable<ReturnType<typeof useLeaderboard>["data"]>[number] & { rank_position?: number };
 const PODIUM = ["text-gold", "text-silver", "text-bronze"];
 
 export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: string }) {
@@ -98,9 +98,10 @@ export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; star
   return <>
   <ol className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
     {rows.map((r, i) => {
-      const rank = start + i + 1;
+      const rank = r.rank_position ?? start + i + 1;
       const prev = i > 0 ? rows[i - 1] : null;
-      const gap = prev ? Number(prev.weight_kg) - Number(r.weight_kg) : null;
+      const adjacent = !prev || r.rank_position == null || prev.rank_position == null || r.rank_position === prev.rank_position + 1;
+      const gap = prev && adjacent ? Number(prev.weight_kg) - Number(r.weight_kg) : null;
       return <li key={r.user_id} role="link" tabIndex={0} onClick={()=>navigate({to:"/u/$username",params:{username:r.username}})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate({to:"/u/$username",params:{username:r.username}});}}} className={cn("group flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-elevated active:bg-primary/10", currentUserId === r.user_id && "bg-primary/[0.08] ring-1 ring-inset ring-primary/40") }>
         <span className="font-stat w-8 shrink-0 text-2xl text-muted-foreground">{rank}</span>
         <Link to="/u/$username" params={{username:r.username}} onClick={e=>e.stopPropagation()} aria-label={`Open @${r.username} profile`} className="rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><AvatarChip name={r.username} url={r.avatar_url} className="h-9 w-9" /></Link>
@@ -110,7 +111,7 @@ export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; star
         </div>
         <div className="text-right">
           <p className="font-stat text-3xl">{Number(r.weight_kg)}<span className="text-sm text-muted-foreground">kg</span></p>
-          <p className="text-[10px] text-muted-foreground">{r.reps > 1 ? `× ${r.reps} · ` : ""}{gap !== null ? `−${gap.toFixed(1)} kg` : "leader"}</p>
+          <p className="text-[10px] text-muted-foreground">{r.reps > 1 ? `× ${r.reps} · ` : ""}{gap !== null ? `−${gap.toFixed(1)} kg` : rank === 1 ? "leader" : `rank #${rank}`}</p>
           {r.has_video && rank <= 10
             ? <button type="button" onClick={(event) => { event.stopPropagation(); setActiveLiftId(r.lift_id); }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline"><Camera className="h-3 w-3"/> Watch video</button>
             : <Link to="/records/$id" params={{ id: r.lift_id }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}>View result</Link>}
