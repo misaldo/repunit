@@ -56,8 +56,8 @@ begin
   if exists(select 1 from public.crew_battles where is_weekly = true and week_start = monday) then
     return;
   end if;
-  battle_category := case (extract(week from monday)::integer - 1) % 3
-    when 0 then 'bench' when 1 then 'squat' else 'deadlift' end;
+  battle_category := case (extract(week from monday)::integer - 1) % 4
+    when 0 then 'bench' when 1 then 'squat' when 2 then 'deadlift' else 'volume' end;
   with eligible as (
     select c.id, row_number() over(order by random()) as rn
     from public.crews c
@@ -90,7 +90,7 @@ declare battle_id uuid;
 begin
   if auth.uid() is null then raise exception 'Sign in to challenge a crew'; end if;
   if _challenger = _opponent then raise exception 'Choose a different crew'; end if;
-  if _category not in ('bench','squat','deadlift') then raise exception 'Invalid battle category'; end if;
+  if _category not in ('bench','squat','deadlift','volume') then raise exception 'Invalid battle category'; end if;
   if not exists(select 1 from public.crew_members where crew_id=_challenger and user_id=auth.uid() and role='admin') then
     raise exception 'Only your crew admins can send challenges';
   end if;
