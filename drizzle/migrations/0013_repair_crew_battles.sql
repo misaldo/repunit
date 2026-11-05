@@ -22,6 +22,10 @@ alter table public.crew_battles
   add column if not exists is_weekly boolean not null default false,
   add column if not exists week_start date;
 
+alter table public.crew_battles drop constraint if exists crew_battles_category_check;
+alter table public.crew_battles add constraint crew_battles_category_check
+  check (category in ('bench','squat','deadlift','volume'));
+
 alter table public.crew_battles drop constraint if exists crew_battles_status_check;
 alter table public.crew_battles add constraint crew_battles_status_check
   check (status in ('pending','scheduled','active','completed','cancelled'));
