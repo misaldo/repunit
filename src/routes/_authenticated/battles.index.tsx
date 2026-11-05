@@ -10,8 +10,14 @@ export const Route=createFileRoute("/_authenticated/battles/")({head:()=>({meta:
 function Battles(){
  const {user}=Route.useRouteContext();
  const {data:crews=[],isLoading,isError,refetch}=useQuery({queryKey:["battle-crews",user.id],queryFn:async()=>{
-  const {data,error}=await (supabase as any).from("crew_members").select("crew_id,role,crews(id,name)").eq("user_id",user.id);
-  if(error)throw error;return data??[];
+  const {data:members,error}=await (supabase as any).from("crew_members").select("crew_id,role").eq("user_id",user.id);
+  if(error)throw error;
+  const ids=[...new Set((members??[]).map((m:any)=>m.crew_id))];
+  if(!ids.length)return [];
+  const {data:rows,error:crewError}=await (supabase as any).from("crews").select("id,name").in("id",ids);
+  if(crewError)throw crewError;
+  const byId=new Map((rows??[]).map((crew:any)=>[crew.id,crew]));
+  return (members??[]).map((m:any)=>({...m,crews:byId.get(m.crew_id)??null}));
  }});
  return <PageShell><div className="battle-hero relative isolate overflow-hidden rounded-3xl border border-primary/25 bg-card px-5 py-8 md:px-9 md:py-10"><div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl"/><div className="relative"><p className="eyebrow text-primary">REPUNIT COMPETITION / SEASON 01</p><h1 className="font-stat mt-3 text-6xl uppercase tracking-tight md:text-8xl">Battles<span className="text-primary">.</span></h1><p className="mt-3 max-w-xl text-sm text-muted-foreground">Weekly crew matchups. Verified lifts only. Every kilo counts. Build your rivalry and own the scoreboard.</p></div><div className="relative mt-7 flex flex-wrap gap-3"><Button asChild variant="hero"><Link to="/crews"><Swords className="mr-2 h-4 w-4"/>Find a crew</Link></Button><Button asChild variant="line"><Link to="/leaderboards"><Trophy className="mr-2 h-4 w-4"/>View ranks</Link></Button></div></div>
 
