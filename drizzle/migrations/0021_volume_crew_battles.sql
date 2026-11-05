@@ -160,6 +160,11 @@ begin
     insert into public.crew_achievements(crew_id, achievement_key)
     values(winner, 'crew_battle_winner:' || _battle::text)
     on conflict(crew_id, achievement_key) do nothing;
+    if b.is_weekly then
+      insert into public.crew_achievements(crew_id, achievement_key)
+      values(winner, 'weekly_winners')
+      on conflict(crew_id, achievement_key) do nothing;
+    end if;
   end if;
 end;
 $$;
@@ -271,6 +276,11 @@ begin
       insert into public.crew_achievements(crew_id, achievement_key)
       values(winner, 'crew_battle_winner:' || b.id::text)
       on conflict(crew_id, achievement_key) do nothing;
+      if b.is_weekly then
+        insert into public.crew_achievements(crew_id, achievement_key)
+        values(winner, 'weekly_winners')
+        on conflict(crew_id, achievement_key) do nothing;
+      end if;
     end if;
     finalized_count := finalized_count + 1;
   end loop;
