@@ -51,7 +51,7 @@ The original schema and backend setup are migrations `0000` through `0011`. If t
 6. `drizzle/migrations/0017_leaderboard_audience_and_weight_classes.sql`
 7. `drizzle/migrations/0018_pro_subscriptions.sql`
 
-Run each migration once, wait for Supabase to report success, then continue. If you already applied migrations `0013` or `0015` before the latest fixes, re-run those two files after pulling the latest code; both are written to be safely repeatable. Do not run these against a different Supabase project from the one configured in `.env`.
+Run each migration once, wait for Supabase to report success, then continue. If you already applied migrations `0013`, `0015` or `0016` before the latest fixes, re-run those files after pulling the latest code; they are written to be safely repeatable. Migration `0016` also creates the lift-video likes/comments tables used by the video player. Do not run these against a different Supabase project from the one configured in `.env`.
 
 ## Web Push setup (optional)
 
