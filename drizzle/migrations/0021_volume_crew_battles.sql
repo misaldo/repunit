@@ -70,7 +70,7 @@ $$;
 grant execute on function public.challenge_crew(uuid,uuid,text) to authenticated;
 
 create or replace function public.respond_crew_battle(_battle uuid, _accept boolean)
-returns void language plpgsql security definer set search_path = public as $
+returns void language plpgsql security definer set search_path = public as $$
 declare
   opponent uuid;
   challenger uuid;
@@ -99,7 +99,7 @@ begin
     update public.crew_battles set status = 'cancelled' where id = _battle;
   end if;
 end;
-$;
+$$;
 grant execute on function public.respond_crew_battle(uuid,boolean) to authenticated;
 
 create or replace function public.complete_crew_battle(_battle uuid)
