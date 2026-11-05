@@ -58,6 +58,17 @@ function Settings() {
         .catch(() => setPushSubscription(false));
     }
   }, []);
+  const subscription = useQuery({
+    queryKey: ["subscription", user.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("user_subscriptions")
+        .select("status").eq("user_id", user.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const isPro = ["active", "trialing"].includes(subscription.data?.status ?? "");
+
   const preferences = useQuery({
     queryKey: ["notification-preferences", user.id],
     queryFn: async () => {
@@ -122,9 +133,11 @@ function Settings() {
     const bodyweightRaw = String(f.get("bodyweight_kg") ?? "").trim();
     const bodyweight = bodyweightRaw ? Number(bodyweightRaw) : null;
     if (bodyweight !== null && (!Number.isFinite(bodyweight) || bodyweight < 25 || bodyweight > 350)) { toast.error("Bodyweight must be between 25 and 350 kg."); return; }
-    const { error } = await (supabase as any).from("profiles").update({
+    const profileUpdate: Record<string, unknown> = {
       username, display_name: String(f.get("display_name")).slice(0, 40) || null, bio: String(f.get("bio")).slice(0, 280) || null, country_code: String(f.get("country_code") || "") || null, bodyweight_kg: bodyweight,
-    }).eq("id", user.id);
+    };
+    if (isPro) profileUpdate.profile_theme = String(f.get("profile_theme") || "default");
+    const { error } = await (supabase as any).from("profiles").update(profileUpdate).eq("id", user.id);
     if (error) { toast.error(error.code === "23505" ? "Username taken" : error.message); return; }
     toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["profile"] });
@@ -139,6 +152,13 @@ function Settings() {
         <div className="space-y-1.5"><Label htmlFor="display_name">Display name</Label><Input id="display_name" name="display_name" defaultValue={p.display_name ?? ""} maxLength={40} /></div>
         <div className="space-y-1.5"><Label htmlFor="bio">Bio</Label><Textarea id="bio" name="bio" defaultValue={p.bio ?? ""} maxLength={280} /></div>
         <div className="space-y-1.5"><Label htmlFor="bodyweight_kg">Bodyweight (kg)</Label><Input id="bodyweight_kg" name="bodyweight_kg" type="number" step="0.1" min="25" max="350" inputMode="decimal" defaultValue={(p as any).bodyweight_kg ?? ""} placeholder="e.g. 82.5" /><p className="text-xs text-muted-foreground">Used for bodyweight-class leaderboards. Leave blank if you prefer not to share it.</p></div>
+        <div className="space-y-1.5">
+          <Label htmlFor="profile_theme">Profile theme · PRO</Label>
+          <select id="profile_theme" name="profile_theme" defaultValue={(p as any).profile_theme ?? "default"} disabled={!isPro} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground disabled:opacity-60">
+            <option value="default">REPUNIT Red</option><option value="ember">Ember</option><option value="steel">Steel</option><option value="violet">Violet</option>
+          </select>
+          {!isPro && <p className="text-xs text-muted-foreground">Custom profile themes are a PRO feature. <a href="/pricing" className="font-semibold text-primary hover:underline">Upgrade to PRO</a>.</p>}
+        </div>
         <div className="space-y-1.5"><Label htmlFor="country_code">Country</Label><select id="country_code" name="country_code" defaultValue={(p as any).country_code ?? ""} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="">Select your country</option><option value="CZ">Czechia</option><option value="SK">Slovakia</option><option value="UA">Ukraine</option><option value="PL">Poland</option><option value="DE">Germany</option><option value="AT">Austria</option><option value="GB">United Kingdom</option><option value="US">United States</option><option value="OT">Other</option></select><p className="text-xs text-muted-foreground">Used to show crew rankings in your country.</p></div>
         <Button variant="hero">Save profile</Button>
       </form>
