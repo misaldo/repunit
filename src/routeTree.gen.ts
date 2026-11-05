@@ -449,7 +449,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBattlesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/records/new':
+    '/_authenticated/records/new': {
       id: '/_authenticated/records/new'
       path: '/records/new'
       fullPath: '/records/new'
