@@ -27,7 +27,8 @@ export function ThroneBanner() {
       ]);
       if (profilesError) throw profilesError;
       if (liftError) throw liftError;
-      const profileMap = new Map((profiles ?? []).map((profile: any) => [profile.id, profile]));
+      const profileMap = new Map<string, any>();
+      for (const profile of profiles ?? []) profileMap.set(profile.id, profile);
       return {
         ...event,
         lifter: profileMap.get(event.lifter_id) ?? null,
