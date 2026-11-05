@@ -51,7 +51,9 @@ grant select on public.pro_badges to anon, authenticated;
 create or replace function public.repunit_guard_pro_profile_theme()
 returns trigger language plpgsql security definer set search_path = public as $
 begin
-  if new.profile_theme is distinct from old.profile_theme and auth.uid() is not null then
+  if auth.uid() is not null
+     and ((tg_op = 'INSERT' and new.profile_theme <> 'default')
+       or (tg_op = 'UPDATE' and new.profile_theme is distinct from old.profile_theme)) then
     if not exists (
       select 1 from public.user_subscriptions
       where user_id = auth.uid() and status in ('active','trialing')
@@ -64,7 +66,7 @@ end;
 $;
 drop trigger if exists profiles_guard_pro_theme on public.profiles;
 create trigger profiles_guard_pro_theme
-before update of profile_theme on public.profiles
+before insert or update of profile_theme on public.profiles
 for each row execute function public.repunit_guard_pro_profile_theme();
 
 commit;
