@@ -10,12 +10,14 @@
 - [x] Lifter progression badges and automatic Crew badges: Iron Squad, Weekly Winners and 100 Ton Club.
 - [x] Weekly crew battle categories: bench, squat, deadlift and total volume.
 - [x] Optional pg_cron scheduling for weekly matchups and automatic battle finalization, with on-visit fallback.
+- [x] Automatic Crew badges: Iron Squad, Weekly Winners and 100 Ton Club.
 - [x] Friend call-outs and in-app notification center with per-type preferences.
 - [x] Web Push subscription UI, service-worker handlers and a secured Edge Function sender.
 - [x] Global/Friends/My Crew lifter leaderboards, date periods and bodyweight classes.
 - [x] Top-ten video modal with playback, likes and comments.
 - [x] Persistent throne-takeover events and animated Feed/home banner.
 - [x] REPUNIT PRO pricing page, Stripe Checkout/Customer Portal Edge Function and signed webhook verification.
+- [x] PRO strength analytics, Big Three estimated-1RM score, six-month volume chart, profile themes, badge and unlimited workout-plan gating.
 - [x] Local setup, database, Edge Function and Vercel deployment documentation.
 - [x] GitHub Actions workflow for TypeScript, lint, tests, production build and Deno checks.
 
