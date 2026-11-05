@@ -14,11 +14,10 @@ export const Route = createFileRoute("/pricing")({
 });
 
 const benefits = [
-  "Advanced strength analytics and detailed progress charts",
-  "Strength score and personal performance insights",
-  "Unlimited workout plans and training history",
-  "Extra profile themes and personalization",
-  "Advanced crew analytics and competition history",
+  "Six-month training volume charts and verified lift analytics",
+  "REPUNIT Strength Score from your best estimated Big Three 1RMs",
+  "Unlimited workout plans (Free includes up to 3)",
+  "PRO-only profile themes: Ember, Steel and Violet",
   "Exclusive REPUNIT PRO profile badge",
 ];
 
@@ -113,7 +112,7 @@ function Pricing() {
           <h2 className="font-stat mt-2 text-4xl uppercase">Free</h2>
           <p className="font-stat mt-5 text-5xl">$0<span className="ml-2 text-sm font-sans text-muted-foreground">forever</span></p>
           <p className="mt-3 text-sm text-muted-foreground">Everything you need to join the REPUNIT community.</p>
-          <ul className="mt-6 space-y-3 text-sm">{["Public lifter profile", "Lift records and video evidence", "Create and join Crews", "Global strength leaderboards", "Follow friends and join challenges"].map((item)=><li key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary"/>{item}</li>)}</ul>
+          <ul className="mt-6 space-y-3 text-sm">{["Public lifter profile", "Lift records and video evidence", "Create and join Crews", "Global strength leaderboards", "Follow friends and join challenges", "Up to 3 saved workout plans"].map((item)=><li key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary"/>{item}</li>)}</ul>
           <Button asChild variant="line" className="mt-8 w-full"><a href={user ? "/dashboard" : "/auth"}>Continue with Free</a></Button>
         </article>
 
