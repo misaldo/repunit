@@ -69,6 +69,23 @@ create trigger lifts_award_verified_pr_xp
 after insert or update of status on public.lifts
 for each row execute function public.award_verified_pr_xp();
 
+-- Add a 10 XP bonus when a lifter extends an existing daily streak.
+create or replace function public.award_streak_xp()
+returns trigger language plpgsql security definer set search_path = public as $repunit$
+begin
+  if new.current_streak > old.current_streak and new.current_streak > 1 then
+    update public.user_progress
+      set xp = xp + 10, updated_at = now()
+      where user_id = new.user_id;
+  end if;
+  return new;
+end;
+$repunit$;
+drop trigger if exists progress_streak_award_xp on public.user_progress;
+create trigger progress_streak_award_xp
+after update of current_streak on public.user_progress
+for each row execute function public.award_streak_xp();
+
 -- Award every participant 20 XP once when a crew battle goes live.
 create or replace function public.award_crew_battle_xp()
 returns trigger language plpgsql security definer set search_path = public as $repunit$
