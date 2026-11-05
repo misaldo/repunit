@@ -38,7 +38,8 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
         ? await (supabase as any).from("profiles").select("id,username,display_name,avatar_url").in("id", commentUserIds)
         : { data: [], error: null };
       if (commentProfilesError) throw commentProfilesError;
-      const profileMap = new Map((commentProfiles ?? []).map((row: any) => [row.id, row]));
+      const profileMap = new Map<string, any>();
+      for (const row of commentProfiles ?? []) profileMap.set(row.id, row);
       let videoUrl: string | null = null;
       if (lift.video_path) {
         const { data: signed, error: signedError } = await supabase.storage.from("lift-videos").createSignedUrl(lift.video_path, 3600);
