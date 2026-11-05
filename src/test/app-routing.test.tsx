@@ -13,6 +13,11 @@ describe("App routing", () => {
     expect(matches.at(-1)?.routeId).toBe("/invite/$code");
     expect(matches.at(-1)?.params).toMatchObject({ code: "abc123" });
   });
+  it("matches the authenticated social feed route", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const matches = router.matchRoutes("/feed");
+    expect(matches.at(-1)?.routeId).toBe("/_authenticated/feed");
+  });
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
