@@ -138,18 +138,26 @@ begin
     or public.is_crew_member(b.opponent_crew_id,auth.uid())
   ) then raise exception 'Join one of the crews to finalize this battle'; end if;
   if b.status in ('completed','cancelled','pending') or now()<b.ends_at then return; end if;
-  select coalesce(sum(best_weight),0) into left_total from (
-    select max(l.weight_kg) as best_weight
+  select coalesce(sum(member_score),0) into left_total from (
+    select case when b.category='volume'
+      then sum(l.weight_kg * coalesce(l.reps,1))
+      else max(l.weight_kg) end as member_score
     from public.lifts l join public.crew_members cm on cm.user_id=l.user_id
-    where cm.crew_id=b.challenger_crew_id and l.exercise::text=b.category
-      and l.status='VERIFIED' and l.lifted_on>=b.starts_at::date and l.lifted_on<b.ends_at::date
+    where cm.crew_id=b.challenger_crew_id
+      and (b.category='volume' or l.exercise::text=b.category)
+      and l.status='VERIFIED'
+      and l.lifted_on>=b.starts_at::date and l.lifted_on<b.ends_at::date
     group by l.user_id
   ) scores;
-  select coalesce(sum(best_weight),0) into right_total from (
-    select max(l.weight_kg) as best_weight
+  select coalesce(sum(member_score),0) into right_total from (
+    select case when b.category='volume'
+      then sum(l.weight_kg * coalesce(l.reps,1))
+      else max(l.weight_kg) end as member_score
     from public.lifts l join public.crew_members cm on cm.user_id=l.user_id
-    where cm.crew_id=b.opponent_crew_id and l.exercise::text=b.category
-      and l.status='VERIFIED' and l.lifted_on>=b.starts_at::date and l.lifted_on<b.ends_at::date
+    where cm.crew_id=b.opponent_crew_id
+      and (b.category='volume' or l.exercise::text=b.category)
+      and l.status='VERIFIED'
+      and l.lifted_on>=b.starts_at::date and l.lifted_on<b.ends_at::date
     group by l.user_id
   ) scores;
   if left_total>right_total then winner:=b.challenger_crew_id;
