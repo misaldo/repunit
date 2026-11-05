@@ -130,12 +130,17 @@ create policy "users comment on lifts as themselves" on public.lift_comments for
 create table if not exists public.user_xp_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
+  actor_id uuid references public.profiles(id) on delete cascade,
   event_type text not null,
   source_id uuid not null,
   xp integer not null check (xp > 0),
-  created_at timestamptz not null default now(),
-  unique(user_id, event_type, source_id)
+  created_at timestamptz not null default now()
 );
+alter table public.user_xp_events add column if not exists actor_id uuid references public.profiles(id) on delete cascade;
+alter table public.user_xp_events drop constraint if exists user_xp_events_user_id_event_type_source_id_key;
+alter table public.user_xp_events drop constraint if exists user_xp_events_user_event_source_actor_key;
+alter table public.user_xp_events add constraint user_xp_events_user_event_source_actor_key
+  unique(user_id, event_type, source_id, actor_id);
 alter table public.user_xp_events enable row level security;
 revoke all on public.user_xp_events from anon, authenticated;
 
@@ -160,8 +165,8 @@ begin
 
   if recipient is null or recipient = new.user_id then return new; end if;
 
-  insert into public.user_xp_events(user_id, event_type, source_id, xp)
-  values(recipient, event_kind, source, 2)
+  insert into public.user_xp_events(user_id, actor_id, event_type, source_id, xp)
+  values(recipient, new.user_id, event_kind, source, 2)
   on conflict(user_id, event_type, source_id) do nothing;
 
   if found then
