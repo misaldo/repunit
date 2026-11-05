@@ -69,5 +69,28 @@ create trigger profiles_guard_pro_theme
 before insert or update of profile_theme on public.profiles
 for each row execute function public.repunit_guard_pro_profile_theme();
 
+-- Enforce the Free workout-plan limit in the database, not only in the UI.
+create or replace function public.repunit_enforce_workout_plan_limit()
+returns trigger language plpgsql security definer set search_path = public as $
+declare plan_count integer;
+begin
+  if auth.uid() is not null and new.user_id = auth.uid()
+     and not exists (
+       select 1 from public.user_subscriptions
+       where user_id = auth.uid() and status in ('active','trialing')
+     ) then
+    select count(*) into plan_count from public.workout_plans where user_id = auth.uid();
+    if plan_count >= 3 then
+      raise exception 'Free accounts can save up to 3 workout plans. Upgrade to REPUNIT PRO for unlimited plans.';
+    end if;
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists workout_plans_enforce_free_limit on public.workout_plans;
+create trigger workout_plans_enforce_free_limit
+before insert on public.workout_plans
+for each row execute function public.repunit_enforce_workout_plan_limit();
+
 commit;
 notify pgrst, 'reload schema';
