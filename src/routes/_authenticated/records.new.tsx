@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EXERCISES, validateVideo, type Exercise } from "@/lib/lifts";
+import { getFunComparison } from "@/components/fun-stats";
 
 export const Route = createFileRoute("/_authenticated/records/new")({
   head: () => ({ meta: [{ property: "og:title", content: "Submit a lift — REPUNIT" }, { property: "og:description", content: "Log a new lift with video evidence." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Submit a lift — REPUNIT" }, { name: "description", content: "Log a new lift with video evidence." }] }),
@@ -68,7 +69,8 @@ function NewRecord() {
         lifted_on: String(f.get("date")), description: String(f.get("description") || "").slice(0, 500) || null, video_path,
       }).select("id").single();
       if (error) throw error;
-      toast.success("Lift submitted");
+      const comparison = getFunComparison(weight * reps, new Date().getDate());
+      toast.success("Lift submitted", { description: comparison ? `That’s about the weight of ${comparison.label}. Keep stacking reps.` : "Another session logged. Keep stacking reps." });
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
       if (video_path) {
