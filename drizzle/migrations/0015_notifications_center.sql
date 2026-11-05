@@ -41,7 +41,7 @@ create policy "users manage own push subscriptions" on public.push_subscriptions
 using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 create or replace function public.repunit_notification_enabled(_user uuid, _kind text)
-returns boolean language plpgsql volatile security definer set search_path = public as $
+returns boolean language plpgsql volatile security definer set search_path = public as $$
 declare enabled_value boolean;
 begin
   if _kind = 'system' then return true; end if;
@@ -195,6 +195,38 @@ drop trigger if exists repunit_notify_battle_status on public.crew_battles;
 create trigger repunit_notify_battle_status after insert or update of status on public.crew_battles
 for each row execute function public.repunit_notify_battle_status();
 
+-- Notify post owners when another lifter likes or comments on their posts.
+create or replace function public.repunit_notify_post_engagement()
+returns trigger language plpgsql security definer set search_path = public as $
+declare
+  post_owner uuid;
+  actor_name text;
+  event_kind text;
+  event_title text;
+  event_body text;
+begin
+  select user_id into post_owner from public.posts where id = new.post_id;
+  select coalesce(display_name, username, 'A lifter') into actor_name from public.profiles where id = new.user_id;
+  if tg_table_name = 'likes' then
+    event_kind := 'like';
+    event_title := 'Someone liked your post';
+    event_body := coalesce(actor_name, 'A lifter') || ' liked your post.';
+  else
+    event_kind := 'comment';
+    event_title := 'New comment';
+    event_body := coalesce(actor_name, 'A lifter') || ' commented: ' || left(new.content, 400);
+  end if;
+  perform public.repunit_create_notification(post_owner, new.user_id, event_kind, event_title, event_body, '/feed');
+  return new;
+end;
+$;
+drop trigger if exists repunit_notify_post_like on public.likes;
+create trigger repunit_notify_post_like after insert on public.likes
+for each row execute function public.repunit_notify_post_engagement();
+drop trigger if exists repunit_notify_post_comment on public.comments;
+create trigger repunit_notify_post_comment after insert on public.comments
+for each row execute function public.repunit_notify_post_engagement();
+
 -- Daily streak-loss check. pg_cron schedules this when the extension is available.
 create or replace function public.repunit_check_streak_losses()
 returns integer language plpgsql security definer set search_path = public as $$
@@ -252,7 +284,7 @@ end $$;
 
 -- Keep challenge notifications under the same per-type preference switch.
 create or replace function public.notify_lifter_challenge()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $$
 declare actor_name text;
 begin
   select coalesce(display_name, username) into actor_name
@@ -264,7 +296,7 @@ begin
   );
   return new;
 end;
-$;
+$$;
 
 -- Internal security-definer helpers must only be callable by trusted trigger functions.
 revoke all on function public.repunit_notification_enabled(uuid,text) from public, anon, authenticated;
