@@ -95,6 +95,30 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
 7. Run a test checkout and verify that the webhook writes the matching row to `public.user_subscriptions`. The app grants PRO status only for `active` or `trialing` subscriptions.
 
+## Web Push notifications
+
+1. Generate a VAPID key pair (for example with `npx web-push generate-vapid-keys`). Keep the private key secret.
+2. Add `VITE_VAPID_PUBLIC_KEY` to the web app's Vercel environment variables and rebuild.
+3. Set the following Supabase Edge Function secrets:
+
+   ```bash
+   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:admin@your-domain.example PUSH_WEBHOOK_SECRET=...
+   ```
+
+4. Deploy the push sender:
+
+   ```bash
+   supabase functions deploy send-push
+   ```
+
+5. In Supabase Dashboard, create a Database Webhook for `public.notifications`, event `INSERT`, method `POST`, URL:
+
+   `https://kqezgcwfqfntazucbbzt.supabase.co/functions/v1/send-push`
+
+   Add the header `x-repunit-webhook-secret` with the exact `PUSH_WEBHOOK_SECRET` value. The webhook body must include the inserted row in `record`. The function sends only to registered subscriptions and removes endpoints that return 404/410.
+
+6. Open REPUNIT in a supported browser, go to Settings, and choose **Enable push**. Test with a real notification after the database webhook is enabled.
+
 ## Deploy the web app to Vercel
 
 1. Push the repository to GitHub and import `misaldo/repunit` into Vercel.
