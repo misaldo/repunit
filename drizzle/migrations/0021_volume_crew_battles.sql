@@ -73,7 +73,7 @@ begin
   end loop;
   return battle_id;
 end;
-$;
+$$;
 grant execute on function public.challenge_crew(uuid,uuid,text) to authenticated;
 
 create or replace function public.respond_crew_battle(_battle uuid, _accept boolean)
