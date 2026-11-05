@@ -69,6 +69,39 @@ end;
 $$;
 grant execute on function public.challenge_crew(uuid,uuid,text) to authenticated;
 
+create or replace function public.respond_crew_battle(_battle uuid, _accept boolean)
+returns void language plpgsql security definer set search_path = public as $
+declare
+  opponent uuid;
+  challenger uuid;
+begin
+  if auth.uid() is null then raise exception 'Sign in to respond'; end if;
+  select opponent_crew_id, challenger_crew_id into opponent, challenger
+  from public.crew_battles
+  where id = _battle and status = 'pending'
+  for update;
+  if opponent is null then raise exception 'This challenge is no longer waiting for a response'; end if;
+  if not exists(select 1 from public.crew_members where crew_id = opponent and user_id = auth.uid() and role = 'admin') then
+    raise exception 'Only the challenged crew admins can respond';
+  end if;
+  if _accept then
+    update public.crew_battles
+      set status = 'active', starts_at = date_trunc('day',now()), ends_at = date_trunc('day',now()) + interval '7 days'
+      where id = _battle;
+    insert into public.user_progress(user_id, xp, current_streak, longest_streak, last_activity_on)
+    select distinct cm.user_id, 10, 0, 0, null
+    from public.crew_members cm
+    where cm.crew_id in (challenger, opponent)
+    on conflict(user_id) do update
+      set xp = public.user_progress.xp + 10,
+          updated_at = now();
+  else
+    update public.crew_battles set status = 'cancelled' where id = _battle;
+  end if;
+end;
+$;
+grant execute on function public.respond_crew_battle(uuid,boolean) to authenticated;
+
 create or replace function public.complete_crew_battle(_battle uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare
