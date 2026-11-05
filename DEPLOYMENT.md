@@ -46,6 +46,7 @@ The existing project has already used migrations through `0011_complete_backend_
 - `0016_progression_reward_fixes.sql`
 - `0017_leaderboard_audience_and_weight_classes.sql`
 - `0018_pro_subscriptions.sql`
+- `0019_throne_events.sql`
 
 Run each pending SQL file in the Supabase SQL Editor. These repair migrations are designed to be repeatable, but do not skip ahead in the sequence.
 
