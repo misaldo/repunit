@@ -52,8 +52,8 @@ create or replace function public.repunit_guard_pro_profile_theme()
 returns trigger language plpgsql security definer set search_path = public as $repunit$
 begin
   if auth.uid() is not null
-     and ((tg_op = 'INSERT' and new.profile_theme <> 'default')
-       or (tg_op = 'UPDATE' and new.profile_theme is distinct from old.profile_theme)) then
+     and new.profile_theme <> 'default'
+     and ((tg_op = 'INSERT') or (tg_op = 'UPDATE' and new.profile_theme is distinct from old.profile_theme)) then
     if not exists (
       select 1 from public.user_subscriptions
       where user_id = auth.uid() and status in ('active','trialing')
