@@ -76,7 +76,7 @@ for each row execute function public.repunit_guard_pro_profile_theme();
 
 -- Enforce the Free workout-plan limit in the database, not only in the UI.
 create or replace function public.repunit_enforce_workout_plan_limit()
-returns trigger language plpgsql security definer set search_path = public as $$repunit$
+returns trigger language plpgsql security definer set search_path = public as $repunit$
 declare plan_count integer;
 begin
   if auth.uid() is not null and new.user_id = auth.uid()
