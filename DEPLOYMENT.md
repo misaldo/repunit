@@ -1,0 +1,112 @@
+# REPUNIT local development and deployment
+
+## Run REPUNIT locally
+
+1. Install Node.js 22 LTS and Git.
+2. Clone the repository and install dependencies:
+
+   ```bash
+   git clone https://github.com/misaldo/repunit.git
+   cd repunit
+   npm ci
+   ```
+
+3. Copy `.env.example` to `.env` and set the Supabase values:
+
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `VITE_SUPABASE_PROJECT_ID`
+
+   Do not commit `.env`. Never put a Supabase service-role key or Stripe secret in a `VITE_` variable.
+
+4. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open the exact local URL printed by Vite (the configured port is normally 8080). Keep the terminal open while using the app.
+
+5. Run quality checks and a production build:
+
+   ```bash
+   npm run lint
+   npm test
+   npm run build
+   ```
+
+## Supabase database
+
+The existing project has already used migrations through `0011_complete_backend_setup.sql`. Check the Supabase migration history and apply only migrations that are still pending, in numeric order:
+
+- `0012_repair_training_splits.sql`
+- `0013_repair_crew_battles.sql`
+- `0014_friend_callouts.sql`
+- `0015_notifications_center.sql`
+- `0016_progression_reward_fixes.sql`
+- `0017_leaderboard_audience_and_weight_classes.sql`
+- `0018_pro_subscriptions.sql`
+
+Run each pending SQL file in the Supabase SQL Editor. These repair migrations are designed to be repeatable, but do not skip ahead in the sequence.
+
+The app also expects the `lift-videos` Supabase Storage bucket and the appropriate authenticated-user storage policies for video uploads and signed playback URLs.
+
+## Stripe billing (optional until Stripe is configured)
+
+The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go to the browser.
+
+1. Create a Stripe product with recurring prices:
+   - Monthly: USD 4.99
+   - Yearly: USD 39.99
+2. Copy both Stripe Price IDs.
+3. Install the Supabase CLI, log in, and link this project:
+
+   ```bash
+   supabase login
+   supabase link --project-ref kqezgcwfqfntazucbbzt
+   ```
+
+4. Set the Edge Function secrets (use your real values; do not commit them):
+
+   ```bash
+   supabase secrets set STRIPE_SECRET_KEY=sk_live_... STRIPE_PRICE_MONTHLY=price_... STRIPE_PRICE_YEARLY=price_... STRIPE_WEBHOOK_SECRET=whsec_... APP_URL=https://your-domain.example
+   ```
+
+   Use Stripe test-mode keys and test prices until the whole payment flow has been verified. Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to deployed Edge Functions.
+
+5. Deploy the function:
+
+   ```bash
+   supabase functions deploy stripe
+   ```
+
+6. In Stripe Dashboard, add a webhook endpoint:
+
+   `https://kqezgcwfqfntazucbbzt.supabase.co/functions/v1/stripe`
+
+   Subscribe to:
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+
+   Copy the webhook signing secret into `STRIPE_WEBHOOK_SECRET`. Enable the Stripe Customer Portal in Stripe settings before testing subscription management.
+
+7. Run a test checkout and verify that the webhook writes the matching row to `public.user_subscriptions`. The app grants PRO status only for `active` or `trialing` subscriptions.
+
+## Deploy the web app to Vercel
+
+1. Push the repository to GitHub and import `misaldo/repunit` into Vercel.
+2. Set the Vercel project environment variables for Production and Preview:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - `VITE_SUPABASE_PROJECT_ID`
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` only if a server-side admin operation is explicitly enabled; never expose it to the browser.
+3. Set the Nitro deployment preset to `vercel` in the Vercel build environment if the default Cloudflare preset is selected by the build config.
+4. Use `npm ci` as the install command and `npm run build` as the build command.
+5. After deployment, verify authentication redirects, video upload/playback, PWA installation, database-backed routes, and the Stripe webhook against the production domain.
+
+## Automated checks
+
+GitHub Actions runs lint, unit tests, and the production build on pushes and pull requests to `main`. A green CI run is required before treating a change as release-ready.
