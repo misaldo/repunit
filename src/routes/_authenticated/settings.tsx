@@ -136,7 +136,7 @@ function Settings() {
     const profileUpdate: Record<string, unknown> = {
       username, display_name: String(f.get("display_name")).slice(0, 40) || null, bio: String(f.get("bio")).slice(0, 280) || null, country_code: String(f.get("country_code") || "") || null, bodyweight_kg: bodyweight,
     };
-    if (isPro) profileUpdate.profile_theme = String(f.get("profile_theme") || "default");
+    profileUpdate.profile_theme = isPro ? String(f.get("profile_theme") || "default") : "default";
     const { error } = await (supabase as any).from("profiles").update(profileUpdate).eq("id", user.id);
     if (error) { toast.error(error.code === "23505" ? "Username taken" : error.message); return; }
     toast.success("Saved");
@@ -154,8 +154,8 @@ function Settings() {
         <div className="space-y-1.5"><Label htmlFor="bodyweight_kg">Bodyweight (kg)</Label><Input id="bodyweight_kg" name="bodyweight_kg" type="number" step="0.1" min="25" max="350" inputMode="decimal" defaultValue={(p as any).bodyweight_kg ?? ""} placeholder="e.g. 82.5" /><p className="text-xs text-muted-foreground">Used for bodyweight-class leaderboards. Leave blank if you prefer not to share it.</p></div>
         <div className="space-y-1.5">
           <Label htmlFor="profile_theme">Profile theme · PRO</Label>
-          <select id="profile_theme" name="profile_theme" defaultValue={(p as any).profile_theme ?? "default"} disabled={!isPro} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground disabled:opacity-60">
-            <option value="default">REPUNIT Red</option><option value="ember">Ember</option><option value="steel">Steel</option><option value="violet">Violet</option>
+          <select id="profile_theme" name="profile_theme" defaultValue={isPro ? ((p as any).profile_theme ?? "default") : "default"} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground disabled:opacity-60">
+            <option value="default">REPUNIT Red</option>{isPro && <><option value="ember">Ember</option><option value="steel">Steel</option><option value="violet">Violet</option></>}
           </select>
           {!isPro && <p className="text-xs text-muted-foreground">Custom profile themes are a PRO feature. <a href="/pricing" className="font-semibold text-primary hover:underline">Upgrade to PRO</a>.</p>}
         </div>
