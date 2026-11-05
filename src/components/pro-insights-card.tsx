@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Activity, TrendingUp, Trophy } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { estimated1RM, exerciseLabel } from "@/lib/lifts";
+import { AnimatedNumber } from "@/components/animated-number";
 
 type Lift = { exercise: string; weight_kg: number; reps: number | null; status: string; lifted_on: string };
 
@@ -33,9 +34,9 @@ export function ProInsightsCard({ lifts }: { lifts: Lift[] }) {
     <section className="mt-6 rounded-2xl border border-primary/25 bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="eyebrow text-primary">PRO PERFORMANCE LAB</p><h2 className="font-stat mt-1 text-3xl uppercase">Your strength, decoded.</h2></div><span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-primary">PRO</span></div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl bg-background p-4 sm:col-span-2"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">REPUNIT Strength Score</p><p className="font-stat mt-1 text-4xl">{Math.round(insights.strengthScore).toLocaleString("en-US")} <span className="text-base text-muted-foreground">kg</span></p><p className="mt-1 text-[10px] text-muted-foreground">Sum of your best estimated 1RMs across bench, squat and deadlift.</p></div>
-        <div className="rounded-xl bg-background p-4"><Trophy className="h-4 w-4 text-primary"/><p className="mt-2 font-stat text-3xl">{insights.verifiedCount}</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Verified lifts</p></div>
-        <div className="rounded-xl bg-background p-4"><TrendingUp className="h-4 w-4 text-primary"/><p className="mt-2 font-stat text-3xl">{insights.months[5]?.volume.toLocaleString("en-US") ?? 0}</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground">This month's volume · kg</p></div>
+        <div className="rounded-xl bg-background p-4 sm:col-span-2"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">REPUNIT Strength Score</p><p className="font-stat mt-1 text-4xl"><AnimatedNumber value={Math.round(insights.strengthScore)} /> <span className="text-base text-muted-foreground">kg</span></p><p className="mt-1 text-[10px] text-muted-foreground">Sum of your best estimated 1RMs across bench, squat and deadlift.</p></div>
+        <div className="rounded-xl bg-background p-4"><Trophy className="h-4 w-4 text-primary"/><p className="mt-2 font-stat text-3xl"><AnimatedNumber value={insights.verifiedCount}/></p><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Verified lifts</p></div>
+        <div className="rounded-xl bg-background p-4"><TrendingUp className="h-4 w-4 text-primary"/><p className="mt-2 font-stat text-3xl"><AnimatedNumber value={insights.months[5]?.volume ?? 0}/></p><p className="text-[10px] uppercase tracking-widest text-muted-foreground">This month's volume · kg</p></div>
       </div>
       <div className="mt-5 grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className="rounded-xl border border-border bg-background p-4">
