@@ -5,8 +5,9 @@
 - [x] Mobile-first navigation: Feed, Workouts, Crews, Ranks and Profile; desktop navigation includes Battles and Challenges.
 - [x] Working social feed with posts, likes and comments.
 - [x] PWA install prompt with browser fallback and iOS instructions.
-- [x] XP for lifts, verified PRs, streak milestones, likes and crew battle participation/completion.
-- [x] Lifter and crew progression badges.
+- [x] XP for lifts, verified PRs, streak milestones, likes and crew battle acceptance/completion.
+- [x] Animated count-up metrics and confetti on verified PR notifications.
+- [x] Lifter progression badges and automatic Crew badges: Iron Squad, Weekly Winners and 100 Ton Club.
 - [x] Weekly crew battle categories: bench, squat, deadlift and total volume.
 - [x] Optional pg_cron scheduling for weekly matchups and automatic battle finalization, with on-visit fallback.
 - [x] Friend call-outs and in-app notification center with per-type preferences.
@@ -19,7 +20,7 @@
 - [x] GitHub Actions workflow for TypeScript, lint, tests, production build and Deno checks.
 
 ## Required setup before release
-- [ ] Apply pending Supabase migrations 0012–0022 in order.
+- [ ] Apply pending Supabase migrations 0012–0023 in order.
 - [ ] Deploy the Stripe and send-push Edge Functions and configure their server secrets.
 - [ ] Configure Stripe recurring prices, Customer Portal and webhook events.
 - [ ] Configure VAPID keys and the Supabase Database Webhook for notification inserts.
