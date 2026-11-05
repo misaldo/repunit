@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Crown, Play, Dumbbell, Camera } from "lucide-react";
+import { Crown, Dumbbell, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Exercise } from "@/lib/lifts";
 import { AvatarChip } from "./avatar-chip";
