@@ -12,6 +12,7 @@ import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
 import { ProgressionCard } from "@/components/progression-card";
 import { FunStatsCard } from "@/components/fun-stats";
+import { ProInsightsCard } from "@/components/pro-insights-card";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records and training activity of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records, community and training activity." }] }),
@@ -196,6 +197,7 @@ function Profile() {
       </section>
 
       <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>
+      {isProProfile && <ProInsightsCard lifts={lifts as any} />}
       <FunStatsCard kg={monthlyVolume} headline="THIS MONTH · PERSONAL POWER" prefix={`${p.display_name ?? p.username} lifted`} />
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
