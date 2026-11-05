@@ -17,7 +17,7 @@ export function useLeaderboard(
 ) {
   const scoped = userIds !== undefined || Boolean(weightClass);
   return useQuery({
-    queryKey: ["leaderboard", exercise, crew ?? null, since ?? null, userIds ?? null, weightClass ?? null],
+    queryKey: ["leaderboard", exercise, crew ?? null, since ?? null, scoped, userIds ?? null, weightClass ?? null],
     queryFn: async () => {
       const exercises: Exercise[] = exercise === "total" ? ["bench", "squat", "deadlift", "ohp", "pullup"] : [exercise];
       const results = await Promise.all(exercises.map(async (_exercise) => {
