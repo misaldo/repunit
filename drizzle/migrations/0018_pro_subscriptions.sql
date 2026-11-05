@@ -17,7 +17,7 @@ create table if not exists public.user_subscriptions (
 alter table public.profiles
   add column if not exists profile_theme text not null default 'default';
 
-do $
+do $repunit$
 begin
   if not exists (
     select 1 from pg_constraint
@@ -29,7 +29,7 @@ begin
       check (profile_theme in ('default','ember','steel','violet'));
   end if;
 end;
-$;
+$repunit$;
 
 create index if not exists user_subscriptions_status_idx
   on public.user_subscriptions(status, current_period_end);
@@ -49,7 +49,7 @@ select user_id from public.user_subscriptions where status in ('active','trialin
 grant select on public.pro_badges to anon, authenticated;
 
 create or replace function public.repunit_guard_pro_profile_theme()
-returns trigger language plpgsql security definer set search_path = public as $
+returns trigger language plpgsql security definer set search_path = public as $repunit$
 begin
   if auth.uid() is not null
      and ((tg_op = 'INSERT' and new.profile_theme <> 'default')
@@ -63,7 +63,7 @@ begin
   end if;
   return new;
 end;
-$;
+$repunit$;
 drop trigger if exists profiles_guard_pro_theme on public.profiles;
 create trigger profiles_guard_pro_theme
 before insert or update of profile_theme on public.profiles
