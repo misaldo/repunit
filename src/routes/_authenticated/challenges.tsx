@@ -47,6 +47,18 @@ function ChallengesPage() {
     },
   });
   const byId = new Map(profiles.map((p:any) => [p.id,p]));
+  const sourceLiftIds = useMemo(() => challenges.map(c => c.source_lift_id).filter((id): id is string => !!id), [challenges]);
+  const { data: sourceLifts = [] } = useQuery({
+    queryKey: ["challenge-source-lifts", sourceLiftIds],
+    enabled: sourceLiftIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lifts").select("id,weight_kg,reps,exercise").in("id", sourceLiftIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const liftById = new Map(sourceLifts.map((lift:any) => [lift.id,lift]));
+
   async function respond(challenge: Challenge, status: "accepted" | "ignored") {
     if (busyId) return;
     setBusyId(challenge.id);
@@ -68,6 +80,7 @@ function ChallengesPage() {
     const incoming = challenge.challenged_id === user.id;
     const other = byId.get(incoming ? challenge.challenger_id : challenge.challenged_id) as any;
     const winner = challenge.winner_id ? byId.get(challenge.winner_id) as any : null;
+    const sourceLift = challenge.source_lift_id ? liftById.get(challenge.source_lift_id) as any : null;
     const statusLabel = challenge.status === "accepted" ? "IN PROGRESS" : challenge.status.toUpperCase();
     return <article className="challenge-enter relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
       <div className="absolute -right-10 -top-12 h-36 w-36 rounded-full bg-primary/[0.07] blur-3xl"/>
@@ -79,6 +92,7 @@ function ChallengesPage() {
           </div>
           <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-black tracking-widest ${challenge.status === "completed" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : challenge.status === "failed" ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-primary/30 bg-primary/10 text-primary"}`}>{statusLabel}</span>
         </div>
+        {sourceLift && <p className="mt-4 rounded-lg border border-primary/20 bg-primary/[0.06] px-3 py-2 text-sm">{other?.display_name ?? other?.username ?? "Your friend"} just {sourceLift.exercise === "squat" ? "squatted" : sourceLift.exercise === "bench" ? "benched" : sourceLift.exercise === "deadlift" ? "deadlifted" : "lifted"} <strong>{Number(sourceLift.weight_kg).toLocaleString()} kg</strong>. Think you can do <strong>{Number(challenge.target_weight_kg).toLocaleString()} kg?</strong></p>}
         <div className="mt-4 flex items-end justify-between gap-3">
           <div><p className="eyebrow">{exerciseNames[challenge.exercise] ?? challenge.exercise}</p><p className="font-stat mt-1 text-4xl">{Number(challenge.target_weight_kg).toLocaleString()}<span className="ml-1 text-base text-muted-foreground">kg</span></p><p className="mt-1 text-xs text-muted-foreground">{incoming ? "Your target to beat" : "Target set for your friend"}</p></div>
           <div className="text-right text-xs text-muted-foreground"><Clock3 className="ml-auto mb-1 h-4 w-4"/>{challenge.status === "completed" ? "Finished" : challenge.status === "failed" ? "Time expired" : `Until ${new Date(challenge.due_at).toLocaleDateString()}`}</div>
