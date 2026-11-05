@@ -311,3 +311,20 @@
 .profile-theme-ember { background-image: radial-gradient(ellipse at 90% 0%, hsl(22 90% 50% / .13), transparent 48%); }
 .profile-theme-steel { background-image: radial-gradient(ellipse at 90% 0%, hsl(205 35% 55% / .15), transparent 48%); }
 .profile-theme-violet { background-image: radial-gradient(ellipse at 90% 0%, hsl(270 65% 58% / .15), transparent 48%); }
+
+
+@keyframes repunit-pr-confetti {
+  0% { opacity: 0; transform: translate3d(0,-12vh,0) rotate(0deg); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--drift, 36px),112vh,0) rotate(760deg); }
+}
+.pr-confetti-piece {
+  position: absolute;
+  top: -12vh;
+  display: block;
+  border-radius: 2px;
+  animation-name: repunit-pr-confetti;
+  animation-timing-function: cubic-bezier(.18,.62,.34,1);
+  animation-fill-mode: both;
+}
+@media (prefers-reduced-motion: reduce) { .pr-confetti-piece { animation: none !important; display: none; } }
