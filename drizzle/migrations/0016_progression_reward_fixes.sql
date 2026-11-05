@@ -69,6 +69,49 @@ create trigger lifts_award_verified_pr_xp
 after insert or update of status on public.lifts
 for each row execute function public.award_verified_pr_xp();
 
+-- Crew milestones: a five-member squad and the 100-ton verified-volume club.
+create or replace function public.award_crew_member_badges()
+returns trigger language plpgsql security definer set search_path = public as $repunit$
+begin
+  if (select count(*) from public.crew_members where crew_id = new.crew_id) >= 5 then
+    insert into public.crew_achievements(crew_id, achievement_key)
+    values(new.crew_id, 'iron_squad')
+    on conflict(crew_id, achievement_key) do nothing;
+  end if;
+  return new;
+end;
+$repunit$;
+drop trigger if exists crew_members_award_badges on public.crew_members;
+create trigger crew_members_award_badges
+after insert on public.crew_members
+for each row execute function public.award_crew_member_badges();
+
+create or replace function public.award_crew_volume_badges()
+returns trigger language plpgsql security definer set search_path = public as $repunit$
+declare
+  crew record;
+  total_volume numeric;
+begin
+  if new.status <> 'VERIFIED' then return new; end if;
+  for crew in select crew_id from public.crew_members where user_id = new.user_id loop
+    select coalesce(sum(l.weight_kg * coalesce(l.reps,1)),0) into total_volume
+    from public.lifts l
+    join public.crew_members cm on cm.user_id = l.user_id
+    where cm.crew_id = crew.crew_id and l.status = 'VERIFIED';
+    if total_volume >= 100000 then
+      insert into public.crew_achievements(crew_id, achievement_key)
+      values(crew.crew_id, '100_ton_club')
+      on conflict(crew_id, achievement_key) do nothing;
+    end if;
+  end loop;
+  return new;
+end;
+$repunit$;
+drop trigger if exists lifts_award_crew_volume_badges on public.lifts;
+create trigger lifts_award_crew_volume_badges
+after insert or update of status on public.lifts
+for each row execute function public.award_crew_volume_badges();
+
 -- Add a 10 XP bonus when a lifter extends an existing daily streak.
 create or replace function public.award_streak_xp()
 returns trigger language plpgsql security definer set search_path = public as $repunit$
