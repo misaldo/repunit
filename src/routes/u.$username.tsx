@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
 import { ProgressionCard } from "@/components/progression-card";
+import { FunStatsCard } from "@/components/fun-stats";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records and training activity of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records, community and training activity." }] }),
@@ -119,6 +120,8 @@ function Profile() {
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts, posts } = data;
   const isOwnProfile = user?.id === p.id;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthlyVolume = lifts.filter((lift: any) => lift.status === "VERIFIED" && String(lift.lifted_on ?? "").startsWith(currentMonth)).reduce((sum: number, lift: any) => sum + Number(lift.weight_kg) * Number(lift.reps ?? 1), 0);
 
   return (
     <PageShell>
@@ -152,6 +155,7 @@ function Profile() {
       </section>
 
       <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>
+      <FunStatsCard kg={monthlyVolume} headline="THIS MONTH · PERSONAL POWER" prefix={`${p.display_name ?? p.username} lifted`} />
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Training split</h2></div>
