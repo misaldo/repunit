@@ -120,7 +120,7 @@ begin
 end;
 $$;
 drop trigger if exists repunit_notify_lift_friends on public.lifts;
-create trigger repunit_notify_lift_friends after insert on public.lifts
+create trigger repunit_notify_lift_friends after insert or update of status on public.lifts
 for each row execute function public.repunit_notify_lift_friends();
 
 -- Notify the previous #1 when a verified lift takes the top spot in that exercise.
