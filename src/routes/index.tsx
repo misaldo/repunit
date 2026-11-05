@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Users, Video, ShieldCheck, Trophy, Zap, Dumbbell } from "lucide-react";
 import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
+import { InstallPrompt } from "@/components/install-prompt";
 import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium } from "@/components/leaderboard-list";
 
@@ -112,6 +113,7 @@ function Landing() {
       </section>
       <SiteFooter />
       <MobileNav />
+      <InstallPrompt />
     </div>
   );
 }
