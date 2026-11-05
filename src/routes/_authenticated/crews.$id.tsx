@@ -56,7 +56,8 @@ function Crew() {
         (supabase as any).from("lifts").select("weight_kg,reps,lifted_on").in("user_id", safeIds).eq("status", "VERIFIED"),
         (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
       ]);
-      const monthKey = new Date().toISOString().slice(0, 7);
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const monthTonnage = (lifts ?? []).filter((lift: any) => String(lift.lifted_on ?? "").startsWith(monthKey)).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0);
       return { c, code, members, badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), monthTonnage, battleWins: battleWins?.length ?? 0 };
     },
