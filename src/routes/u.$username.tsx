@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords } from "lucide-react";
+import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ function Profile() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
     queryFn: async () => {
-      const { data: p, error } = await supabase.from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username).maybeSingle();
+      const { data: p, error } = await supabase.from("profiles").select("id, username, display_name, bio, avatar_url, created_at, profile_theme").eq("username", username).maybeSingle();
       if (error) throw error;
       if (!p) return null;
       const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
@@ -48,6 +48,17 @@ function Profile() {
     if (isLoading || !data || window.location.hash !== "#training-split") return;
     document.getElementById("training-split")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [isLoading, data]);
+
+  const { data: isProProfile = false } = useQuery({
+    queryKey: ["public-pro-badge", data?.p.id],
+    enabled: !!data?.p.id,
+    queryFn: async () => {
+      const { data: badge, error } = await (supabase as any).from("pro_badges")
+        .select("user_id").eq("user_id", data!.p.id).maybeSingle();
+      if (error) throw error;
+      return Boolean(badge);
+    },
+  });
 
   const { data: progression } = useQuery({
     queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
@@ -147,11 +158,11 @@ function Profile() {
 
   return (
     <PageShell>
-      <section className="rounded-2xl border border-border bg-card p-5 sm:p-7">
+      <section className={`profile-theme profile-theme-${p.profile_theme ?? "default"} rounded-2xl border border-border bg-card p-5 sm:p-7`}>
         <div className="flex flex-wrap items-center gap-4">
           <AvatarChip name={p.username} url={p.avatar_url} className="h-20 w-20 text-xl" />
           <div className="min-w-0 flex-1">
-            <h1 className="text-3xl font-bold">{p.display_name ?? p.username}</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-3xl font-bold">{p.display_name ?? p.username}{isProProfile && <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-primary"><Crown className="h-3 w-3"/> PRO</span>}</h1>
             <p className="text-sm text-muted-foreground">@{p.username} · joined {new Date(p.created_at).toLocaleDateString()}</p>
           </div>
           <div className="flex flex-wrap gap-2">
