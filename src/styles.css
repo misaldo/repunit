@@ -305,3 +305,9 @@
 }
 .throne-enter { animation: repunit-throne-enter .55s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .throne-enter { animation: none !important; } }
+
+
+/* Optional PRO profile accents */
+.profile-theme-ember { background-image: radial-gradient(ellipse at 90% 0%, hsl(22 90% 50% / .13), transparent 48%); }
+.profile-theme-steel { background-image: radial-gradient(ellipse at 90% 0%, hsl(205 35% 55% / .15), transparent 48%); }
+.profile-theme-violet { background-image: radial-gradient(ellipse at 90% 0%, hsl(270 65% 58% / .15), transparent 48%); }
