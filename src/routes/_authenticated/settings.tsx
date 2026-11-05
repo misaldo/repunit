@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Bell, Dumbbell, Trophy, Heart, MessageCircle, Swords, Medal, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,12 +28,36 @@ const notificationOptions = [
   { key: "battle", label: "Crew battles", description: "When a battle starts or ends.", icon: Swords },
   { key: "streak", label: "Streak alerts", description: "When your training streak expires.", icon: Flame },
 ] as const;
-const defaults = { lift:true, pr:true, like:true, comment:true, challenge:true, rank:true, battle:true, streak:true };
+const defaults = { lift:true, pr:true, like:true, comment:true, challenge:true, rank:true, battle:true, streak:true, push_enabled:false };
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  const output = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index++) output[index] = raw.charCodeAt(index);
+  return output;
+}
 
 function Settings() {
   const { user } = Route.useRouteContext();
   const { data: p } = useMyProfile(user.id);
   const qc = useQueryClient();
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
+  const [pushSubscription, setPushSubscription] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    const supported = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window && Boolean(import.meta.env["VITE_VAPID_PUBLIC_KEY"]);
+    setPushSupported(supported);
+    if ("Notification" in window) setPushPermission(Notification.permission);
+    if (supported) {
+      void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription())
+        .then((subscription) => setPushSubscription(Boolean(subscription)))
+        .catch(() => setPushSubscription(false));
+    }
+  }, []);
   const preferences = useQuery({
     queryKey: ["notification-preferences", user.id],
     queryFn: async () => {
@@ -49,6 +73,46 @@ function Settings() {
     await qc.invalidateQueries({ queryKey: ["notification-preferences", user.id] });
     toast.success("Notification setting saved");
   }
+  async function toggleWebPush() {
+    if (!pushSupported) { toast.error("Web push is not supported or VAPID is not configured."); return; }
+    setPushBusy(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) {
+        const { error } = await (supabase as any).from("push_subscriptions").delete()
+          .eq("user_id", user.id).eq("endpoint", existing.endpoint);
+        if (error) throw error;
+        await existing.unsubscribe();
+        await setPreference("push_enabled", false);
+        setPushSubscription(false);
+        toast.success("Web push notifications disabled");
+      } else {
+        const permission = await Notification.requestPermission();
+        setPushPermission(permission);
+        if (permission !== "granted") throw new Error("Allow notifications in your browser to enable web push.");
+        const publicKey = import.meta.env["VITE_VAPID_PUBLIC_KEY"];
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+        const keys = subscription.toJSON().keys;
+        if (!keys?.p256dh || !keys?.auth) throw new Error("The browser did not return valid push keys.");
+        const { error } = await (supabase as any).from("push_subscriptions").upsert({
+          user_id: user.id, endpoint: subscription.endpoint, p256dh: keys.p256dh, auth: keys.auth,
+        }, { onConflict: "user_id,endpoint" });
+        if (error) { await subscription.unsubscribe(); throw error; }
+        await setPreference("push_enabled", true);
+        setPushSubscription(true);
+        toast.success("Web push notifications enabled");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update web push settings.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -82,7 +146,13 @@ function Settings() {
         {preferences.isLoading ? <p className="py-6 text-sm text-muted-foreground">Loading preferences…</p> : preferences.isError ? <div className="py-5"><p className="text-sm text-muted-foreground">Notification settings are not available yet. Apply database migration 0015 first.</p><Button className="mt-3" variant="line" size="sm" onClick={() => void preferences.refetch()}>Try again</Button></div> : <div className="mt-4 divide-y divide-border">
           {notificationOptions.map(({key,label,description,icon:Icon}) => <div key={key} className="flex items-center gap-3 py-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background text-primary"><Icon className="h-4 w-4"/></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{label}</p><p className="text-xs text-muted-foreground">{description}</p></div><Switch checked={Boolean((preferences.data as any)?.[key])} onCheckedChange={(value) => void setPreference(key,value)} aria-label={label}/></div>)}
         </div>}
-        <div className="mt-4 rounded-xl border border-border bg-background p-4"><p className="text-sm font-semibold">Web push notifications</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">In-app alerts are active. Background push delivery still needs the secure push sender and VAPID keys configured on the server; browser permission alone cannot deliver push while REPUNIT is closed.</p></div>
+        <div className="mt-4 rounded-xl border border-border bg-background p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold">Web push notifications</p><p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">Get REPUNIT alerts even when the app is closed. Your browser must allow notifications.</p></div>
+            <Button size="sm" variant={pushSubscription ? "line" : "hero"} disabled={!pushSupported || pushBusy} onClick={() => void toggleWebPush()}>{pushBusy ? "Updating…" : pushSubscription ? "Disable push" : "Enable push"}</Button>
+          </div>
+          {!pushSupported && <p className="mt-3 text-[11px] text-muted-foreground">Push is unavailable in this browser or the VAPID public key has not been configured.</p>}
+          {pushPermission === "denied" && <p className="mt-2 text-[11px] text-amber-300">Notifications are blocked by your browser. Change the site permission in browser settings first.</p>}
+        </div>
       </section>
     </PageShell>
   );
