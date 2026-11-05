@@ -133,10 +133,10 @@ begin
     into previous_top
   from public.lifts l join public.profiles p on p.id = l.user_id
   where l.exercise = new.exercise and l.status = 'VERIFIED'
-    and l.user_id <> new.user_id
+    and l.id <> new.id
   order by l.weight_kg desc, l.reps desc, l.lifted_on asc
   limit 1;
-  if previous_top.user_id is not null and new.weight_kg > previous_top.weight_kg then
+  if previous_top.user_id is not null and previous_top.user_id <> new.user_id and new.weight_kg > previous_top.weight_kg then
     perform public.repunit_create_notification(
       previous_top.user_id, new.user_id, 'rank', 'You lost the #1 spot',
       coalesce((select display_name from public.profiles where id = new.user_id),
@@ -244,6 +244,29 @@ begin
     alter publication supabase_realtime add table public.notifications;
   end if;
 end $$;
+
+
+-- Keep challenge notifications under the same per-type preference switch.
+create or replace function public.notify_lifter_challenge()
+returns trigger language plpgsql security definer set search_path = public as $
+declare actor_name text;
+begin
+  select coalesce(display_name, username) into actor_name
+  from public.profiles where id = new.challenger_id;
+  perform public.repunit_create_notification(
+    new.challenged_id, new.challenger_id, 'challenge', 'You got called out',
+    coalesce(actor_name, 'A friend') || ' challenged you to ' || new.target_weight_kg::text || ' kg. Can you beat it?',
+    '/challenges'
+  );
+  return new;
+end;
+$;
+
+-- Internal security-definer helpers must only be callable by trusted trigger functions.
+revoke all on function public.repunit_notification_enabled(uuid,text) from public, anon, authenticated;
+revoke all on function public.repunit_create_notification(uuid,uuid,text,text,text,text) from public, anon, authenticated;
+revoke all on function public.repunit_check_streak_losses() from public, anon, authenticated;
+grant execute on function public.repunit_check_streak_losses() to service_role;
 
 commit;
 notify pgrst, 'reload schema';
