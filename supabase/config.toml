@@ -1,1 +1,5 @@
 project_id = "sfumcokjwvhxwuanlofw"
+
+# Stripe verifies its webhook signature and validates user tokens inside the function.
+[functions.stripe]
+verify_jwt = false
