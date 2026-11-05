@@ -35,7 +35,7 @@ async function stripeRequest(path: string, params: URLSearchParams) {
   return payload;
 }
 
-function safeAppUrl(request: Request) {
+function safeAppUrl() {
   const configured = required("APP_URL");
   return configured.replace(/\/+$/, "");
 }
@@ -142,7 +142,7 @@ async function handleWebhook(request: Request) {
 async function handleUserAction(request: Request) {
   const user = await getAuthenticatedUser(request);
   const body = await request.json().catch(() => ({})) as { action?: string; plan?: string };
-  const appUrl = safeAppUrl(request);
+  const appUrl = safeAppUrl();
   const existingResponse = await adminRest(`user_subscriptions?user_id=eq.${encodeURIComponent(user.id)}&select=status,stripe_customer_id`);
   if (!existingResponse.ok) throw new Error("Could not read subscription status. Apply migration 0018 first.");
   const existingRows = await existingResponse.json();
