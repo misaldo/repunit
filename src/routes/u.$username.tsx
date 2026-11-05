@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays } from "lucide-react";
+import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,10 @@ function Profile() {
   const { user } = useUser();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [challengeOpen, setChallengeOpen] = useState(false);
+  const [challengeBusy, setChallengeBusy] = useState(false);
+  const [challengeExercise, setChallengeExercise] = useState("bench");
+  const [challengeWeight, setChallengeWeight] = useState("100");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
@@ -87,17 +91,21 @@ function Profile() {
     enabled: !!data?.p.id,
     queryFn: async () => {
       const profileId = data!.p.id;
-      const [{ count: followers, error: followersError }, { count: following, error: followingError }, { data: relation, error: relationError }] = await Promise.all([
+      const [{ count: followers, error: followersError }, { count: following, error: followingError }, { data: relation, error: relationError }, { data: mutualRelation, error: mutualError }] = await Promise.all([
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileId),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileId),
         user && user.id !== profileId
           ? supabase.from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", profileId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
+        user && user.id !== profileId
+          ? supabase.from("follows").select("follower_id").eq("follower_id", profileId).eq("following_id", user.id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
       if (followersError) throw followersError;
       if (followingError) throw followingError;
       if (relationError) throw relationError;
-      return { followers: followers ?? 0, following: following ?? 0, isFollowing: !!relation };
+      if (mutualError) throw mutualError;
+      return { followers: followers ?? 0, following: following ?? 0, isFollowing: !!relation, isFriend: !!relation && !!mutualRelation };
     },
   });
 
@@ -113,6 +121,20 @@ function Profile() {
       toast.success(social?.isFollowing ? "Unfollowed" : "Following");
     }
     setBusy(false);
+  }
+
+  async function sendChallenge() {
+    if (!user || !data || !social?.isFriend || challengeBusy) return;
+    const target = Number(challengeWeight);
+    if (!Number.isFinite(target) || target <= 0 || target > 600) { toast.error("Enter a target between 0.5 and 600 kg."); return; }
+    setChallengeBusy(true);
+    const { error } = await (supabase as any).from("lifter_challenges").insert({
+      challenger_id: user.id, challenged_id: data.p.id, exercise: challengeExercise,
+      target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    if (error) toast.error(error.message);
+    else { toast.success("Challenge sent. Let the rivalry begin."); setChallengeOpen(false); setChallengeWeight("100"); }
+    setChallengeBusy(false);
   }
 
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
@@ -143,9 +165,17 @@ function Profile() {
             <Button asChild variant="hero"><Link to="/auth">Sign in to follow</Link></Button>
           )}
           {workoutPlans.length > 0 && <Button asChild variant="line"><a href="#training-split"><Dumbbell className="mr-2 h-4 w-4" />View training split</a></Button>}
+          {!isOwnProfile && user && social?.isFriend && <Button variant="hero" onClick={() => setChallengeOpen(v => !v)}><Swords className="mr-2 h-4 w-4"/>Challenge</Button>}
           </div>
         </div>
         {p.bio && <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-6">{p.bio}</p>}
+        {challengeOpen && <form onSubmit={e => { e.preventDefault(); void sendChallenge(); }} className="mt-5 grid gap-3 rounded-xl border border-primary/25 bg-primary/[0.05] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div><label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lift</label><select value={challengeExercise} onChange={e=>setChallengeExercise(e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm">{EXERCISES.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></div>
+          <div><label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Target (kg)</label><input value={challengeWeight} onChange={e=>setChallengeWeight(e.target.value)} type="number" min="0.5" max="600" step="0.5" required className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"/></div>
+          <Button type="submit" disabled={challengeBusy}>{challengeBusy ? "Sending…" : "Send challenge"}</Button>
+          <p className="text-xs text-muted-foreground sm:col-span-3">They have 7 days to hit the target with a verified lift.</p>
+        </form>}
+
         <div className="mt-5 flex flex-wrap gap-6 border-t border-border pt-4 text-sm">
           <div><strong className="text-foreground">{social?.followers ?? "—"}</strong> <span className="text-muted-foreground">followers</span></div>
           <div><strong className="text-foreground">{social?.following ?? "—"}</strong> <span className="text-muted-foreground">following</span></div>
