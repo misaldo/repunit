@@ -169,6 +169,7 @@ function Profile() {
           <div className="flex flex-wrap gap-2">
           {isOwnProfile ? (
             <Button asChild variant="line"><Link to="/settings">Edit profile</Link></Button>
+            {!isProProfile && <Button asChild variant="hero"><Link to="/pricing"><Crown className="mr-2 h-4 w-4"/>Go PRO</Link></Button>}
           ) : user ? (
             <Button variant={social?.isFollowing ? "line" : "hero"} onClick={() => void toggleFollow()} disabled={busy || !social}>
               {social?.isFollowing ? <><UserCheck className="mr-2 h-4 w-4" />Following</> : <><UserPlus className="mr-2 h-4 w-4" />Follow</>}
