@@ -127,7 +127,7 @@ grant execute on function public.complete_crew_battle(uuid) to authenticated;
 
 -- Generate the weekly pairings without requiring a user to open a Crew page.
 create or replace function public.repunit_generate_weekly_crew_battles()
-returns integer language plpgsql security definer set search_path = public as $
+returns integer language plpgsql security definer set search_path = public as $$
 declare
   monday date := date_trunc('week', now())::date;
   battle_category text;
@@ -166,13 +166,13 @@ begin
   get diagnostics inserted_count = row_count;
   return inserted_count;
 end;
-$;
+$$;
 revoke all on function public.repunit_generate_weekly_crew_battles() from public, anon, authenticated;
 grant execute on function public.repunit_generate_weekly_crew_battles() to service_role;
 
 -- Finalize expired weekly and accepted battles even if no member opens the app.
 create or replace function public.repunit_finalize_expired_crew_battles()
-returns integer language plpgsql security definer set search_path = public as $
+returns integer language plpgsql security definer set search_path = public as $$
 declare
   b record;
   left_total numeric;
@@ -236,12 +236,12 @@ begin
   end loop;
   return finalized_count;
 end;
-$;
+$$;
 revoke all on function public.repunit_finalize_expired_crew_battles() from public, anon, authenticated;
 grant execute on function public.repunit_finalize_expired_crew_battles() to service_role;
 
 -- pg_cron is optional on Supabase projects; the app still has an on-visit fallback.
-do $
+do $$
 begin
   if exists(select 1 from pg_extension where extname = 'pg_cron') then
     if not exists(select 1 from cron.job where jobname = 'repunit-weekly-crew-battles') then
@@ -254,7 +254,7 @@ begin
 exception when undefined_table or undefined_function or insufficient_privilege then
   raise notice 'pg_cron is unavailable; crew battles will use the on-visit fallback.';
 end;
-$;
+$$;
 
 commit;
 notify pgrst, 'reload schema';
