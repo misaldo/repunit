@@ -30,6 +30,7 @@
 5. Run quality checks and a production build:
 
    ```bash
+   npm run typecheck
    npm run lint
    npm test
    npm run build
@@ -74,7 +75,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 4. Set the Edge Function secrets (use your real values; do not commit them):
 
    ```bash
-   supabase secrets set STRIPE_SECRET_KEY=sk_live_... STRIPE_PRICE_MONTHLY=price_... STRIPE_PRICE_YEARLY=price_... STRIPE_WEBHOOK_SECRET=whsec_... APP_URL=https://your-domain.example
+   supabase secrets set STRIPE_SECRET_KEY=sk_test_... STRIPE_PRICE_MONTHLY=price_... STRIPE_PRICE_YEARLY=price_... STRIPE_WEBHOOK_SECRET=whsec_... APP_URL=https://your-domain.example
    ```
 
    Use Stripe test-mode keys and test prices until the whole payment flow has been verified. Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to deployed Edge Functions.
@@ -132,7 +133,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
    - `SUPABASE_URL`
    - `SUPABASE_PUBLISHABLE_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY` only if a server-side admin operation is explicitly enabled; never expose it to the browser.
-3. Set the Nitro deployment preset to `vercel` in the Vercel build environment if the default Cloudflare preset is selected by the build config.
+3. Set the Nitro deployment preset to `vercel` in the Vercel build environment if the default Cloudflare preset is selected by the build config. Also add `VITE_VAPID_PUBLIC_KEY` if Web Push is enabled.
 4. Use `npm ci` as the install command and `npm run build` as the build command.
 5. After deployment, verify authentication redirects, video upload/playback, PWA installation, database-backed routes, and the Stripe webhook against the production domain.
 
