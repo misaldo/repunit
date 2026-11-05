@@ -10,9 +10,16 @@ declare total_volume numeric;
 begin
   if new.status <> 'VERIFIED' then return new; end if;
 
-  insert into public.user_achievements(user_id, achievement_key)
-  values(new.user_id, 'first_pr')
-  on conflict(user_id, achievement_key) do nothing;
+  if not exists (
+    select 1 from public.lifts
+    where user_id = new.user_id and exercise = new.exercise
+      and status = 'VERIFIED' and id <> new.id
+      and weight_kg >= new.weight_kg
+  ) then
+    insert into public.user_achievements(user_id, achievement_key)
+    values(new.user_id, 'first_pr')
+    on conflict(user_id, achievement_key) do nothing;
+  end if;
 
   if new.exercise = 'bench' and new.weight_kg >= 100 then
     insert into public.user_achievements(user_id, achievement_key)
