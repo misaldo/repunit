@@ -36,7 +36,7 @@ begin
   )
   select p.left_id, p.right_id, battle_category,
     monday::timestamptz, (monday + 7)::timestamptz,
-    'scheduled', auth.uid(), true, monday
+    'active', auth.uid(), true, monday
   from pairs p
   where not exists (
     select 1 from public.crew_battles b
@@ -50,7 +50,7 @@ grant execute on function public.ensure_weekly_crew_battles(uuid) to authenticat
 
 create or replace function public.challenge_crew(_challenger uuid, _opponent uuid, _category text)
 returns uuid language plpgsql security definer set search_path = public as $$
-declare battle_id uuid;
+declare battle_id uuid; member record;
 begin
   if auth.uid() is null then raise exception 'Sign in to challenge a crew'; end if;
   if _challenger = _opponent then raise exception 'Choose a different crew'; end if;
@@ -64,9 +64,16 @@ begin
     status, created_by, is_weekly
   ) values (_challenger, _opponent, _category, date_trunc('day',now()), date_trunc('day',now()) + interval '7 days', 'pending', auth.uid(), false)
   returning id into battle_id;
+  for member in select user_id from public.crew_members where crew_id = _opponent loop
+    perform public.repunit_create_notification(
+      member.user_id, auth.uid(), 'battle', 'Crew challenge received',
+      'Your crew has been challenged. Open the battle to accept or decline.',
+      '/battles/' || battle_id::text
+    );
+  end loop;
   return battle_id;
 end;
-$$;
+$;
 grant execute on function public.challenge_crew(uuid,uuid,text) to authenticated;
 
 create or replace function public.respond_crew_battle(_battle uuid, _accept boolean)
@@ -188,7 +195,7 @@ begin
     status, created_by, is_weekly, week_start
   )
   select p.left_id, p.right_id, battle_category, monday::timestamptz,
-         (monday + 7)::timestamptz, 'scheduled', p.created_by, true, monday
+         (monday + 7)::timestamptz, 'active', p.created_by, true, monday
   from pairs p
   where not exists (
     select 1 from public.crew_battles b
