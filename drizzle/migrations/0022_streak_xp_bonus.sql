@@ -44,7 +44,7 @@ $$;
 
 -- Fallback for projects without pg_cron: check the signed-in user's streak on app open.
 create or replace function public.repunit_check_my_streak_loss()
-returns void language plpgsql security definer set search_path = public as $
+returns void language plpgsql security definer set search_path = public as $$
 declare
   progress_row public.user_progress%rowtype;
 begin
@@ -66,7 +66,7 @@ begin
     end if;
   end if;
 end;
-$;
+$$;
 grant execute on function public.repunit_check_my_streak_loss() to authenticated;
 
 commit;
