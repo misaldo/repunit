@@ -50,6 +50,38 @@ create trigger lifter_challenge_notification
 after insert on public.lifter_challenges
 for each row execute function public.notify_lifter_challenge();
 
+-- Every mutual follow (friend) receives an automatic call-out when a lift is logged.
+create or replace function public.create_friend_lift_callouts()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+begin
+  if new.weight_kg < 600 then
+    insert into public.lifter_challenges(
+      challenger_id, challenged_id, exercise, target_weight_kg, source_lift_id, due_at
+    )
+    select new.user_id, f.follower_id, new.exercise,
+           least(new.weight_kg + 2.5, 600), new.id, now() + interval '7 days'
+    from public.follows f
+    where f.following_id = new.user_id
+      and f.follower_id <> new.user_id
+      and exists (
+        select 1 from public.follows mutual
+        where mutual.follower_id = new.user_id
+          and mutual.following_id = f.follower_id
+      );
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists lifts_create_friend_callouts on public.lifts;
+create trigger lifts_create_friend_callouts
+after insert on public.lifts
+for each row execute function public.create_friend_lift_callouts();
+
 -- When a verified lift beats the target, close the accepted challenge and record its winner.
 create or replace function public.resolve_lifter_challenges()
 returns trigger
