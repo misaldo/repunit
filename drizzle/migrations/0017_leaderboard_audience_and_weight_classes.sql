@@ -37,13 +37,11 @@ returns table(
   reps integer,
   status public.lift_status,
   lift_id uuid,
-  lifted_on date
+  lifted_on date,
+  rank_position bigint
 )
 language sql stable security definer set search_path = public as $$
-  select ranked.user_id, ranked.username, ranked.display_name, ranked.avatar_url,
-         ranked.bodyweight_kg, ranked.weight_kg, ranked.reps, ranked.status,
-         ranked.lift_id, ranked.lifted_on
-  from (
+  with best_lifts as (
     select distinct on (l.user_id)
       l.user_id, p.username, p.display_name, p.avatar_url, p.bodyweight_kg,
       l.weight_kg, l.reps, l.status, l.id as lift_id, l.lifted_on
@@ -69,9 +67,17 @@ language sql stable security definer set search_path = public as $$
         end = _weight_class
       )
     order by l.user_id, l.weight_kg desc, l.reps desc, l.lifted_on asc
-  ) ranked
-  order by ranked.weight_kg desc, ranked.reps desc
-  limit 100;
+  ), ranked as (
+    select row_number() over(order by b.weight_kg desc, b.reps desc, b.lifted_on asc, b.username asc) as rank_position,
+           b.*
+    from best_lifts b
+  )
+  select ranked.user_id, ranked.username, ranked.display_name, ranked.avatar_url,
+         ranked.bodyweight_kg, ranked.weight_kg, ranked.reps, ranked.status,
+         ranked.lift_id, ranked.lifted_on, ranked.rank_position
+  from ranked
+  where ranked.rank_position <= 100 or ranked.user_id = auth.uid()
+  order by ranked.rank_position;
 $$;
 
 grant execute on function public.leaderboard_scoped(public.exercise, uuid, date, uuid[], text) to anon, authenticated;
