@@ -20,11 +20,11 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 const notificationOptions = [
   { key: "lift", label: "Friend logs a lift", description: "When a mutual friend records a workout.", icon: Dumbbell },
-  { key: "pr", label: "Personal records", description: "When a friend sets a new PR.", icon: Trophy },
+  { key: "pr", label: "Personal records", description: "When you or a friend sets a new PR.", icon: Trophy },
   { key: "like", label: "Likes", description: "When someone likes your content.", icon: Heart },
   { key: "comment", label: "Comments", description: "When someone comments on your content.", icon: MessageCircle },
   { key: "challenge", label: "Challenges", description: "New call-outs and lifting challenges.", icon: Swords },
-  { key: "rank", label: "Rank changes", description: "When someone takes your #1 spot and achievements unlock.", icon: Medal },
+  { key: "rank", label: "Rank changes", description: "When someone takes your #1 spot.", icon: Medal },
   { key: "battle", label: "Crew battles", description: "When a battle starts or ends.", icon: Swords },
   { key: "streak", label: "Streak alerts", description: "When your training streak expires.", icon: Flame },
 ] as const;
