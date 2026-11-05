@@ -136,7 +136,7 @@ function FeedPage() {
             </div>
             {post.content && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed">{post.content}</p>}
             <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
-              <Button type="button" size="sm" variant={liked ? "soft" : "ghost"} onClick={() => void toggleLike(post)}><Heart className={`mr-1.5 h-4 w-4 ${liked ? "fill-current text-primary" : ""}`}/>{post.likes.length} {post.likes.length === 1 ? "Like" : "Likes"}</Button>
+              <Button type="button" size="sm" variant={liked ? "outline" : "ghost"} onClick={() => void toggleLike(post)}><Heart className={`mr-1.5 h-4 w-4 ${liked ? "fill-current text-primary" : ""}`}/>{post.likes.length} {post.likes.length === 1 ? "Like" : "Likes"}</Button>
               <Button type="button" size="sm" variant="ghost" onClick={() => toggleComments(post.id)}><MessageCircle className="mr-1.5 h-4 w-4"/>{post.comments.length} Comments</Button>
             </div>
             {commentsVisible && <div className="mt-3 space-y-3 border-t border-border pt-3">
