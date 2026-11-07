@@ -105,7 +105,7 @@ function NewRecord() {
           <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" type="number" min="1" max="100" defaultValue={1} required /></div>
         </div>
         <div className="space-y-1.5"><Label htmlFor="date">Date</Label><Input id="date" name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-        <div className="space-y-1.5"><Label htmlFor="video">Video (MP4/MOV/WebM, max 100 MB)</Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" /></div>
+        <div className="space-y-1.5"><Label htmlFor="video">Video (MP4/MOV/WebM, max 100 MB)</Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" required /></div>
         <div className="space-y-1.5"><Label htmlFor="description">Notes</Label><Textarea id="description" name="description" maxLength={500} /></div>
         {uploadProgress !== null && (
           <div className="space-y-2" aria-live="polite">
@@ -116,7 +116,7 @@ function NewRecord() {
           </div>
         )}
         <Button variant="hero" className="h-12 w-full" disabled={busy}>{busy ? (uploadProgress === null ? "Saving lift…" : `Uploading ${uploadProgress}%`) : "Submit"}</Button>
-        <p className="text-xs text-muted-foreground">New lifts start as Unverified.</p>
+        <p className="text-xs text-muted-foreground">Upload a video to submit your lift. Once the upload is complete, it is automatically marked VERIFIED and progression rewards are applied.</p>
       </form>
     </PageShell>
   );
