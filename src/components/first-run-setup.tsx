@@ -33,7 +33,7 @@ export function FirstRunSetup() {
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const open = Boolean(user?.id && profile && user.user_metadata?.repunit_onboarding_required === true && (profile as any).onboarding_completed !== true && !locallyCompleted);
+  const open = Boolean(user?.id && profile && user.user_metadata?.["repunit_onboarding_required"] === true && (profile as any).onboarding_completed !== true && !locallyCompleted);
   if (!open || !profile || !user) return null;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -53,7 +53,7 @@ export function FirstRunSetup() {
           throw new Error("Choose an image under 5 MB.");
         }
         const extension = avatar.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-        const path = user.id + "/" + crypto.randomUUID() + "." + extension;
+        const path = user!.id + "/" + crypto.randomUUID() + "." + extension;
         const { error: uploadError } = await supabase.storage.from("avatars").upload(path, avatar, {
           cacheControl: "3600", upsert: true, contentType: avatar.type,
         });
@@ -64,14 +64,14 @@ export function FirstRunSetup() {
         username: cleanUsername,
         display_name: cleanNickname || null,
       };
-      if (avatarUrl) update.avatar_url = avatarUrl;
+      if (avatarUrl) update["avatar_url"] = avatarUrl;
       const { data: updated, error } = await (supabase as any).from("profiles")
-        .update(update).eq("id", user.id).select("*").single();
+        .update(update).eq("id", user!.id).select("*").single();
       if (error) {
         if (error.code === "23505") throw new Error("That username is already taken. Choose another one.");
         throw error;
       }
-      queryClient.setQueryData(["profile", user.id], updated);
+      queryClient.setQueryData(["profile", user!.id], updated);
       await queryClient.invalidateQueries({ queryKey: ["public-profile"] });
       if (avatarUploadFailed) toast.error("Profile saved. Your picture needs the avatar storage setup before it can upload.");
       setStep("community");
@@ -90,16 +90,16 @@ export function FirstRunSetup() {
     setSaving(true);
     // Clear the registration-only flag so future logins never reopen setup.
     const { error: metadataError } = await supabase.auth.updateUser({
-      data: { ...user.user_metadata, repunit_onboarding_required: false },
+      data: { ...user!.user_metadata, repunit_onboarding_required: false },
     });
     const { error: profileError } = await (supabase as any).from("profiles")
-      .update({ onboarding_completed: true }).eq("id", user.id);
+      .update({ onboarding_completed: true }).eq("id", user!.id);
     // Local fallback also protects this browser if either backend update is unavailable.
     if (metadataError || profileError) {
-      try { window.localStorage.setItem("repunit-onboarding-done:" + user.id, "1"); } catch { /* storage may be disabled */ }
+      try { window.localStorage.setItem("repunit-onboarding-done:" + user!.id, "1"); } catch { /* storage may be disabled */ }
     }
     setLocallyCompleted(true);
-    await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+    await queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
     setSaving(false);
     void navigate({ to: destination });
   }

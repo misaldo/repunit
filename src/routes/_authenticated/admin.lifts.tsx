@@ -50,13 +50,13 @@ function AdminLifts() {
       const lifts = (data ?? []) as unknown as Array<Record<string, any>>;
       if (!lifts.length) return [];
 
-      const userIds = [...new Set(lifts.map((lift) => String(lift.user_id)))];
+      const userIds = [...new Set(lifts.map((lift) => String(lift["user_id"])))];
       const [profilesResult, rows] = await Promise.all([
         supabase.from("profiles").select("id, username").in("id", userIds),
         Promise.all(lifts.map(async (lift) => {
           const { data: signed, error: signedError } = await supabase.storage
             .from("lift-videos")
-            .createSignedUrl(String(lift.video_path), 60 * 60);
+            .createSignedUrl(String(lift["video_path"]), 60 * 60);
           return {
             ...lift,
             video_url: signedError ? null : signed?.signedUrl ?? null,
@@ -67,7 +67,7 @@ function AdminLifts() {
       const usernames = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile.username]));
       return rows.map((lift) => ({
         ...lift,
-        username: usernames.get(String(lift.user_id)) ?? null,
+        username: usernames.get(String((lift as Record<string, any>)["user_id"])) ?? null,
       })) as PendingLift[];
     },
     retry: false,
