@@ -41,7 +41,7 @@ function urlBase64ToUint8Array(base64String: string) {
 
 function Settings() {
   const { user } = Route.useRouteContext();
-  const { data: p } = useMyProfile(user.id);
+  const { data: p, isLoading: profileLoading, isError: profileError, refetch: refetchProfile } = useMyProfile(user.id);
   const qc = useQueryClient();
   const [pushSupported, setPushSupported] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
@@ -80,7 +80,7 @@ function Settings() {
   async function setPreference(key: string, value: boolean, showToast = true): Promise<boolean> {
     const { error } = await (supabase as any).from("notification_preferences")
       .upsert({ user_id: user.id, [key]: value, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (error) { toast.error("Could not save notification setting: " + error.message); return false; }
+    if (error) { toast.error("Could not save this notification setting. Try again."); return false; }
     await qc.invalidateQueries({ queryKey: ["notification-preferences", user.id] });
     if (showToast) toast.success("Notification setting saved");
     return true;
@@ -138,11 +138,12 @@ function Settings() {
     };
     profileUpdate.profile_theme = isPro ? String(f.get("profile_theme") || "default") : "default";
     const { error } = await (supabase as any).from("profiles").update(profileUpdate).eq("id", user.id);
-    if (error) { toast.error(error.code === "23505" ? "Username taken" : error.message); return; }
+    if (error) { toast.error(error.code === "23505" ? "Username already taken." : "Could not save your profile. Check your connection and try again."); return; }
     toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["profile"] });
   }
-  if (!p) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
+  if (profileLoading) return <PageShell><p className="text-muted-foreground">Loading your settings…</p></PageShell>;
+  if (profileError || !p) return <PageShell><div className="py-10 text-center"><p className="font-semibold">Your settings could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p><Button className="mt-4" variant="line" onClick={() => void refetchProfile()}>Try again</Button></div></PageShell>;
   return (
     <PageShell>
       <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Bell className="h-5 w-5"/></div><div><p className="eyebrow text-primary">YOUR ACCOUNT</p><h1 className="font-stat text-4xl uppercase">Settings</h1></div></div>
@@ -164,7 +165,7 @@ function Settings() {
       </form>
       <section className="mt-8 max-w-xl rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="flex items-center gap-3"><Bell className="h-5 w-5 text-primary"/><div><h2 className="font-stat text-2xl uppercase">Notifications</h2><p className="text-xs text-muted-foreground">Choose what REPUNIT should tell you about.</p></div></div>
-        {preferences.isLoading ? <p className="py-6 text-sm text-muted-foreground">Loading preferences…</p> : preferences.isError ? <div className="py-5"><p className="text-sm text-muted-foreground">Notification settings are not available yet. Apply database migration 0015 first.</p><Button className="mt-3" variant="line" size="sm" onClick={() => void preferences.refetch()}>Try again</Button></div> : <div className="mt-4 divide-y divide-border">
+        {preferences.isLoading ? <p className="py-6 text-sm text-muted-foreground">Loading preferences…</p> : preferences.isError ? <div className="py-5"><p className="text-sm text-muted-foreground">Notification settings are temporarily unavailable. Check your connection and try again.</p><Button className="mt-3" variant="line" size="sm" onClick={() => void preferences.refetch()}>Try again</Button></div> : <div className="mt-4 divide-y divide-border">
           {notificationOptions.map(({key,label,description,icon:Icon}) => <div key={key} className="flex items-center gap-3 py-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background text-primary"><Icon className="h-4 w-4"/></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{label}</p><p className="text-xs text-muted-foreground">{description}</p></div><Switch checked={Boolean((preferences.data as any)?.[key])} onCheckedChange={(value) => void setPreference(key,value)} aria-label={label}/></div>)}
         </div>}
         <div className="mt-4 rounded-xl border border-border bg-background p-4">
