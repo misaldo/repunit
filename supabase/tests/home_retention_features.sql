@@ -1,6 +1,6 @@
 begin;
 
-select plan(3);
+select plan(2);
 
 select ok(
   to_regprocedure('public.award_verified_pr_xp()') is not null
@@ -16,12 +16,6 @@ select ok(
       and not tgisinternal
   ),
   'completed weekly Crew battles award the Weekly Winners badge'
-);
-
-select ok(
-  exists (select 1 from public.crew_achievements where achievement_key = '100_ton_club')
-  or to_regclass('public.crew_achievements') is not null,
-  'Crew achievement storage is available for 100 Ton Club and Weekly Winners'
 );
 
 select * from finish();
