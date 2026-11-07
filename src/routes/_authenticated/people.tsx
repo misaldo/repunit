@@ -72,8 +72,8 @@ function PeoplePage() {
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search username or name..." className="w-full bg-transparent text-sm outline-none" />
         </label>
 
-        {isLoading ? <p className="py-12 text-center text-sm text-muted-foreground">Loading lifters...</p>
-          : isError ? <p className="py-12 text-center text-sm text-destructive">Could not load people. Check your connection and try again.</p>
+        {isLoading && !data ? <p className="py-12 text-center text-sm text-muted-foreground">Loading lifters...</p>
+          : isError && !data ? <p className="py-12 text-center text-sm text-destructive">Could not load people. Check your connection and try again.</p>
           : filtered.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center"><Users className="mx-auto mb-3 h-8 w-8 text-muted-foreground" /><p className="font-semibold">No lifters found</p><p className="mt-1 text-sm text-muted-foreground">Try another username or come back when more people join.</p></div>
           : <div className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {filtered.map((person) => {
