@@ -220,7 +220,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
 
   return <section className="mt-10">
     <div className="flex items-end justify-between gap-3"><div><p className="eyebrow text-primary">THE WEEKLY SHOWDOWN</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew battles</h2><p className="mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">Build your rivalry. Stack PRs. Earn your place at the top.</p><p className="mt-1 text-xs text-muted-foreground">Logged PRs count · One category every week</p></div><Swords className="mb-1 h-6 w-6 text-primary"/></div>
-    {isAdmin&&data?.adminCrews.length>0&&<div className="mt-4 rounded-2xl border border-border bg-card p-4">
+    {false && isAdmin&&data?.adminCrews.length>0&&<div className="mt-4 rounded-2xl border border-border bg-card p-4">
       <p className="text-xs font-black uppercase tracking-widest">Challenge a crew</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
         <select value={opponent} onChange={e=>setOpponent(e.target.value)} className="h-11 min-w-0 rounded-xl border border-border bg-background px-3 text-sm"><option value="">Choose rival crew</option>{data.adminCrews.map((c:Crew)=><option key={c.id} value={c.id}>{c.name}</option>)}</select>
@@ -229,7 +229,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       </div>
     </div>}
     {isLoading&&!data?<p className="mt-5 text-sm text-muted-foreground">Loading battles…</p>:isError&&!data?<div className="mt-5 rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">Battle information is temporarily unavailable.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void refetch()}>Retry</Button></div>:<>
-      <div className="mt-5 space-y-4">{current.length?current.map(x=>card(x)): <div className="rounded-2xl border border-dashed border-border p-6 text-center"><Swords className="mx-auto h-7 w-7 text-muted-foreground"/><p className="mt-2 text-sm font-bold">No active battles yet</p><p className="mt-1 text-xs text-muted-foreground">Weekly matchups are paired automatically. You can also challenge another crew above.</p></div>}</div>
+      <div className="mt-5 space-y-4">{current.length?current.map(x=>card(x)): <div className="rounded-2xl border border-dashed border-border p-6 text-center"><Swords className="mx-auto h-7 w-7 text-muted-foreground"/><p className="mt-2 text-sm font-bold">No active battles yet</p><p className="mt-1 text-xs text-muted-foreground">Weekly matchups are paired automatically. Check back when your next matchup begins.</p></div>}</div>
       {history.length>0&&<div className="mt-8"><p className="eyebrow">PAST SHOWDOWNS</p><h3 className="font-stat mt-1 text-2xl uppercase">Battle history</h3><div className="mt-3 space-y-3">{history.map(x=>card(x,true))}</div></div>}
     </>}
   </section>;
