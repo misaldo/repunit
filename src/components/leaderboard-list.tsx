@@ -96,11 +96,12 @@ export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: s
         <Link to="/u/$username" params={{ username: r.username }} hash="training-split" className="mt-2 inline-flex min-h-8 w-full items-center justify-center gap-1 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 hover:text-primary">
           <Dumbbell className="h-3 w-3" /> View SPLIT
         </Link>
-        {r.has_video
-          ? user
+        {r.has_video ? <>
+          {user
             ? <button type="button" onClick={() => setActiveLiftId(r.lift_id)} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:bg-primary/20 sm:text-xs"><Camera className="h-3.5 w-3.5"/> Watch video</button>
-            : <Link to="/auth" className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 sm:text-xs">Sign in to watch</Link>
-          : <Link to="/records/$id" params={{ id: r.lift_id }} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 sm:text-xs">View result</Link>}
+            : <Link to="/auth" className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 sm:text-xs">Sign in to watch</Link>}
+          <Link to="/records/$id" params={{ id: r.lift_id }} className="mt-1 inline-flex min-h-7 w-full items-center justify-center text-[10px] font-bold uppercase tracking-wide text-muted-foreground hover:text-primary">View result · Flag</Link>
+        </> : <Link to="/records/$id" params={{ id: r.lift_id }} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 sm:text-xs">View result · Flag</Link>}
       </div>;
     })}
   </div>
@@ -129,11 +130,10 @@ export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; star
         <div className="text-right">
           <p className="font-stat text-3xl">{Number(r.weight_kg)}<span className="text-sm text-muted-foreground">kg</span></p>
           <p className="text-[10px] text-muted-foreground">{r.reps > 1 ? `× ${r.reps} · ` : ""}{gap !== null ? `−${gap.toFixed(1)} kg` : rank === 1 ? "leader" : `rank #${rank}`}</p>{r.has_video && <span className="mt-1 inline-flex rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">Video</span>}
-          {r.has_video && rank <= 10
-            ? user
-              ? <button type="button" onClick={(event) => { event.stopPropagation(); setActiveLiftId(r.lift_id); }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline"><Camera className="h-3 w-3"/> Watch video</button>
-              : <Link to="/auth" className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}>Sign in to watch</Link>
-            : <Link to="/records/$id" params={{ id: r.lift_id }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}>View result</Link>}
+          {r.has_video && rank <= 10 && (user
+            ? <button type="button" onClick={(event) => { event.stopPropagation(); setActiveLiftId(r.lift_id); }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline"><Camera className="h-3 w-3"/> Watch video</button>
+            : <Link to="/auth" className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}>Sign in to watch</Link>)}
+          <Link to="/records/$id" params={{ id: r.lift_id }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground hover:text-primary" onClick={e=>e.stopPropagation()}>View result · Flag</Link>
         </div>
       </li>;
     })}
