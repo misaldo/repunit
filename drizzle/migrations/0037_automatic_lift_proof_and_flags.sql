@@ -133,8 +133,6 @@ begin
     select count(*)::integer into daily_pr_jump_count
     from public.lifts same_day
     where same_day.user_id = submitting_user
-      and same_day.created_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
-      and same_day.created_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC')
       and same_day.verified_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
       and same_day.verified_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC')
       and same_day.weight_kg > coalesce((
