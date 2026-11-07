@@ -106,7 +106,7 @@ export function DesktopSidebar() {
 export function MobileNav() {
   const { user } = useUser();
   const { data: profile } = useMyProfile(user?.id);
-  const item = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.04em] text-muted-foreground transition active:scale-95";
+  const item = "relative flex h-full min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.04em] text-muted-foreground transition active:scale-95";
   const active = { className: "!text-primary" };
   return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden">
     <div className="mx-auto flex h-[76px] max-w-xl items-center justify-between gap-1 px-2">
