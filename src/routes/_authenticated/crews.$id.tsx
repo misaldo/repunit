@@ -126,7 +126,7 @@ function Crew() {
     finally { setLeaving(false); }
   }
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
-  if (isError) return <PageShell><div className="py-10 text-center"><p className="font-semibold">This crew could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p><Button variant="line" className="mt-4" onClick={() => void refetch()}>Try again</Button></div></PageShell>;
+  if (isError && !data) return <PageShell><div className="py-10 text-center"><p className="font-semibold">This crew could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p><Button variant="line" className="mt-4" onClick={() => void refetch()}>Try again</Button></div></PageShell>;
   if (!data?.c) return <PageShell><p>Crew not found.</p></PageShell>;
   return (
     <PageShell>
