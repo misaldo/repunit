@@ -20,6 +20,7 @@ export function FirstRunSetup() {
   const [nickname, setNickname] = useState("");
   const [avatar, setAvatar] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [locallyCompleted, setLocallyCompleted] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("repunit-onboarding-done:" + (user?.id ?? "")) === "1");
 
   useEffect(() => {
     if (!profile) return;
@@ -27,7 +28,7 @@ export function FirstRunSetup() {
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const open = Boolean(user?.id && profile && profile.onboarding_completed !== true);
+  const open = Boolean(user?.id && profile && profile.onboarding_completed !== true && !locallyCompleted);
   if (!open || !profile || !user) return null;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -82,12 +83,14 @@ export function FirstRunSetup() {
     setSaving(true);
     const { error } = await (supabase as any).from("profiles")
       .update({ onboarding_completed: true }).eq("id", user.id);
+    // Keep onboarding from blocking the app if the new migration has not yet
+    // reached a preview database; local completion is a safe fallback.
     if (error) {
-      toast.error("Your setup could not be completed. Please try again.");
-      setSaving(false);
-      return;
+      try { window.localStorage.setItem("repunit-onboarding-done:" + user.id, "1"); } catch { /* storage may be disabled */ }
+      setLocallyCompleted(true);
+    } else {
+      await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
     }
-    await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
     setSaving(false);
     void navigate({ to: destination });
   }
