@@ -31,6 +31,8 @@ The admin lift review migration is `drizzle/migrations/0025_admin_lift_review.sq
 
 The automatic video verification migration is `drizzle/migrations/0026_auto_verify_uploaded_lifts.sql`. Apply it after `0025_admin_lift_review.sql`. It requires an actual object in the private `lift-videos` bucket, owned by the submitting user, before a normal authenticated submission is inserted as `VERIFIED`. This is automatic MVP approval based on video upload presence; it does not use computer vision or judge lifting technique. The existing admin review RPC and page remain available for older pending submissions and exceptional cases.
 
+The privacy hardening migration is `drizzle/migrations/0027_privacy_hardening.sql`. Apply it after `0026_auto_verify_uploaded_lifts.sql`. It removes anonymous read access to `lift-videos`, keeps signed-in playback, and grants anon only the public profile columns needed by public pages. The matching pgTAP checks are in `supabase/tests/privacy_hardening.sql`.
+
 The pgTAP permission test is `supabase/tests/admin_lift_review_permissions.sql`. Run it against a local Supabase test database with `supabase test db` after applying the migration. Do not run it against production as a substitute for a backup or deployment check.
 
 ## Check which migrations are already applied
