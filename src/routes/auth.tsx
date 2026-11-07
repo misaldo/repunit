@@ -81,7 +81,9 @@ function AuthPage() {
         navigate({ to: safePath(redirect) });
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "";
+      const safeMessages = ["Username: 3–20 lowercase letters, numbers or _.", "Password must be at least 8 characters.", "That username is taken."];
+      toast.error(safeMessages.includes(message) ? message : mode === "reset" ? "Could not send a password reset email. Check your address and try again." : mode === "up" ? "Could not create your account. Check your details and try again." : "Could not sign in. Check your email and password and try again.");
     } finally {
       setBusy(false);
     }
@@ -98,7 +100,7 @@ async function google() {
   });
 
   if (error) {
-    toast.error(error.message);
+    toast.error("Could not continue with Google sign-in. Please try again.");
   }
 }
   return (
