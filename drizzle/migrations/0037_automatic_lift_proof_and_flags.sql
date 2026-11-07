@@ -10,8 +10,8 @@ begin;
 alter table public.lifts drop constraint if exists lifts_weight_kg_check;
 alter table public.lifts drop constraint if exists lifts_reps_check;
 alter table public.lifts
-  add constraint lifts_weight_kg_check check (weight_kg >= 0 and weight_kg <= 9999.99),
-  add constraint lifts_reps_check check (reps between 1 and 1000);
+  add constraint lifts_weight_kg_check check (weight_kg between -9999.99 and 9999.99),
+  add constraint lifts_reps_check check (reps between -1000000 and 1000000);
 
 alter table public.lifts
   add column if not exists verification_reason text,
