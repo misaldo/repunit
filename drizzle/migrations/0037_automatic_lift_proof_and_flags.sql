@@ -56,6 +56,7 @@ declare
   submitting_user uuid := auth.uid();
   previous_best numeric;
   same_day_best numeric;
+  daily_pr_jump_count integer;
   failure_reason text := null;
   daily_count integer;
   max_weight numeric;
@@ -125,9 +126,22 @@ begin
     if previous_best is not null and new.weight_kg > previous_best * 1.10 then
       failure_reason := coalesce(failure_reason, 'A PR jump over 10% needs video proof.');
     end if;
-    if same_day_best is not null and same_day_best > coalesce(previous_best, 0)
-       and new.weight_kg > same_day_best then
-      failure_reason := coalesce(failure_reason, 'Only one unproven PR jump is allowed per exercise per day. Add video proof.');
+    select count(*)::integer into daily_pr_jump_count
+    from public.lifts same_day
+    where same_day.user_id = submitting_user
+      and same_day.lifted_on = new.lifted_on
+      and same_day.status = 'VERIFIED'
+      and same_day.weight_kg > coalesce((
+        select max(prior.weight_kg)
+        from public.lifts prior
+        where prior.user_id = same_day.user_id
+          and prior.exercise = same_day.exercise
+          and prior.status = 'VERIFIED'
+          and prior.lifted_on < same_day.lifted_on
+      ), 0);
+
+    if coalesce(daily_pr_jump_count, 0) > 0 then
+      failure_reason := coalesce(failure_reason, 'Only one unproven PR jump is allowed per user per day. Add video proof.');
     end if;
   end if;
 
