@@ -42,6 +42,7 @@ export function FirstRunSetup() {
     setSaving(true);
     try {
       let avatarUrl: string | undefined;
+      let avatarUploadFailed = false;
       if (avatar) {
         if (!avatar.type.startsWith("image/") || avatar.size > 5 * 1024 * 1024) {
           throw new Error("Choose an image under 5 MB.");
@@ -51,8 +52,8 @@ export function FirstRunSetup() {
         const { error: uploadError } = await supabase.storage.from("avatars").upload(path, avatar, {
           cacheControl: "3600", upsert: true, contentType: avatar.type,
         });
-        if (uploadError) throw uploadError;
-        avatarUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+        if (uploadError) avatarUploadFailed = true;
+        else avatarUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
       }
       const update: Record<string, unknown> = {
         username: cleanUsername,
@@ -67,6 +68,7 @@ export function FirstRunSetup() {
       }
       queryClient.setQueryData(["profile", user.id], updated);
       await queryClient.invalidateQueries({ queryKey: ["public-profile"] });
+      if (avatarUploadFailed) toast.error("Profile saved. Your picture needs the avatar storage setup before it can upload.");
       setStep("community");
     } catch (error) {
       toast.error(error instanceof Error && error.message.includes("already taken")
