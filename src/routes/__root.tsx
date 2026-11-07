@@ -129,7 +129,7 @@ function RootComponent() {
     <I18nProvider>
       <QueryClientProvider client={queryClient}>
         <Outlet />
-        <AchievementUnlockBanner />
+        {false && <AchievementUnlockBanner />}
         <PrCelebration />
         <Toaster theme="dark" position="top-center" />
       </QueryClientProvider>
