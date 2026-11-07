@@ -413,6 +413,14 @@ export type Database = {
         Relationships: []
       }
     }
+      user_progress: {
+        Row: { user_id: string; xp: number; current_streak: number; longest_streak: number; last_activity_on: string | null; updated_at: string }
+        Insert: { user_id: string; xp?: number; current_streak?: number; longest_streak?: number; last_activity_on?: string | null; updated_at?: string }
+        Update: { user_id?: string; xp?: number; current_streak?: number; longest_streak?: number; last_activity_on?: string | null; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "user_progress_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] }
+        ]
+      }
     Views: {
       leaderboard_lifts: {
         Row: {
