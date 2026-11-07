@@ -172,6 +172,8 @@ export type Database = {
           lifted_on: string
           reps: number
           status: Database["public"]["Enums"]["lift_status"]
+          verification_reason: string | null
+          xp_awarded_at: string | null
           updated_at: string
           user_id: string
           video_path: string | null
@@ -185,6 +187,8 @@ export type Database = {
           lifted_on?: string
           reps: number
           status?: Database["public"]["Enums"]["lift_status"]
+          verification_reason?: string | null
+          xp_awarded_at?: string | null
           updated_at?: string
           user_id: string
           video_path?: string | null
@@ -198,6 +202,8 @@ export type Database = {
           lifted_on?: string
           reps?: number
           status?: Database["public"]["Enums"]["lift_status"]
+          verification_reason?: string | null
+          xp_awarded_at?: string | null
           updated_at?: string
           user_id?: string
           video_path?: string | null
@@ -209,6 +215,52 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lift_flags: {
+        Row: {
+          created_at: string
+          crew_id: string
+          flagger_id: string
+          id: string
+          lift_id: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          flagger_id: string
+          id?: string
+          lift_id: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          flagger_id?: string
+          id?: string
+          lift_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lift_flags_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lift_flags_flagger_id_fkey"
+            columns: ["flagger_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lift_flags_lift_id_fkey"
+            columns: ["lift_id"]
+            isOneToOne: false
+            referencedRelation: "lifts"
             referencedColumns: ["id"]
           },
         ]
@@ -399,6 +451,14 @@ export type Database = {
           member_count: number
           name: string
         }[]
+      }
+      attach_lift_video: {
+        Args: { _lift_id: string; _video_path: string }
+        Returns: Database["public"]["Tables"]["lifts"]["Row"]
+      }
+      flag_lift: {
+        Args: { _lift_id: string }
+        Returns: number
       }
       has_role: {
         Args: {
