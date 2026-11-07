@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(22);
 
 select ok(
   exists (
@@ -66,6 +66,53 @@ select ok(
 select ok(
   to_regprocedure('public.admin_review_lift(uuid,text)') is null,
   'the manual admin review RPC is removed'
+);
+
+select ok(
+  exists (
+    select 1 from pg_trigger
+    where tgrelid = 'public.lifts'::regclass
+      and tgname = 'lifts_require_pending_on_insert'
+      and not tgisinternal
+  ),
+  'every user lift insert passes through the server-side classifier'
+);
+
+select ok(
+  position('daily_count >= 10' in lower(pg_get_functiondef('public.require_pending_lift_submission()'::regprocedure))) > 0,
+  'the database enforces the daily submission limit'
+);
+
+select ok(
+  position('weight or reps are outside the plausible range' in lower(pg_get_functiondef('public.require_pending_lift_submission()'::regprocedure))) > 0,
+  'the database checks exercise-specific plausible weight and reps'
+);
+
+select ok(
+  position('this looks like a duplicate lift' in lower(pg_get_functiondef('public.require_pending_lift_submission()'::regprocedure))) > 0,
+  'the database detects duplicate lift submissions'
+);
+
+select ok(
+  position('a pr jump over 10% needs video proof' in lower(pg_get_functiondef('public.require_pending_lift_submission()'::regprocedure))) > 0
+  and position('only one unproven pr jump is allowed' in lower(pg_get_functiondef('public.require_pending_lift_submission()'::regprocedure))) > 0,
+  'the database limits unproven PR jumps to one per day and 10 percent'
+);
+
+select ok(
+  position('count(distinct f.flagger_id)' in lower(pg_get_functiondef('public.flag_lift(uuid)'::regprocedure))) > 0
+  and position('flag_count >= 3' in lower(pg_get_functiondef('public.flag_lift(uuid)'::regprocedure))) > 0,
+  'three distinct Crew members are required to flag a lift under review'
+);
+
+select ok(
+  position('verified_at = null' in lower(pg_get_functiondef('public.flag_lift(uuid)'::regprocedure))) > 0,
+  'flagging a lift removes its verified timestamp from PR calculations'
+);
+
+select ok(
+  position('status in (''needs_proof'', ''under_review'', ''pending'')' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
+  'video proof can resolve only lifts waiting for proof or review'
 );
 
 select * from finish();
