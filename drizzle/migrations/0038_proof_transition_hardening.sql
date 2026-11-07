@@ -80,6 +80,10 @@ begin
     raise exception 'Sign in to add video proof' using errcode = '42501';
   end if;
 
+  -- Serialize proof resolutions with new submissions so parallel RPC calls
+  -- cannot push one user past the daily verified-lift limit.
+  perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text, 370037));
+
   if _video_path is null or btrim(_video_path) = ''
      or split_part(_video_path, '/', 1) <> auth.uid()::text then
     raise exception 'The video must be uploaded to your own private folder' using errcode = '42501';
