@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { UserRound } from "lucide-react";
 
@@ -22,6 +22,7 @@ function Settings() {
   const { user } = Route.useRouteContext();
   const { data: p, isLoading: profileLoading, isError: profileError, refetch: refetchProfile } = useMyProfile(user.id);
   const qc = useQueryClient();
+  const [avatar, setAvatar] = useState<File | null>(null);
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -33,8 +34,17 @@ function Settings() {
     const profileUpdate: Record<string, unknown> = {
       username, display_name: String(f.get("display_name")).slice(0, 40) || null, bio: String(f.get("bio")).slice(0, 280) || null, country_code: String(f.get("country_code") || "") || null, bodyweight_kg: bodyweight,
     };
+    if (avatar) {
+      if (!avatar.type.startsWith("image/") || avatar.size > 5 * 1024 * 1024) { toast.error("Choose an image under 5 MB."); return; }
+      const extension = avatar.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const avatarPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(avatarPath, avatar, { cacheControl: "3600", upsert: true, contentType: avatar.type });
+      if (uploadError) { toast.error("Could not upload your profile photo. Please try again."); return; }
+      profileUpdate["avatar_url"] = supabase.storage.from("avatars").getPublicUrl(avatarPath).data.publicUrl;
+    }
     const { error } = await (supabase as any).from("profiles").update(profileUpdate).eq("id", user.id);
     if (error) { toast.error(error.code === "23505" ? "Username already taken." : "Could not save your profile. Check your connection and try again."); return; }
+    setAvatar(null);
     toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["profile"] });
   }
@@ -46,6 +56,10 @@ function Settings() {
       {profileError && <div className="mt-4 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">Showing your last saved settings. <button type="button" onClick={() => void refetchProfile()} className="font-semibold text-primary underline">Refresh</button></div>}
       <form onSubmit={save} className="mt-6 max-w-xl space-y-4 rounded-2xl border border-border bg-card p-5">
         <h2 className="font-stat text-2xl uppercase">Edit profile</h2>
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-background p-3">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary">{p.avatar_url ? <img src={p.avatar_url} alt="Current profile" className="h-full w-full object-cover" /> : <UserRound className="h-7 w-7" />}</div>
+          <div className="min-w-0 flex-1"><Label htmlFor="avatar" className="cursor-pointer">Profile photo</Label><Input id="avatar" type="file" accept="image/*" onChange={(event) => setAvatar(event.target.files?.[0] ?? null)} className="mt-1 min-h-10 text-xs" /><p className="mt-1 truncate text-[10px] text-muted-foreground">{avatar ? avatar.name : "JPG, PNG or WebP · max 5 MB"}</p></div>
+        </div>
         <div className="space-y-1.5"><Label htmlFor="username">Username</Label><Input id="username" name="username" defaultValue={p.username} required /></div>
         <div className="space-y-1.5"><Label htmlFor="display_name">Display name</Label><Input id="display_name" name="display_name" defaultValue={p.display_name ?? ""} maxLength={40} /></div>
         <div className="space-y-1.5"><Label htmlFor="bio">Bio</Label><Textarea id="bio" name="bio" defaultValue={p.bio ?? ""} maxLength={280} /></div>
