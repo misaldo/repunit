@@ -21,6 +21,7 @@ function Profile() {
   const { user } = useUser();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [copyBusyId, setCopyBusyId] = useState<string | null>(null);
   const [challengeOpen, setChallengeOpen] = useState(false);
   const [challengeBusy, setChallengeBusy] = useState(false);
   const [challengeExercise, setChallengeExercise] = useState("bench");
@@ -66,7 +67,17 @@ function Profile() {
         .eq("user_id", data!.p.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || user?.id === data!.p.id);
+      let isFriend = false;
+      if (user?.id && user.id !== data!.p.id) {
+        const [{ data: outgoing, error: outgoingError }, { data: incoming, error: incomingError }] = await Promise.all([
+          (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.p.id).maybeSingle(),
+          (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.p.id).eq("following_id", user.id).maybeSingle(),
+        ]);
+        if (outgoingError) throw outgoingError;
+        if (incomingError) throw incomingError;
+        isFriend = Boolean(outgoing && incoming);
+      }
+      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || (plan.visibility === "followers" && isFriend) || user?.id === data!.p.id);
     },
   });
 
@@ -82,6 +93,42 @@ function Profile() {
       return exercises ?? [];
     },
   });
+
+  async function copyPlan(plan: { id: string; title: string; workout_day: string }) {
+    if (!user || copyBusyId) return;
+    if (workoutExercises.isLoading || workoutExercises.isError || !workoutExercises.data) {
+      toast.error("The SPLIT exercises are not ready to copy. Try again in a moment.");
+      return;
+    }
+    const items = workoutExercises.data.filter((exercise: any) => exercise.plan_id === plan.id);
+    if (!items.length) {
+      toast.error("This SPLIT has no exercises to copy yet.");
+      return;
+    }
+    setCopyBusyId(plan.id);
+    try {
+      const { data: copied, error: planError } = await (supabase as any).from("workout_plans")
+        .insert({ user_id: user.id, title: `${plan.title.slice(0, 70)} (copy)`, workout_day: plan.workout_day || "Monday", visibility: "private" })
+        .select("id").single();
+      if (planError) throw planError;
+      const { error: exerciseError } = await (supabase as any).from("workout_plan_exercises").insert(
+        items.map((exercise: any, index: number) => ({
+          plan_id: copied.id, exercise_name: exercise.exercise_name, sets: exercise.sets,
+          reps: exercise.reps, rest_seconds: exercise.rest_seconds, position: index,
+        }))
+      );
+      if (exerciseError) {
+        await (supabase as any).from("workout_plans").delete().eq("id", copied.id);
+        throw exerciseError;
+      }
+      await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
+      toast.success("SPLIT copied to your library.");
+    } catch {
+      toast.error("Could not copy this SPLIT. Please try again.");
+    } finally {
+      setCopyBusyId(null);
+    }
+  }
 
   const { data: social, isError: socialError, refetch: refetchSocial } = useQuery({
     queryKey: ["profile-social", data?.p.id, user?.id],
@@ -185,7 +232,7 @@ function Profile() {
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
-        {workoutPlansLoading ? <p className="text-sm text-muted-foreground">Loading SPLIT…</p> : workoutPlansError && !workoutPlans.length ? <div className="rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">SPLIT could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchWorkoutPlans()}>Try again</Button></div> : workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No public SPLIT shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : workoutExercises.isError && !workoutExercises.data ? <div className="mt-3"><p className="text-xs text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void workoutExercises.refetch()}>Try again</Button></div> : items.length === 0 ? <p className="mt-3 text-xs text-muted-foreground">No exercises in this workout.</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>}
+        {workoutPlansLoading ? <p className="text-sm text-muted-foreground">Loading SPLIT…</p> : workoutPlansError && !workoutPlans.length ? <div className="rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">SPLIT could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchWorkoutPlans()}>Try again</Button></div> : workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No public SPLIT shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : workoutExercises.isError && !workoutExercises.data ? <div className="mt-3"><p className="text-xs text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void workoutExercises.refetch()}>Try again</Button></div> : items.length === 0 ? <p className="mt-3 text-xs text-muted-foreground">No exercises in this workout.</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}{user && user.id !== p.id && <Button className="mt-4 w-full" variant="line" disabled={copyBusyId !== null || workoutExercises.isLoading || workoutExercises.isError} onClick={() => void copyPlan(plan)}>{copyBusyId === plan.id ? "Copying…" : "Copy to my SPLIT"}</Button>}</article>; })}</div>}
       </section>
 
       <div className="mt-8">
