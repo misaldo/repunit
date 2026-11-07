@@ -2,6 +2,12 @@
 
 begin;
 
+insert into public.crew_achievements(crew_id, achievement_key)
+select distinct winner_crew_id, 'weekly_winners'
+from public.crew_battles
+where is_weekly = true and status = 'completed' and winner_crew_id is not null
+on conflict (crew_id, achievement_key) do nothing;
+
 create or replace function public.repunit_award_weekly_winner_badge()
 returns trigger
 language plpgsql
