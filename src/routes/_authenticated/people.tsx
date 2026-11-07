@@ -48,7 +48,7 @@ function PeoplePage() {
     const result = isFollowing
       ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", person.id)
       : await supabase.from("follows").insert({ follower_id: user.id, following_id: person.id });
-    if (result.error) toast.error(result.error.message);
+    if (result.error) toast.error("Could not update this follow. Check your connection and try again.");
     else {
       await qc.invalidateQueries({ queryKey: ["people-discovery", user.id] });
       await qc.invalidateQueries({ queryKey: ["profile-social"] });
