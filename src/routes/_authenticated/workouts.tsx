@@ -212,6 +212,10 @@ function WorkoutsPage() {
   }
 
   async function createPlan() {
+    if (subscriptionQuery.isError || plansQuery.isError) {
+      toast.error("Workout limits could not be checked. Reload the page and try again.");
+      return;
+    }
     if (!isPro && (plansQuery.data?.length ?? 0) >= 3) {
       toast.error("Free accounts can save up to 3 workout plans. Upgrade to PRO for unlimited plans.");
       return;
@@ -239,25 +243,28 @@ function WorkoutsPage() {
         draftExercises.map((item, index) => ({ ...item, plan_id: plan.id, position: index }))
       );
       if (exerciseError) {
-        await db.from("workout_plans").delete().eq("id", plan.id);
+        const { error: cleanupError } = await db.from("workout_plans").delete().eq("id", plan.id);
+        if (cleanupError) throw new Error("The workout was created but could not be completed. Refresh the page before trying again.");
         throw exerciseError;
       }
       setTitle(""); setWorkoutDay("Monday"); setDraftExercises([]); setVisibility("private");
       await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
       toast.success("Split saved.");
     } catch (error) {
-      const message = error && typeof error === "object" && "message" in error
-        ? String((error as { message: unknown }).message)
-        : error instanceof Error ? error.message : "Unknown database error";
-      toast.error(`Could not create split: ${message}`);
+      toast.error("Could not save your workout. Check your connection and try again.");
     } finally { setSaving(false); }
   }
 
   async function deletePlan(plan: Plan) {
-    if (!window.confirm("Delete this split?")) return;
-    const { error } = await db.from("workout_plans").delete().eq("id", plan.id).eq("user_id", user.id);
-    if (error) toast.error(error.message);
-    else { await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] }); toast.success("Split deleted."); }
+    if (!window.confirm("Delete this workout?")) return;
+    try {
+      const { error } = await db.from("workout_plans").delete().eq("id", plan.id).eq("user_id", user.id);
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
+      toast.success("Workout deleted.");
+    } catch {
+      toast.error("Could not delete this workout. Check your connection and try again.");
+    }
   }
 
   const plans = plansQuery.data ?? [];
@@ -287,7 +294,7 @@ function WorkoutsPage() {
           <Button type="button" variant="hero" className="w-full" onClick={() => setPickerOpen(true)}><Plus className="mr-2 h-4 w-4" />Add exercise</Button>
           {draftExercises.length > 0 ? <ol className="mt-4 space-y-2">{draftExercises.map((item, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"><span className="min-w-0"><b>{i + 1}. {item.exercise_name}</b><span className="block text-xs text-muted-foreground">{item.sets} sets × {item.reps} · {item.rest_seconds}s rest</span></span><button onClick={() => setDraftExercises((all) => all.filter((_, index) => index !== i))} aria-label="Remove exercise" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button></li>)}</ol> : <p className="mt-4 rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">Your exercise list is empty. Tap “Add exercise” to get started.</p>}
         </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your split will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || subscriptionQuery.isLoading || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Plan limit reached" : "Save split"}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your split will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError || subscriptionQuery.isLoading || subscriptionQuery.isError || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Plan limit reached" : "Save split"}</Button></div>
       </section>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
