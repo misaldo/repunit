@@ -48,6 +48,19 @@ describe("App routing", () => {
     }
   });
 
+  it("keeps the restored Feed and crew creation routes reachable", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/feed").at(-1)?.routeId).toBe("/_authenticated/feed");
+    expect(router.matchRoutes("/crews/new").at(-1)?.routeId).toBe("/_authenticated/crews/new");
+  });
+
+  it("keeps settings, pricing and lifter discovery reachable", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/settings").at(-1)?.routeId).toBe("/_authenticated/settings");
+    expect(router.matchRoutes("/pricing").at(-1)?.routeId).toBe("/pricing");
+    expect(router.matchRoutes("/people").at(-1)?.routeId).toBe("/_authenticated/people");
+  });
+
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
