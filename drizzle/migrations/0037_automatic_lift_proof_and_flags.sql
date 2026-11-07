@@ -272,7 +272,7 @@ begin
   select count(distinct f.flagger_id)::integer into flag_count
   from public.lift_flags f where f.lift_id = _lift_id;
 
-  if flag_count >= 3 and current_status not in ('UNDER_REVIEW', 'NEEDS_PROOF', 'REJECTED') then
+  if flag_count >= 3 and current_status not in ('UNDER_REVIEW', 'REJECTED') then
     perform set_config('repunit.lift_workflow', 'on', true);
     update public.lifts
     set status = 'UNDER_REVIEW',
@@ -318,6 +318,10 @@ begin
   perform set_config('repunit.lift_workflow', 'off', true);
 
   if result_lift.id is null then raise exception 'Lift not found or you are not its owner' using errcode = '42501'; end if;
+
+  -- Proof resolves the current flag wave; a fresh set of three different
+  -- Crew members is required if the lift is flagged again later.
+  delete from public.lift_flags where lift_id = _lift_id;
   return result_lift;
 end;
 $function$;
