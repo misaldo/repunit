@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords, Crown } from "lucide-react";
+import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,6 @@ import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
-import { ProgressionCard } from "@/components/progression-card";
-import { FunStatsCard } from "@/components/fun-stats";
-import { ProInsightsCard } from "@/components/pro-insights-card";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: `@${params.username} — REPUNIT` }, { name: "description", content: `Lifting records and training activity of @${params.username}.` }, { property: "og:title", content: `@${params.username} on REPUNIT` }, { property: "og:description", content: "Personal records, community and training activity." }] }),
@@ -51,27 +48,12 @@ function Profile() {
     document.getElementById("training-split")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [isLoading, data]);
 
-  const { data: isProProfile = false } = useQuery({
-    queryKey: ["public-pro-badge", data?.p.id],
-    enabled: !!data?.p.id,
+  const { data: streak = 0 } = useQuery({
+    queryKey: ["profile-streak", data?.p.id], enabled: !!data?.p.id,
     queryFn: async () => {
-      const { data: badge, error } = await (supabase as any).from("pro_badges")
-        .select("user_id").eq("user_id", data!.p.id).maybeSingle();
+      const { data: stats, error } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", data!.p.id).maybeSingle();
       if (error) throw error;
-      return Boolean(badge);
-    },
-  });
-
-  const { data: progression, isError: progressionError, refetch: refetchProgression } = useQuery({
-    queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
-    queryFn: async () => {
-      const [{ data: stats, error: statsError }, { data: badges, error: badgesError }] = await Promise.all([
-        (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", data!.p.id).maybeSingle(),
-        (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", data!.p.id),
-      ]);
-      if (statsError) throw statsError;
-      if (badgesError) throw badgesError;
-      return { xp: Number(stats?.xp ?? 0), streak: stats?.current_streak ?? 0, longest: stats?.longest_streak ?? 0, achievements: (badges ?? []).map((x: {achievement_key:string}) => x.achievement_key) };
+      return Number(stats?.current_streak ?? 0);
     },
   });
 
@@ -158,23 +140,20 @@ function Profile() {
   const { p, lifts, posts } = data;
   const isOwnProfile = user?.id === p.id;
   const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthlyVolume = lifts.filter((lift: any) => lift.status === "VERIFIED" && String(lift.lifted_on ?? "").startsWith(currentMonth)).reduce((sum: number, lift: any) => sum + Number(lift.weight_kg) * Number(lift.reps ?? 1), 0);
 
   return (
     <PageShell>
-      <section className={`profile-theme profile-theme-${isProProfile ? (p.profile_theme ?? "default") : "default"} rounded-2xl border border-border bg-card p-5 sm:p-7`}>
+      <section className="profile-theme profile-theme-default rounded-2xl border border-border bg-card p-5 sm:p-7">
         <div className="flex flex-wrap items-center gap-4">
           <AvatarChip name={p.username} url={p.avatar_url} className="h-20 w-20 text-xl" />
           <div className="min-w-0 flex-1">
-            <h1 className="flex flex-wrap items-center gap-2 text-3xl font-bold">{p.display_name ?? p.username}{isProProfile && <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-primary"><Crown className="h-3 w-3"/> PRO</span>}</h1>
+            <h1 className="text-3xl font-bold">{p.display_name ?? p.username}</h1>
             <p className="text-sm text-muted-foreground">@{p.username} · joined {new Date(p.created_at).toLocaleDateString()}</p>
           </div>
           <div className="flex flex-wrap gap-2">
           {isOwnProfile ? (
             <>
               <Button asChild variant="line"><Link to="/settings">Edit profile</Link></Button>
-              {!isProProfile && <Button asChild variant="hero"><Link to="/pricing"><Crown className="mr-2 h-4 w-4"/>Go PRO</Link></Button>}
             </>
           ) : user ? (
             <Button variant={social?.isFollowing ? "line" : "hero"} onClick={() => void toggleFollow()} disabled={busy || !social}>
@@ -203,9 +182,7 @@ function Profile() {
         </div>
       </section>
 
-      <div className="mt-6">{progressionError && !progression ? <div className="rounded-xl border border-border bg-card p-4"><p className="text-sm text-muted-foreground">Progress information could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchProgression()}>Try again</Button></div> : <ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} />}</div>
-      {isProProfile && <ProInsightsCard lifts={lifts as any} />}
-      <FunStatsCard kg={monthlyVolume} headline="THIS MONTH · PERSONAL POWER" prefix={`${p.display_name ?? p.username} lifted`} />
+      <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" />{streak} day streak</div>
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
