@@ -12,7 +12,6 @@ export type Language = (typeof LANGUAGES)[number];
 type TranslationKey = keyof typeof en;
 const dictionaries = { en, cs, sk, de, pl, es } satisfies Record<Language, Record<TranslationKey, string>>;
 const STORAGE_KEY = "repunit.language";
-const MANUAL_KEY = "repunit.language.manual";
 const countryLanguage: Record<string, Language> = { CZ: "cs", SK: "sk", DE: "de", AT: "de", CH: "de", PL: "pl", ES: "es", MX: "es", AR: "es", CO: "es", CL: "es" };
 
 function browserLanguage(): Language {
@@ -33,8 +32,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const manual = localStorage.getItem(MANUAL_KEY) === "true";
-    if (saved && LANGUAGES.includes(saved as Language) && manual) {
+    if (saved && LANGUAGES.includes(saved as Language)) {
       setLanguageState(saved as Language);
       return;
     }
@@ -48,7 +46,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         const selected = detected ?? browserLanguage();
         setLanguageState(selected);
         localStorage.setItem(STORAGE_KEY, selected);
-        localStorage.setItem(MANUAL_KEY, "false");
       });
 
     return () => { active = false; };
@@ -57,7 +54,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLanguage = useCallback((next: Language) => {
     setLanguageState(next);
     localStorage.setItem(STORAGE_KEY, next);
-    localStorage.setItem(MANUAL_KEY, "true");
   }, []);
 
   useEffect(() => {
