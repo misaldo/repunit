@@ -1,6 +1,7 @@
 // @ts-nocheck -- references backend features not yet set up; typed once their tables exist
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trophy, Users, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell } from "lucide-react";
 import { Wordmark } from "./brand";
@@ -45,7 +46,13 @@ export function SiteHeader() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   async function signOut() {
-    await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut();
+    await qc.cancelQueries();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Could not sign out. Please try again.");
+      return;
+    }
+    qc.clear();
     navigate({ to: "/auth", replace: true });
   }
   return (
