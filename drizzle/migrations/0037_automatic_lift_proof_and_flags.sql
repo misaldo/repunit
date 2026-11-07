@@ -15,12 +15,17 @@ alter table public.lifts
 
 alter table public.lifts
   add column if not exists verification_reason text,
-  add column if not exists xp_awarded_at timestamptz;
+  add column if not exists xp_awarded_at timestamptz,
+  add column if not exists verified_at timestamptz;
 
 -- Existing verified lifts have already earned their progression rewards.
 update public.lifts
 set xp_awarded_at = coalesce(updated_at, created_at, now())
 where status = 'VERIFIED' and xp_awarded_at is null;
+
+update public.lifts
+set verified_at = coalesce(updated_at, created_at, now())
+where status = 'VERIFIED' and verified_at is null;
 
 create table if not exists public.lift_flags (
   id uuid primary key default gen_random_uuid(),
@@ -147,16 +152,25 @@ begin
     ) then
       raise exception 'The video upload has not completed. Please retry the submission.' using errcode = '23514';
     end if;
-    new.status := 'VERIFIED';
-    new.verification_reason := null;
+    if daily_count >= 10 then
+      new.status := 'NEEDS_PROOF';
+      new.verification_reason := 'Daily limit reached (10 lifts per day). Replace the proof after the daily limit resets.';
+      new.verified_at := null;
+    else
+      new.status := 'VERIFIED';
+      new.verification_reason := null;
+      new.verified_at := now();
+    end if;
   else
     new.video_path := null;
     if failure_reason is null then
       new.status := 'VERIFIED';
       new.verification_reason := null;
+      new.verified_at := now();
     else
       new.status := 'NEEDS_PROOF';
       new.verification_reason := failure_reason;
+      new.verified_at := null;
     end if;
   end if;
 
@@ -314,11 +328,24 @@ begin
     raise exception 'The uploaded video could not be found' using errcode = '23514';
   end if;
 
+  if (
+    select count(*) from public.lifts l
+    where l.user_id = auth.uid()
+      and l.status = 'VERIFIED'
+      and l.verified_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
+      and l.verified_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC')
+      and l.id <> _lift_id
+  ) >= 10 then
+    raise exception 'You have reached the 10 verified lifts per day limit. Try again tomorrow.'
+      using errcode = 'P0001';
+  end if;
+
   perform set_config('repunit.lift_workflow', 'on', true);
   update public.lifts
   set video_path = _video_path,
       status = 'VERIFIED',
-      verification_reason = null
+      verification_reason = null,
+      verified_at = now()
   where id = _lift_id and user_id = auth.uid()
   returning * into result_lift;
   perform set_config('repunit.lift_workflow', 'off', true);
