@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Swords, Users, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell } from "lucide-react";
+import { Trophy, Users, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -15,8 +15,6 @@ const nav = [
   { to: "/workouts" as const, label: "Workouts", icon: Dumbbell },
   { to: "/crews" as const, label: "Crews", icon: Users },
   { to: "/leaderboards" as const, label: "Ranks", icon: Trophy },
-  { to: "/challenges" as const, label: "Challenges", icon: Swords },
-  { to: "/battles" as const, label: "Battles", icon: Swords },
 ];
 
 export function SiteHeader() {
@@ -85,7 +83,6 @@ export function DesktopSidebar() {
       {nav.map(({to,label,icon:Icon})=><Link key={to} to={to} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-elevated hover:text-foreground" activeProps={{className:"!bg-primary/10 !text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"}}><Icon className="h-[18px] w-[18px] transition group-hover:scale-110"/>{label}{label==="Battles"&&<span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]"/>}</Link>)}
     </nav>
     <div className="mt-auto space-y-2">
-      <Link to="/workouts" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Dumbbell className="h-4 w-4"/> Training split</Link>
       <Link to="/records/new" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-[0_8px_30px_-12px_hsl(var(--primary)/.7)] transition hover:-translate-y-0.5 hover:brightness-110"><Dumbbell className="h-4 w-4"/> Submit a lift</Link>
       {profile&&<Link to="/u/$username" params={{username:profile.username}} className="mt-3 flex items-center gap-3 rounded-xl border border-border p-2 transition hover:border-primary/40 hover:bg-elevated"><Avatar className="h-9 w-9"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback>{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar><span className="min-w-0"><b className="block truncate text-xs">{profile.display_name||profile.username}</b><span className="text-[10px] text-muted-foreground">View profile</span></span></Link>}
     </div>
