@@ -18,6 +18,14 @@ alter table public.lifts
   add column if not exists xp_awarded_at timestamptz,
   add column if not exists verified_at timestamptz;
 
+create index if not exists lifts_user_created_at_idx
+  on public.lifts(user_id, created_at desc);
+create index if not exists lifts_user_exercise_verified_at_idx
+  on public.lifts(user_id, exercise, verified_at desc)
+  where verified_at is not null;
+create index if not exists lifts_duplicate_guard_idx
+  on public.lifts(user_id, exercise, lifted_on, weight_kg, reps);
+
 -- Existing verified lifts have already earned their progression rewards.
 update public.lifts
 set xp_awarded_at = coalesce(updated_at, created_at, now())
