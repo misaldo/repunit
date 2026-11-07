@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(24);
 
 select ok(
   exists (
@@ -113,6 +113,16 @@ select ok(
 select ok(
   position('status in (''needs_proof'', ''under_review'', ''pending'')' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
   'video proof can resolve only lifts waiting for proof or review'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.lift_flags', 'SELECT'),
+  'clients cannot read Crew flag identities directly'
+);
+
+select ok(
+  position('pg_advisory_xact_lock' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
+  'proof verification shares the per-user lock used by lift submissions'
 );
 
 select * from finish();
