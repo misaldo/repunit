@@ -182,7 +182,6 @@ export interface FileRoutesByTo {
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
-  '/admin/lifts': typeof AuthenticatedAdminLiftsRoute
   '/battles/$id': typeof AuthenticatedBattlesIdRoute
   '/crews/$id': typeof AuthenticatedCrewsIdRoute
   '/crews/new': typeof AuthenticatedCrewsNewRoute
