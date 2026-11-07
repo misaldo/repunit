@@ -23,12 +23,17 @@ export function FirstRunSetup() {
   const [locallyCompleted, setLocallyCompleted] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("repunit-onboarding-done:" + (user?.id ?? "")) === "1");
 
   useEffect(() => {
+    if (!user?.id) return;
+    try { setLocallyCompleted(window.localStorage.getItem("repunit-onboarding-done:" + user.id) === "1"); } catch { setLocallyCompleted(false); }
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!profile) return;
     setUsername(profile.username ?? "");
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const open = Boolean(user?.id && profile && profile.onboarding_completed !== true && !locallyCompleted);
+  const open = Boolean(user?.id && profile && (profile as any).onboarding_completed !== true && !locallyCompleted);
   if (!open || !profile || !user) return null;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
