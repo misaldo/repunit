@@ -104,8 +104,7 @@ export function DesktopSidebar() {
 export function MobileNav() {
   const { user } = useUser();
   const { data: profile } = useMyProfile(user?.id);
-  if (!user) return null;
-  const item = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-[0.06em] text-muted-foreground transition active:scale-95";
+  const item = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[11px] font-black uppercase tracking-[0.04em] text-muted-foreground transition active:scale-95";
   const active = { className: "!text-primary" };
   return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden">
     <div className="mx-auto flex h-[76px] max-w-xl items-center justify-between gap-1 px-2">
@@ -115,7 +114,7 @@ export function MobileNav() {
         <Plus className="h-7 w-7"/><span className="text-[9px] font-black uppercase tracking-wider">LOG</span>
       </Link>
       <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>SPLIT</Link>
-      {profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>PROFILE</Link> : <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
+      {user && profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>PROFILE</Link> : <Link to="/auth" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
     </div>
   </nav>;
 }
