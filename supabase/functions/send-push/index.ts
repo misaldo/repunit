@@ -53,7 +53,7 @@ Deno.serve(async (request: Request) => {
     const message = JSON.stringify({
       title: notification.title || "REPUNIT",
       body: notification.body || "New activity from your training crew.",
-      url: typeof notification.href === "string" && notification.href.startsWith("/") ? notification.href : "/notifications",
+      url: typeof notification.href === "string" && notification.href.startsWith("/") ? notification.href : "/leaderboards",
       tag: notification.id,
     });
 
