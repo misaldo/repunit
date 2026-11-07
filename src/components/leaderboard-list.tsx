@@ -86,7 +86,7 @@ export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: s
           <p className={cn("font-stat mt-2 text-2xl", PODIUM[rank - 1])}>#{rank}</p>
         </Link>
         <Link to="/u/$username" params={{ username: r.username }} hash="training-split" className="mt-2 inline-flex min-h-8 w-full items-center justify-center gap-1 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 hover:text-primary">
-          <Dumbbell className="h-3 w-3" /> View training split
+          <Dumbbell className="h-3 w-3" /> View SPLIT
         </Link>
         {r.has_video
           ? <button type="button" onClick={() => setActiveLiftId(r.lift_id)} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:bg-primary/20 sm:text-xs"><Camera className="h-3.5 w-3.5"/> Watch video</button>
@@ -113,7 +113,7 @@ export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; star
         <Link to="/u/$username" params={{username:r.username}} onClick={e=>e.stopPropagation()} aria-label={`Open @${r.username} profile`} className="rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><AvatarChip name={r.username} url={r.avatar_url} className="h-9 w-9" /></Link>
         <div className="min-w-0 flex-1">
           <Link to="/u/$username" params={{ username: r.username }} className="truncate text-sm font-semibold hover:text-primary" onClick={e=>e.stopPropagation()}>@{r.username}{currentUserId === r.user_id && <span className="ml-1 text-[9px] font-black uppercase text-primary">You</span>}</Link>
-          <Link to="/u/$username" params={{ username: r.username }} hash="training-split" className="relative z-10 mt-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}><Dumbbell className="h-3 w-3" /> View training split</Link>
+          <Link to="/u/$username" params={{ username: r.username }} hash="training-split" className="relative z-10 mt-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}><Dumbbell className="h-3 w-3" /> View SPLIT</Link>
         </div>
         <div className="text-right">
           <p className="font-stat text-3xl">{Number(r.weight_kg)}<span className="text-sm text-muted-foreground">kg</span></p>
