@@ -81,8 +81,8 @@ function NotificationsPage() {
       </div>
     </div>
     <div className="mt-6 space-y-2">
-      {query.isLoading ? <p className="py-10 text-center text-sm text-muted-foreground">Loading your activity…</p>
-      : query.isError ? <div className="rounded-2xl border border-border p-6"><p>Could not load notifications.</p><Button className="mt-3" variant="line" onClick={() => void query.refetch()}>Try again</Button></div>
+      {query.isLoading && !query.data ? <p className="py-10 text-center text-sm text-muted-foreground">Loading your activity…</p>
+      : query.isError && !query.data ? <div className="rounded-2xl border border-border p-6"><p>Could not load notifications.</p><Button className="mt-3" variant="line" onClick={() => void query.refetch()}>Try again</Button></div>
       : notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center"><Bell className="mx-auto h-8 w-8 text-muted-foreground"/><h2 className="mt-3 font-bold">You’re all caught up</h2><p className="mt-1 text-sm text-muted-foreground">New activity from your crew and friends will show up here.</p></div>
       : notifications.map((item: any) => {
         const Icon = iconByKind[item.kind] ?? Bell;
