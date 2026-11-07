@@ -250,14 +250,14 @@ function WorkoutsPage() {
       }
       setTitle(""); setWorkoutDay("Monday"); setDraftExercises([]); setVisibility("private");
       await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
-      toast.success("Workout saved.");
+      toast.success("SPLIT day saved.");
     } catch {
       toast.error("Could not save your workout. Check your connection and try again.");
     } finally { setSaving(false); }
   }
 
   async function deletePlan(plan: Plan) {
-    if (!window.confirm("Delete this workout?")) return;
+    if (!window.confirm("Remove this SPLIT day?")) return;
     try {
       const { error } = await db.from("workout_plans").delete().eq("id", plan.id).eq("user_id", user.id);
       if (error) throw error;
@@ -274,21 +274,21 @@ function WorkoutsPage() {
       <div className="mb-8">
         <p className="eyebrow">PLAN YOUR TRAINING</p>
         <h1 className="font-stat mt-2 text-6xl uppercase">SPLIT<span className="text-primary">.</span></h1>
-        <p className="mt-2 text-sm text-muted-foreground">Build your SPLIT, choose training days and share your routine.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Write your weekly SPLIT, choose training days and share it with friends.</p>
       </div>
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Create a workout</h2></div><div className="flex items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{plans.length}{isPro ? " plans · unlimited" : " / 3 free plans"}</span>{!isPro && plans.length >= 3 && <Button asChild size="sm" variant="hero"><Link to="/pricing">Go PRO</Link></Button>}</div></div>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Build your weekly SPLIT</h2></div><div className="flex items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{plans.length}{isPro ? " plans · unlimited" : " / 3 free plans"}</span>{!isPro && plans.length >= 3 && <Button asChild size="sm" variant="hero"><Link to="/pricing">Go PRO</Link></Button>}</div></div>
         {subscriptionQuery.isLoading && <p className="mb-4 text-xs text-muted-foreground">Checking your account plan…</p>}
         {subscriptionQuery.isError && <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3"><p className="text-sm text-muted-foreground">Your account plan could not be checked. Saving is paused until this is resolved.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void subscriptionQuery.refetch()}>Try again</Button></div>}
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workout name</label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Push day / Upper body" /></div>
-          <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Training day</label><select value={workoutDay} onChange={(e) => setWorkoutDay(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{DAYS.map((day) => <option key={day}>{day}</option>)}</select></div>
+          <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Day title</label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Push day / Upper body" /></div>
+          <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Day</label><select value={workoutDay} onChange={(e) => setWorkoutDay(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{DAYS.map((day) => <option key={day}>{day}</option>)}</select></div>
         </div>
-        <div className="mt-3"><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Who can see this workout?</label><select value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:max-w-sm"><option value="private">Private — only me</option><option value="public">Public — everyone</option><option value="followers">Friends — mutual follows</option></select></div>
+        <div className="mt-3"><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Who can see this SPLIT?</label><select value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:max-w-sm"><option value="private">Private — only me</option><option value="public">Public — everyone</option><option value="followers">Friends</option></select></div>
 
         <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
-          <div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="font-semibold">Exercises</h3><p className="text-xs text-muted-foreground">Add movements from the exercise library.</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{draftExercises.length} added</span></div>
+          <div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="font-semibold">Exercises</h3><p className="text-xs text-muted-foreground">Add exercises for this training day.</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{draftExercises.length} added</span></div>
           <div className="mb-3 grid grid-cols-3 gap-2">
             <div><label className="mb-1 block text-xs text-muted-foreground">Sets</label><Input value={sets} onChange={(e) => setSets(e.target.value)} inputMode="numeric" /></div>
             <div><label className="mb-1 block text-xs text-muted-foreground">Reps</label><Input value={reps} onChange={(e) => setReps(e.target.value)} maxLength={20} /></div>
@@ -297,7 +297,7 @@ function WorkoutsPage() {
           <Button type="button" variant="hero" className="w-full" onClick={() => setPickerOpen(true)}><Plus className="mr-2 h-4 w-4" />Add exercise</Button>
           {draftExercises.length > 0 ? <ol className="mt-4 space-y-2">{draftExercises.map((item, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"><span className="min-w-0"><b>{i + 1}. {item.exercise_name}</b><span className="block text-xs text-muted-foreground">{item.sets} sets × {item.reps} · {item.rest_seconds}s rest</span></span><button onClick={() => setDraftExercises((all) => all.filter((_, index) => index !== i))} aria-label="Remove exercise" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button></li>)}</ol> : <p className="mt-4 rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">Your exercise list is empty. Tap “Add exercise” to get started.</p>}
         </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your workout will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError || subscriptionQuery.isLoading || subscriptionQuery.isError || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Workout limit reached" : "Save workout"}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">This SPLIT day uses the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError || subscriptionQuery.isLoading || subscriptionQuery.isError || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Workout limit reached" : "Save SPLIT day"}</Button></div>
       </section>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
@@ -322,10 +322,10 @@ function WorkoutsPage() {
         <h2 className="mb-4 text-xl font-bold">Your SPLIT</h2>
         {plansQuery.isLoading && !plansQuery.data ? <p className="text-muted-foreground">Loading SPLIT…</p> : plansQuery.isError && !plansQuery.data ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your SPLIT could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved SPLIT has not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No SPLIT yet. Create your first plan above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete workout" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
+            <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Remove day" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
             <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility === "followers" ? "Friends" : plan.visibility}</div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
-            {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading && !exercisesQuery.data ? <p className="text-sm text-muted-foreground">Loading exercises…</p> : exercisesQuery.isError && !exercisesQuery.data ? <div className="rounded-lg bg-background p-3"><p className="text-sm text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void exercisesQuery.refetch()}>Try again</Button></div> : (exercisesQuery.data ?? []).length === 0 ? <p className="rounded-lg bg-background p-3 text-sm text-muted-foreground">No exercises in this workout yet.</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
+            {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading && !exercisesQuery.data ? <p className="text-sm text-muted-foreground">Loading exercises…</p> : exercisesQuery.isError && !exercisesQuery.data ? <div className="rounded-lg bg-background p-3"><p className="text-sm text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void exercisesQuery.refetch()}>Try again</Button></div> : (exercisesQuery.data ?? []).length === 0 ? <p className="rounded-lg bg-background p-3 text-sm text-muted-foreground">No exercises in this SPLIT day yet.</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
           </article>)}</div>
         )}
       </section>
