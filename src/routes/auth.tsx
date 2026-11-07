@@ -71,7 +71,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/auth", data: { username } },
+          options: { emailRedirectTo: window.location.origin + "/auth", data: { username, repunit_onboarding_required: true } },
         });
         if (error) throw error;
         setSent("Confirm your email to activate your account.");
