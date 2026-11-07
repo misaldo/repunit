@@ -28,6 +28,30 @@ function periodStart(period:Period) {
   const monday=new Date(now);monday.setHours(0,0,0,0);monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
   return monday.toISOString().slice(0,10);
 }
+async function scoreCrewsLegacy(exercise:Exercise|"total",from:string|null,to:string|null) {
+  const {data:crews,error}=await (supabase as any).from("crews").select("id,name,emblem,accent_color").order("name");
+  if(error)throw error;
+  if(!crews?.length)return [];
+  const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id");
+  if(memberError)throw memberError;
+  let lifts:any[]=[];
+  if(members?.length){
+    let q=(supabase as any).from("lifts").select("user_id,exercise,weight_kg,reps,lifted_on").in("user_id",[...new Set(members.map((m:any)=>m.user_id))]).eq("status","VERIFIED");
+    if(exercise!=="total")q=q.eq("exercise",exercise);
+    else q=q.in("exercise",["bench","squat","deadlift"]);
+    if(from)q=q.gte("lifted_on",from);
+    if(to)q=q.lt("lifted_on",to);
+    const result=await q;if(result.error)throw result.error;lifts=result.data??[];
+  }
+  const totals=new Map<string,number>();
+  for(const lift of lifts){
+    for(const member of members??[])if(member.user_id===lift.user_id)totals.set(member.crew_id,(totals.get(member.crew_id)??0)+Number(lift.weight_kg)*Number(lift.reps??1));
+  }
+  const counts=new Map<string,number>();
+  for(const member of members??[])counts.set(member.crew_id,(counts.get(member.crew_id)??0)+1);
+  return crews.map((crew:any)=>({...crew,total:totals.get(crew.id)??0,members:counts.get(crew.id)??0,wins:0,is_mine:(members??[]).some((member:any)=>member.crew_id===crew.id&&member.user_id===undefined)}));
+}
+
 function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enabled:boolean) {
   return useQuery({
     queryKey:["crew-ranks-rpc-v1",exercise,period,region],
@@ -46,10 +70,18 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enab
         (supabase as any).rpc("crew_leaderboard",{_exercise:exercise,_from:from,_to:null}),
         (supabase as any).rpc("crew_leaderboard",{_exercise:exercise,_from:previousFrom,_to:previousTo}),
       ]);
-      if(currentResult.error)throw currentResult.error;
-      if(previousResult.error)throw previousResult.error;
-      const current=currentResult.data??[];
-      const previous=previousResult.data??[];
+      let current=currentResult.data??[];
+      let previous=previousResult.data??[];
+      const rpcMissing=[currentResult.error,previousResult.error].some((error:any)=>error && (error.code==="42883"||error.code==="PGRST202"||String(error.message??"").includes("crew_leaderboard")));
+      if(currentResult.error||previousResult.error){
+        if(!rpcMissing)throw currentResult.error??previousResult.error;
+        const [legacyCurrent,legacyPrevious]=await Promise.all([
+          scoreCrewsLegacy(exercise,from,null),
+          scoreCrewsLegacy(exercise,previousFrom,previousTo),
+        ]);
+        current=legacyCurrent;
+        previous=legacyPrevious;
+      }
       const prevRank=new Map([...previous].sort((a:any,b:any)=>Number(b.total)-Number(a.total)).map((crew:any,i:number)=>[crew.id,i+1]));
       const ranked=[...current].sort((a:any,b:any)=>Number(b.total)-Number(a.total));
       return {
