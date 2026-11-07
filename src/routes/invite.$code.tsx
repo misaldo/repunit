@@ -43,7 +43,7 @@ function Invite() {
       await qc.invalidateQueries({ queryKey: ["my-crews", user.id] });
       toast.success("Welcome to the crew");
       navigate({ to: "/crews/$id", params: { id } });
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not join crew."); }
+    } catch { toast.error("Could not join this crew. Check that the invitation is still valid and try again."); }
     finally { setBusy(false); }
   }
   return <PageShell>
