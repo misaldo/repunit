@@ -71,6 +71,7 @@ declare
   daily_pr_jump_count integer;
   failure_reason text := null;
   daily_count integer;
+  verified_today_count integer;
   max_weight numeric;
   max_reps integer := 30;
 begin
@@ -92,7 +93,14 @@ begin
     and l.created_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
     and l.created_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC');
 
-  if daily_count >= 10 then
+  select count(*) into verified_today_count
+  from public.lifts l
+  where l.user_id = submitting_user
+    and l.status = 'VERIFIED'
+    and l.verified_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
+    and l.verified_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC');
+
+  if daily_count >= 10 or verified_today_count >= 10 then
     failure_reason := 'Daily limit reached (10 lifts per day). Add video proof.';
   end if;
 
@@ -166,7 +174,7 @@ begin
     ) then
       raise exception 'The video upload has not completed. Please retry the submission.' using errcode = '23514';
     end if;
-    if daily_count >= 10 then
+    if daily_count >= 10 or verified_today_count >= 10 then
       new.status := 'NEEDS_PROOF';
       new.verification_reason := 'Daily limit reached (10 lifts per day). Replace the proof after the daily limit resets.';
       new.verified_at := null;
@@ -328,6 +336,7 @@ declare
   result_lift public.lifts;
 begin
   if auth.uid() is null then raise exception 'Sign in to add video proof' using errcode = '42501'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text, 370037));
   if _video_path is null or btrim(_video_path) = ''
      or split_part(_video_path, '/', 1) <> auth.uid()::text then
     raise exception 'The video must be uploaded to your own private folder' using errcode = '42501';
