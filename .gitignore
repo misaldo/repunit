@@ -17,8 +17,6 @@ dist-ssr
 *.local
 
 # Environment variables and secrets
-.env
-.env.*
 !.env.example
 
 # Wrangler / Cloudflare
@@ -35,3 +33,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw*
+.env.local
