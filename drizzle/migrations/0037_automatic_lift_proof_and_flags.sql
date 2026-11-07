@@ -18,6 +18,14 @@ alter table public.lifts
   add column if not exists xp_awarded_at timestamptz,
   add column if not exists verified_at timestamptz;
 
+-- Reassert least-privilege column grants: status and proof path are never
+-- writable directly by anon/authenticated clients, even if an older grant
+-- was broader than the baseline migration.
+revoke insert, update on public.lifts from PUBLIC, anon, authenticated;
+grant insert (user_id, exercise, weight_kg, reps, lifted_on, description, video_path)
+  on public.lifts to authenticated;
+grant update (description) on public.lifts to authenticated;
+
 create index if not exists lifts_user_created_at_idx
   on public.lifts(user_id, created_at desc);
 create index if not exists lifts_user_exercise_verified_at_idx
