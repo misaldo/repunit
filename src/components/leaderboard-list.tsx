@@ -13,11 +13,10 @@ export function useLeaderboard(
   crew?: string | null,
   since?: string | null,
   userIds?: string[] | null,
-  weightClass?: string | null,
 ) {
-  const scoped = userIds !== undefined || Boolean(weightClass);
+  const scoped = userIds !== undefined;
   return useQuery({
-    queryKey: ["leaderboard", exercise, crew ?? null, since ?? null, scoped, userIds ?? null, weightClass ?? null],
+    queryKey: ["leaderboard", exercise, crew ?? null, since ?? null, scoped, userIds ?? null],
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
     retry: 2,
@@ -33,7 +32,7 @@ export function useLeaderboard(
             _crew: crew ?? null,
             _since: since ?? null,
             _user_ids: userIds ?? null,
-            _weight_class: weightClass ?? null,
+            _weight_class: null,
           });
           if (error) throw error;
           return data ?? [];
