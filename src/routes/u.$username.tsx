@@ -146,7 +146,7 @@ function Profile() {
       challenger_id: user.id, challenged_id: data.p.id, exercise: challengeExercise,
       target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error("Could not send this challenge. Check your connection and try again.");
     else { toast.success("Challenge sent. Let the rivalry begin."); setChallengeOpen(false); setChallengeWeight("100"); }
     setChallengeBusy(false);
   }
