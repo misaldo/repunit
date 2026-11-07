@@ -97,3 +97,15 @@ GitHub Actions runs TypeScript, ESLint, Vitest, Deno checks for the Edge Functio
 - AI lift verification requires a separately configured verification service and should not be represented as automated unless that service is deployed and enabled.
 - Push delivery and Stripe billing require the external secrets, webhooks and Edge Function deployments above.
 - Local UI development does not automatically apply SQL migrations or deploy Edge Functions.
+
+### Regenerate Supabase TypeScript types
+
+After the canonical database migrations are applied, generate types from the live project instead of hand-editing the generated file. Install/use the Supabase CLI through the project script and provide a personal access token only in your local shell:
+
+```powershell
+$env:SUPABASE_ACCESS_TOKEN = "YOUR_SUPABASE_ACCESS_TOKEN"
+npm run db:types
+Remove-Item Env:SUPABASE_ACCESS_TOKEN
+```
+
+Do not commit the token or paste it into chat. The script writes the CLI output to `src/integrations/supabase/types.ts` only when generation succeeds. Then run typecheck and remove any obsolete `@ts-nocheck` / `supabase as any` workarounds against the real generated schema.
