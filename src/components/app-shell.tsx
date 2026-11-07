@@ -30,13 +30,15 @@ export function SiteHeader() {
       return count ?? 0;
     },
   });
-  const { data: progress } = useQuery({
+  const { data: progress, isError: progressError } = useQuery({
     queryKey: ["user-progression", user?.id], enabled: !!user?.id,
     queryFn: async () => {
-      const [{ data: stats }, { data: badges }] = await Promise.all([
+      const [{ data: stats, error: statsError }, { data: badges, error: badgesError }] = await Promise.all([
         (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", user!.id).maybeSingle(),
         (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", user!.id),
       ]);
+      if (statsError) throw statsError;
+      if (badgesError) throw badgesError;
       return { xp: Number(stats?.xp ?? 0), streak: stats?.current_streak ?? 0, longest: stats?.longest_streak ?? 0, achievements: (badges ?? []).map((x: {achievement_key:string}) => x.achievement_key) };
     },
   });
@@ -60,7 +62,7 @@ export function SiteHeader() {
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition group-open:rotate-180" />
           </summary>
           <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-2xl shadow-black/40">
-            <div className="border-b border-border px-3 py-3"><p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p><div className="mt-3"><ProgressionCard xp={progress?.xp ?? 0} streak={progress?.streak ?? 0} longestStreak={progress?.longest ?? 0} achievements={progress?.achievements ?? []} compact /></div></div>
+            <div className="border-b border-border px-3 py-3"><p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p><div className="mt-3">{progressError ? <p className="text-xs text-muted-foreground">Progress stats unavailable.</p> : progress ? <ProgressionCard xp={progress.xp} streak={progress.streak} longestStreak={progress.longest} achievements={progress.achievements} compact /> : <p className="text-xs text-muted-foreground">Loading progress…</p>}</div></div>
             {profile && <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><UserRound className="h-4 w-4" /> My Profile</Link>}
             <Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><Settings className="h-4 w-4" /> Settings</Link>
             <Link to="/pricing" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary transition hover:bg-elevated"><Crown className="h-4 w-4" /> Upgrade to PRO</Link>
