@@ -100,7 +100,7 @@ export function MobileNav() {
   return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden">
     <div className="mx-auto flex h-[76px] max-w-xl items-center justify-between gap-1 px-2">
       <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5"/>TOP</Link>
-      <Link to="/battles" className={item} activeProps={active}><Swords className="h-5 w-5"/>BATTLES</Link>
+      <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5"/>CREWS</Link>
       <Link to="/records/new" aria-label="Log a lift" className="relative -mt-5 flex h-[62px] w-[62px] shrink-0 flex-col items-center justify-center rounded-2xl border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_28px_-8px_hsl(var(--primary)/.8)] transition hover:brightness-110 active:scale-95">
         <Plus className="h-7 w-7"/><span className="text-[9px] font-black uppercase tracking-wider">LOG</span>
       </Link>
