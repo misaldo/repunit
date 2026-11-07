@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Check, Crown, Zap, ShieldCheck, Sparkles, CreditCard, LoaderCircle } from "lucide-react";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-session";
 
 export const Route = createFileRoute("/pricing")({
+  beforeLoad: () => { throw redirect({ to: "/leaderboards", replace: true }); },
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "REPUNIT PRO — Pricing" }, { name: "description", content: "Upgrade your training with REPUNIT PRO." }, { property: "og:title", content: "REPUNIT PRO — Pricing" }, { property: "og:description", content: "Train smarter. Track deeper. Compete harder." }] }),
   component: Pricing,
 });
