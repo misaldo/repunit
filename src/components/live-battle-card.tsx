@@ -16,7 +16,7 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
   const navigate=useNavigate();
   const [now,setNow]=useState(Date.now());
   useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(timer);},[]);
-  const {data,isLoading,isError}=useQuery({
+  const {data,isLoading,isError,refetch}=useQuery({
     queryKey:["home-live-battle",user?.id],
     enabled:!!user?.id,
     refetchInterval:15000,
@@ -77,7 +77,7 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
   const rightScore=data?.rightScore??0;
   const total=leftScore+rightScore;
   const leftPercent=total>0?leftScore/total*100:50;
-  const open=()=>navigate({to:battle?"/battles/$id":"/battles",...(battle?{params:{id:battle.id}}:{})} as any);
+  const open=()=>{if(isError&&!data){void refetch();return;}navigate({to:battle?"/battles/$id":"/battles",...(battle?{params:{id:battle.id}}:{})} as any);};
   const compactClass=compact?"p-3 sm:p-4":"p-4 md:p-5";
   return <button type="button" onClick={open} className={`group relative block w-full overflow-hidden rounded-2xl border border-primary/30 bg-card text-left transition hover:border-primary/70 hover:shadow-[0_15px_45px_-20px_hsl(var(--primary)/.55)] active:scale-[.99] ${compactClass}`}>
     <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl"/>
@@ -85,8 +85,8 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
       <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-primary"><span className="h-2 w-2 animate-pulse rounded-full bg-primary"/>{battle?"Weekly battle":"Weekly battle"}</span>
       <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Clock3 className="h-3 w-3"/>{battle?countdown(new Date(battle.status==="pending"?battle.starts_at:battle.ends_at).getTime(),now):"See matchups"}</span>
     </div>
-    {isLoading?<div className="relative mt-3 grid grid-cols-3 items-center gap-2"><div className="h-10 animate-pulse rounded-lg bg-muted"/><div className="h-5 animate-pulse rounded bg-muted"/><div className="h-10 animate-pulse rounded-lg bg-muted"/></div>
-    :isError?<div className="relative mt-3 flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Battle status is temporarily unavailable.</p><span className="text-xs font-bold text-primary">Open battles</span></div>
+    {isLoading&&!data?<div className="relative mt-3 grid grid-cols-3 items-center gap-2"><div className="h-10 animate-pulse rounded-lg bg-muted"/><div className="h-5 animate-pulse rounded bg-muted"/><div className="h-10 animate-pulse rounded-lg bg-muted"/></div>
+    :isError&&!data?<div className="relative mt-3 flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Battle status is temporarily unavailable. Tap to retry.</p><span className="text-xs font-bold text-primary">Retry</span></div>
     :battle?<div className="relative mt-3">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="min-w-0"><div className="flex items-center gap-2"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-lg">{data?.left?.emblem||"🏋️"}</span><span className="truncate text-xs font-black uppercase">{data?.left?.name||"Crew"}</span></div><p className="mt-1 pl-11 font-stat text-xl tabular-nums">{leftScore.toLocaleString()}<span className="ml-1 text-[10px] text-muted-foreground">kg</span></p></div>
