@@ -30,7 +30,7 @@ The development server uses the local environment in `.env`. Start from `.env.ex
 
 ## Backend configuration
 
-The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. `VITE_SUPABASE_URL` in the local `.env` currently points to the Lovable Cloud gateway for this project; the app's browser client uses that URL. Supabase CLI and Edge Function deployments use the canonical project ref.
+The canonical Supabase backend is project `sfumcokjwvhxwuanlofw` at `https://sfumcokjwvhxwuanlofw.supabase.co`. Both browser and server clients, Supabase CLI operations, database migrations and Edge Functions must target this same project. The Lovable Cloud gateway is not used as a backend URL.
 
 ## Environment variables
 
@@ -45,7 +45,7 @@ The browser must only receive `VITE_*` values that are safe to expose. Keep serv
 
 ## Database setup
 
-The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. The browser client uses the Lovable Cloud gateway URL in `.env`; Supabase CLI deployments, database migrations and Edge Functions target the canonical project ref. Apply the additional SQL migrations in the exact order in [MIGRATIONS.md](./MIGRATIONS.md). Do not run them against another project.
+The canonical Supabase project URL is `https://sfumcokjwvhxwuanlofw.supabase.co` (project ref `sfumcokjwvhxwuanlofw`). Browser requests, server-side Supabase requests, CLI operations, database migrations and Edge Functions all target this same backend. Apply SQL migrations in the exact order in [MIGRATIONS.md](./MIGRATIONS.md). Do not run them against another project.
 
 ## Web Push setup (optional)
 
