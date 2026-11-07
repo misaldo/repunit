@@ -181,6 +181,15 @@ $$;
 revoke all on function public.remove_friend(uuid) from public, anon;
 grant execute on function public.remove_friend(uuid) to authenticated;
 
+-- Only accepted friends can send one-to-one challenges.
+drop policy if exists "users create challenges" on public.lifter_challenges;
+create policy "friends create challenges"
+on public.lifter_challenges for insert to authenticated
+with check (
+  challenger_id = auth.uid()
+  and public.are_friends(challenger_id, challenged_id)
+);
+
 -- Friend call-outs now use accepted friend requests, not mutual follows.
 create or replace function public.create_friend_lift_callouts()
 returns trigger
