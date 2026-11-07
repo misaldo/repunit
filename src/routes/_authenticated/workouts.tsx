@@ -117,7 +117,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 const CATEGORIES = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"];
 
 export const Route = createFileRoute("/_authenticated/workouts")({
-  head: () => ({ meta: [{ title: "Workouts — REPUNIT" }, { name: "description", content: "Build, save and share your workouts." }] }),
+  head: () => ({ meta: [{ title: "SPLIT — REPUNIT" }, { name: "description", content: "Build, save and share your workouts." }] }),
   component: WorkoutsPage,
 });
 
@@ -272,7 +272,7 @@ function WorkoutsPage() {
     <PageShell>
       <div className="mb-8">
         <p className="eyebrow">PLAN YOUR TRAINING</p>
-        <h1 className="font-stat mt-2 text-6xl uppercase">Workouts<span className="text-primary">.</span></h1>
+        <h1 className="font-stat mt-2 text-6xl uppercase">SPLIT<span className="text-primary">.</span></h1>
         <p className="mt-2 text-sm text-muted-foreground">Build your workouts, choose training days and share your routines.</p>
       </div>
 
