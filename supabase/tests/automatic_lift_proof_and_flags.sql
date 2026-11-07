@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(14);
 
 select ok(
   exists (
@@ -56,6 +56,16 @@ select ok(
 select ok(
   not has_column_privilege('authenticated', 'public.lifts', 'video_path', 'UPDATE'),
   'authenticated clients must use the guarded proof RPC to attach video'
+);
+
+select ok(
+  to_regprocedure('public.admin_list_pending_lifts()') is null,
+  'the manual admin lift queue RPC is removed'
+);
+
+select ok(
+  to_regprocedure('public.admin_review_lift(uuid,text)') is null,
+  'the manual admin review RPC is removed'
 );
 
 select * from finish();
