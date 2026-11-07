@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AchievementUnlockBanner } from "@/components/achievement-unlock-banner";
 import { PrCelebration } from "@/components/pr-celebration";
 import { supabase } from "@/integrations/supabase/client";
+import { I18nProvider } from "@/i18n/i18n-provider";
 
 function NotFoundComponent() {
   return (
@@ -125,11 +126,13 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <AchievementUnlockBanner />
-      <PrCelebration />
-      <Toaster theme="dark" position="top-center" />
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+        <AchievementUnlockBanner />
+        <PrCelebration />
+        <Toaster theme="dark" position="top-center" />
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
