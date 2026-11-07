@@ -53,6 +53,12 @@ export type Database = {
           },
         ]
       }
+      crew_achievements: {
+        Row: { id: string; crew_id: string; achievement_key: string; awarded_at: string }
+        Insert: { id?: string; crew_id: string; achievement_key: string; awarded_at?: string }
+        Update: { id?: string; crew_id?: string; achievement_key?: string; awarded_at?: string }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           crew_id: string
@@ -129,6 +135,12 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      friend_requests: {
+        Row: { id: string; requester_id: string; recipient_id: string; status: string; created_at: string; responded_at: string | null }
+        Insert: { id?: string; requester_id: string; recipient_id: string; status?: string; created_at?: string; responded_at?: string | null }
+        Update: { id?: string; requester_id?: string; recipient_id?: string; status?: string; created_at?: string; responded_at?: string | null }
+        Relationships: []
       }
       follows: {
         Row: {
