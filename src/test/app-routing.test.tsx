@@ -20,6 +20,7 @@ describe("App routing", () => {
       ["/battles", "/_authenticated/battles/"],
       ["/records/new", "/_authenticated/records/new"],
       ["/workouts", "/_authenticated/workouts"],
+      ["/admin/lifts", "/_authenticated/admin/lifts"],
       ["/u/example", "/u/$username"],
     ] as const;
 
