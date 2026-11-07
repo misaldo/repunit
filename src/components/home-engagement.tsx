@@ -96,8 +96,8 @@ export function HomeEngagement({ userId }: Props) {
     },
   });
 
-  if (isLoading) return <div className="mt-6 h-40 animate-pulse rounded-2xl bg-card" />;
-  if (isError || !data) return null;
+  if (isLoading) return <><div className="mt-6 h-40 animate-pulse rounded-2xl bg-card" /><ThroneBanner /></>;
+  if (isError || !data) return <ThroneBanner />;
   const badgeLabels: Record<string, string> = { weekly_winners: "🏆 Weekly Winners", "100_ton_club": "💯 100 Ton Club", iron_squad: "🛡️ Iron Squad" };
   return <div className="mt-6 space-y-6">
     <section>
