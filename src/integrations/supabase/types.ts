@@ -439,6 +439,8 @@ export type Database = {
         | "AI_ANALYZING"
         | "AI_CHECKED"
         | "NEEDS_REVIEW"
+        | "NEEDS_PROOF"
+        | "UNDER_REVIEW"
         | "VERIFIED"
         | "REJECTED"
     }
