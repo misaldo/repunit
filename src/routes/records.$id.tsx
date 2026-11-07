@@ -48,7 +48,7 @@ function Record() {
       const { data: count, error } = await supabase.rpc("flag_lift", { _lift_id: id });
       if (error) throw error;
       toast.success(Number(count) >= 3 ? "Lift moved under review" : "Flag submitted", {
-        description: Number(count) >= 3 ? "The lift is hidden from rankings until video proof is added." : "A total of three different Crew members is required.",
+        description: Number(count) >= 3 ? "The lift is hidden from rankings until video proof is added." : `${Number(count)}/3 different Crew members have flagged this lift.`,
       });
       await refetch();
     } catch (error) {
