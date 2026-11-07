@@ -26,7 +26,7 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
     queryFn:async()=>{
       const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id").eq("user_id",user!.id);
       if(memberError)throw memberError;
-      const ids=[...new Set((members??[]).map((member:any)=>member.crew_id))];
+      const ids=Array.from(new Set<string>((members??[]).map((member:any)=>String(member.crew_id))));
       if(!ids.length)return null;
       const weeklySetup=await Promise.all(ids.map((crewId:string)=>(supabase as any).rpc("ensure_weekly_crew_battles",{_crew:crewId})));
       const setupError=weeklySetup.find((result:any)=>result.error)?.error;
