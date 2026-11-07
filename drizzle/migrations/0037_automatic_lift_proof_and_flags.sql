@@ -60,6 +60,7 @@ as $function$
 declare
   submitting_user uuid := auth.uid();
   previous_best numeric;
+  same_day_best numeric;
   daily_pr_jump_count integer;
   failure_reason text := null;
   daily_count integer;
@@ -119,7 +120,14 @@ begin
     and l.status = 'VERIFIED'
     and l.lifted_on < new.lifted_on;
 
-  if new.weight_kg > coalesce(previous_best, 0) then
+  select max(l.weight_kg) into same_day_best
+  from public.lifts l
+  where l.user_id = submitting_user
+    and l.exercise = new.exercise
+    and l.status = 'VERIFIED'
+    and l.lifted_on = new.lifted_on;
+
+  if new.weight_kg > greatest(coalesce(previous_best, 0), coalesce(same_day_best, 0)) then
     if previous_best is not null and new.weight_kg > previous_best * 1.10 then
       failure_reason := coalesce(failure_reason, 'A PR jump over 10% needs video proof.');
     end if;
