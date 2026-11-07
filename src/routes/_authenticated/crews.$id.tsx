@@ -30,7 +30,7 @@ function Crew() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
-      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, total_xp, is_public").eq("id", id).maybeSingle();
+      const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, is_public").eq("id", id).maybeSingle();
       if (error) throw error;
       // Keep the core crew page independent from optional invite/profile relations.
       let code: string | null = null;
@@ -51,23 +51,12 @@ function Crew() {
       }
       const profileById = new Map(profiles.map((p: any) => [p.id, p]));
       const members = (memberRows ?? []).map((m: any) => ({ ...m, profiles: profileById.get(m.user_id) ?? null }));
-      const safeIds = memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"];
-      const [
-        { data: badges, error: badgesError },
-        { data: lifts, error: liftsError },
-        { data: battleWins, error: battleWinsError },
-      ] = await Promise.all([
-        (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),
-        (supabase as any).from("lifts").select("weight_kg,reps,lifted_on").in("user_id", safeIds).eq("status", "VERIFIED"),
-        (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
-      ]);
-      if (badgesError) throw badgesError;
-      if (liftsError) throw liftsError;
-      if (battleWinsError) throw battleWinsError;
-      const now = new Date();
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const monthTonnage = (lifts ?? []).filter((lift: any) => String(lift.lifted_on ?? "").startsWith(monthKey)).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0);
-      return { c, code, members, badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), monthTonnage, battleWins: battleWins?.length ?? 0 };
+      const { data: rankingRows, error: rankingError } = await (supabase as any).rpc("crew_leaderboard", {
+        _exercise: "total", _from: null, _to: null,
+      });
+      if (rankingError) throw rankingError;
+      const crewScore = (rankingRows ?? []).find((row: any) => row.id === id) ?? null;
+      return { c, code, members, crewScore };
     },
   });
   const { data: rows = [], isLoading: ranksLoading, isError: ranksError, refetch: refetchRanks } = useLeaderboard(ex, id);
@@ -136,6 +125,10 @@ function Crew() {
         <p className="eyebrow mt-6 text-primary">REPUNIT CREW</p><h1 className="font-stat mt-2 break-words text-5xl uppercase md:text-7xl">{data.c.name}</h1>
         {data.c.description && <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{data.c.description}</p>}
         <div className="mt-6 grid max-w-xl grid-cols-2 gap-3"><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{count}<span className="text-lg text-muted-foreground">/{cap}</span></p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Members</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,count/cap*100)}%`}}/></div></div><div className="rounded-xl border border-border bg-background/60 p-3"><p className="font-stat text-3xl">{Math.max(0,cap-count)}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Open spots</p></div></div></div>
+      </div>
+      <div className="mt-4 grid max-w-xl grid-cols-2 gap-3">
+        <div className="rounded-xl border border-primary/25 bg-primary/[0.06] p-3"><p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Crew total</p><p className="font-stat mt-1 text-2xl">{Math.round(data.crewScore?.total ?? 0).toLocaleString()} kg</p><p className="text-[10px] text-muted-foreground">Logged PR volume</p></div>
+        <div className="rounded-xl border border-border bg-card p-3"><p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Weekly wins</p><p className="font-stat mt-1 text-2xl">{data.crewScore?.wins ?? 0}</p><p className="text-[10px] text-muted-foreground">Crew battles won</p></div>
       </div>
       {false && <>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
