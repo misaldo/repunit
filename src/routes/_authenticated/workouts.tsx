@@ -117,7 +117,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 const CATEGORIES = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"];
 
 export const Route = createFileRoute("/_authenticated/workouts")({
-  head: () => ({ meta: [{ title: "Training splits — REPUNIT" }, { name: "description", content: "Build, save and share your training plans." }] }),
+  head: () => ({ meta: [{ title: "Workouts — REPUNIT" }, { name: "description", content: "Build, save and share your workouts." }] }),
   component: WorkoutsPage,
 });
 
@@ -249,7 +249,7 @@ function WorkoutsPage() {
       }
       setTitle(""); setWorkoutDay("Monday"); setDraftExercises([]); setVisibility("private");
       await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
-      toast.success("Split saved.");
+      toast.success("Workout saved.");
     } catch (error) {
       toast.error("Could not save your workout. Check your connection and try again.");
     } finally { setSaving(false); }
@@ -294,7 +294,7 @@ function WorkoutsPage() {
           <Button type="button" variant="hero" className="w-full" onClick={() => setPickerOpen(true)}><Plus className="mr-2 h-4 w-4" />Add exercise</Button>
           {draftExercises.length > 0 ? <ol className="mt-4 space-y-2">{draftExercises.map((item, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"><span className="min-w-0"><b>{i + 1}. {item.exercise_name}</b><span className="block text-xs text-muted-foreground">{item.sets} sets × {item.reps} · {item.rest_seconds}s rest</span></span><button onClick={() => setDraftExercises((all) => all.filter((_, index) => index !== i))} aria-label="Remove exercise" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button></li>)}</ol> : <p className="mt-4 rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">Your exercise list is empty. Tap “Add exercise” to get started.</p>}
         </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your split will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError || subscriptionQuery.isLoading || subscriptionQuery.isError || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Workout limit reached" : "Save workout"}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Your workout will follow the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError || subscriptionQuery.isLoading || subscriptionQuery.isError || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Workout limit reached" : "Save workout"}</Button></div>
       </section>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
@@ -317,7 +317,7 @@ function WorkoutsPage() {
 
       <section className="mt-10">
         <h2 className="mb-4 text-xl font-bold">Your workouts</h2>
-        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading workouts…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your workouts could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved workouts have not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No splits yet. Create your first one above.</div> : (
+        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading workouts…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your workouts could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved workouts have not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No workouts yet. Create your first one above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete workout" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
             <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility}</div>
