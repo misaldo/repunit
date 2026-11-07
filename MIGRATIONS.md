@@ -66,3 +66,4 @@ Use the SQL Editor query above if the project has migration-history records. Oth
 After applying a migration, wait for the SQL Editor to report success before moving to the next file. If a migration fails, stop and resolve that error before continuing.
 
 The PR flow refocus migration is `drizzle/migrations/0028_optional_pr_video.sql`. Apply it after `0027_privacy_hardening.sql`. It makes video evidence optional for a PR while preserving owner checks and verifying that any supplied video object exists in the private bucket. User-submitted PRs count as self-reported results; `VERIFIED` does not mean AI or human technique verification.
+The friend-challenge notification migration is `drizzle/migrations/0029_friend_challenge_copy.sql`. Apply it after `0028_optional_pr_video.sql`. Automatic mutual-friend call-outs now include the lift, weight and suggested target in the notification; the existing Accept / Ignore and win/loss challenge workflow is retained.
