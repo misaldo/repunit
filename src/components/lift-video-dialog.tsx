@@ -59,7 +59,7 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
     const result = liked
       ? await (supabase as any).from("lift_likes").delete().eq("lift_id", liftId).eq("user_id", user.id)
       : await (supabase as any).from("lift_likes").insert({ lift_id: liftId, user_id: user.id });
-    if (result.error) { toast.error("Could not update your like: " + result.error.message); return; }
+    if (result.error) { toast.error("Could not update your like. Please try again."); return; }
     await qc.invalidateQueries({ queryKey });
   }
 
@@ -68,7 +68,7 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
     const content = draft.trim();
     if (!user || !liftId || !content || content.length > 2000) return;
     const { error } = await (supabase as any).from("lift_comments").insert({ lift_id: liftId, user_id: user.id, content });
-    if (error) { toast.error("Could not add comment: " + error.message); return; }
+    if (error) { toast.error("Could not add your comment. Please try again."); return; }
     setDraft("");
     await qc.invalidateQueries({ queryKey });
     toast.success("Comment added");
