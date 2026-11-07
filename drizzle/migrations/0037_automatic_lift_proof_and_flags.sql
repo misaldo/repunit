@@ -54,17 +54,8 @@ create table if not exists public.lift_flags (
 create index if not exists lift_flags_lift_id_idx on public.lift_flags(lift_id);
 alter table public.lift_flags enable row level security;
 revoke all on public.lift_flags from anon, authenticated;
-grant select on public.lift_flags to authenticated;
 drop policy if exists "shared crew members can read lift flags" on public.lift_flags;
-create policy "shared crew members can read lift flags"
-on public.lift_flags for select to authenticated
-using (
-  flagger_id = auth.uid()
-  or exists (
-    select 1 from public.crew_members cm
-    where cm.crew_id = lift_flags.crew_id and cm.user_id = auth.uid()
-  )
-);
+-- Flag identities are private; clients interact only through the guarded RPC.
 
 -- The browser cannot set status. Every normal insert is classified here.
 create or replace function public.require_pending_lift_submission()
