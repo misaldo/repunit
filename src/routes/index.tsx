@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ArrowRight, Users, Video, ShieldCheck, Trophy, Zap, Dumbbell } from "lucide-react";
 import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
 import { InstallPrompt } from "@/components/install-prompt";
@@ -6,22 +6,21 @@ import { Button } from "@/components/ui/button";
 import { useLeaderboard, Podium } from "@/components/leaderboard-list";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ to: "/leaderboards", replace: true });
+  },
   head: () => ({
     meta: [
-      { title: "REPUNIT — Who is the strongest in your crew?" },
-      { name: "description", content: "The social strength network. Build your crew, submit lifts with video, climb the leaderboard." },
-      { property: "og:title", content: "REPUNIT — Who is the strongest in your crew?" },
+      { title: "REPUNIT TOP — Who is the strongest?" },
+      { name: "description", content: "Open the REPUNIT global strength leaderboard." },
+      { property: "og:title", content: "REPUNIT TOP — Who is the strongest?" },
       { property: "og:description", content: "Your lifts. Your people. One place to see where you stand." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: OpenTop,
+  component: Landing,
 });
-
-function OpenTop() {
-  return <Navigate to="/leaderboards" replace />;
-}
 
 function HeroMotion() {
   return (
