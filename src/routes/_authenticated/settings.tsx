@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent } from "react";
 import { toast } from "sonner";
 import { UserRound } from "lucide-react";
