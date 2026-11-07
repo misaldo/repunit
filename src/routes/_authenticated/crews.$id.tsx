@@ -27,7 +27,7 @@ function Crew() {
   const qc = useQueryClient();
   const [leaving, setLeaving] = useState(false);
   const [ex, setEx] = useState<Exercise>("bench");
-  const { data, isLoading, isError, error: crewLoadError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew", id],
     queryFn: async () => {
       const { data: c, error } = await (supabase as any).from("crews").select("id, name, description, owner_id, max_members, total_xp, is_public").eq("id", id).maybeSingle();
