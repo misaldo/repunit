@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(11);
 
 select ok(
   not has_table_privilege('anon', 'public.profiles', 'SELECT'),
@@ -28,6 +28,15 @@ select ok(
 select ok(
   exists (select 1 from storage.buckets where id = 'lift-videos' and public = false),
   'lift-videos bucket is private'
+);
+
+select ok(
+  has_function_privilege('anon', 'public.leaderboard(public.exercise,uuid,date)', 'EXECUTE'),
+  'logged-out visitors can still call the public TOP leaderboard'
+);
+select ok(
+  has_table_privilege('anon', 'public.lifts', 'SELECT'),
+  'logged-out visitors can still read public lift results for TOP'
 );
 
 select * from finish();
