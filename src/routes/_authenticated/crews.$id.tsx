@@ -54,8 +54,22 @@ function Crew() {
       const { data: rankingRows, error: rankingError } = await (supabase as any).rpc("crew_leaderboard", {
         _exercise: "total", _from: null, _to: null,
       });
-      if (rankingError) throw rankingError;
-      const crewScore = (rankingRows ?? []).find((row: any) => row.id === id) ?? null;
+      let crewScore = !rankingError ? (rankingRows ?? []).find((row: any) => row.id === id) ?? null : null;
+      if (rankingError && (rankingError.code === "42883" || rankingError.code === "PGRST202")) {
+        const safeIds = memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"];
+        const [{ data: lifts, error: liftsError }, { data: wins, error: winsError }] = await Promise.all([
+          (supabase as any).from("lifts").select("weight_kg,reps").in("user_id", safeIds).eq("status", "VERIFIED"),
+          (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
+        ]);
+        if (liftsError) throw liftsError;
+        if (winsError) throw winsError;
+        crewScore = {
+          total: (lifts ?? []).reduce((sum: number, lift: any) => sum + Number(lift.weight_kg) * Number(lift.reps ?? 1), 0),
+          wins: wins?.length ?? 0,
+        };
+      } else if (rankingError) {
+        throw rankingError;
+      }
       return { c, code, members, crewScore };
     },
   });
