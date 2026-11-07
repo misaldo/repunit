@@ -13,11 +13,6 @@ describe("App routing", () => {
     expect(matches.at(-1)?.routeId).toBe("/invite/$code");
     expect(matches.at(-1)?.params).toMatchObject({ code: "abc123" });
   });
-  it("matches the authenticated social feed route", () => {
-    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
-    const matches = router.matchRoutes("/feed");
-    expect(matches.at(-1)?.routeId).toBe("/_authenticated/feed");
-  });
   it("matches every destination in the five-tab mobile navigation", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     const destinations = [
@@ -34,12 +29,11 @@ describe("App routing", () => {
     }
   });
 
-  it("keeps crews, challenges and notifications reachable", () => {
+  it("keeps crews and challenges reachable", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     const destinations = [
       ["/crews", "/_authenticated/crews/"],
       ["/challenges", "/_authenticated/challenges"],
-      ["/notifications", "/_authenticated/notifications"],
     ] as const;
 
     for (const [path, expectedRouteId] of destinations) {
@@ -48,9 +42,8 @@ describe("App routing", () => {
     }
   });
 
-  it("keeps the restored Feed and crew creation routes reachable", () => {
+  it("keeps crew creation reachable after removing the Feed screen", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
-    expect(router.matchRoutes("/feed").at(-1)?.routeId).toBe("/_authenticated/feed");
     expect(router.matchRoutes("/crews/new").at(-1)?.routeId).toBe("/_authenticated/crews/new");
   });
 
