@@ -200,9 +200,6 @@ as $function$
 declare
   workflow_update boolean :=
     coalesce(current_setting('repunit.lift_workflow', true), '') = 'on';
-  admin_review boolean :=
-    coalesce(current_setting('repunit.admin_lift_review', true), '') = 'on'
-    and public.has_role(auth.uid(), 'admin');
 begin
   if auth.role() <> 'service_role' then
     if new.user_id is distinct from old.user_id
@@ -211,7 +208,7 @@ begin
       or new.reps is distinct from old.reps
       or new.lifted_on is distinct from old.lifted_on
       or (new.video_path is distinct from old.video_path and not workflow_update)
-      or (new.status is distinct from old.status and not workflow_update and not admin_review)
+      or (new.status is distinct from old.status and not workflow_update)
       or new.verification_reason is distinct from old.verification_reason and not workflow_update then
       raise exception 'Lift evidence and verification status can only be changed through REPUNIT proof workflows'
         using errcode = '42501';
@@ -370,6 +367,11 @@ begin
   return result_lift;
 end;
 $function$;
+
+-- The old manual queue is no longer part of the product; owners resolve proof
+-- requests directly through attach_lift_video.
+drop function if exists public.admin_list_pending_lifts();
+drop function if exists public.admin_review_lift(uuid, text);
 
 revoke all on function public.flag_lift(uuid) from public, anon;
 revoke all on function public.attach_lift_video(uuid, text) from public, anon;
