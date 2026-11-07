@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-session";
-import { Users, Trophy, ArrowUpRight, TrendingUp, TrendingDown, Minus, Crown, Swords } from "lucide-react";
+import { Users, Trophy, TrendingUp, TrendingDown, Minus, Crown, Swords } from "lucide-react";
 import { LiveBattleCard } from "@/components/live-battle-card";
 
 export const Route = createFileRoute("/leaderboards")({
