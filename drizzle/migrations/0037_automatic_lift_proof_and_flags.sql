@@ -36,11 +36,11 @@ create index if not exists lifts_duplicate_guard_idx
 
 -- Existing verified lifts have already earned their progression rewards.
 update public.lifts
-set xp_awarded_at = coalesce(updated_at, created_at, now())
+set xp_awarded_at = coalesce(created_at, now())
 where status = 'VERIFIED' and xp_awarded_at is null;
 
 update public.lifts
-set verified_at = coalesce(updated_at, created_at, now())
+set verified_at = coalesce(created_at, now())
 where status = 'VERIFIED' and verified_at is null;
 
 create table if not exists public.lift_flags (
