@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Users, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell } from "lucide-react";
+import { Trophy, Swords, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell, Plus } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -13,9 +13,9 @@ import { InstallPrompt } from "./install-prompt";
 import { ProgressionCard } from "./progression-card";
 
 const nav = [
-  { to: "/workouts" as const, label: "Workouts", icon: Dumbbell },
-  { to: "/crews" as const, label: "Crews", icon: Users },
-  { to: "/leaderboards" as const, label: "Ranks", icon: Trophy },
+  { to: "/leaderboards" as const, label: "TOP", icon: Trophy },
+  { to: "/battles" as const, label: "BATTLES", icon: Swords },
+  { to: "/workouts" as const, label: "SPLIT", icon: Dumbbell },
 ];
 
 export function SiteHeader() {
@@ -89,7 +89,10 @@ export function DesktopSidebar() {
     <div className="px-3 pb-7"><Wordmark /></div>
     <p className="px-3 pb-3 text-[9px] font-black uppercase tracking-[.22em] text-muted-foreground">Workspace</p>
     <nav className="space-y-1">
-      {nav.map(({to,label,icon:Icon})=><Link key={to} to={to} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-elevated hover:text-foreground" activeProps={{className:"!bg-primary/10 !text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"}}><Icon className="h-[18px] w-[18px] transition group-hover:scale-110"/>{label}{label==="Battles"&&<span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]"/>}</Link>)}
+      {nav.map(({to,label,icon:Icon})=><Link key={to} to={to} className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-elevated hover:text-foreground" activeProps={{className:"!bg-primary/10 !text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"}}><Icon className="h-[18px] w-[18px] transition group-hover:scale-110"/>{label}</Link>)}
+      <Link to="/crews" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>CREWS</Link>
+      <Link to="/challenges" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Swords className="h-[18px] w-[18px]"/>CHALLENGES</Link>
+      <Link to="/people" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>FIND LIFTERS</Link>
     </nav>
     <div className="mt-auto space-y-2">
       <Link to="/records/new" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-[0_8px_30px_-12px_hsl(var(--primary)/.7)] transition hover:-translate-y-0.5 hover:brightness-110"><Dumbbell className="h-4 w-4"/> Submit a lift</Link>
@@ -99,19 +102,25 @@ export function DesktopSidebar() {
 }
 
 export function MobileNav() {
-  const { user } = useUser(); const { data: profile } = useMyProfile(user?.id);
+  const { user } = useUser();
+  const { data: profile } = useMyProfile(user?.id);
   if (!user) return null;
-  const item = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-2 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground transition-all duration-200 active:scale-90";
+  const item = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-[0.06em] text-muted-foreground transition active:scale-95";
   const active = { className: "!text-primary" };
-  return <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden"><div className="mx-auto flex max-w-xl items-end px-1">
-    <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>Workouts</Link>
-    <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5"/>Crews</Link>
-    <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5"/>Ranks</Link>
-    {profile?<Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>Profile</Link>:<Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>Profile</Link>}
-  </div></nav>;
+  return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden">
+    <div className="mx-auto flex h-[76px] max-w-xl items-center justify-between gap-1 px-2">
+      <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5"/>TOP</Link>
+      <Link to="/battles" className={item} activeProps={active}><Swords className="h-5 w-5"/>BATTLES</Link>
+      <Link to="/records/new" aria-label="Log a lift" className="relative -mt-5 flex h-[62px] w-[62px] shrink-0 flex-col items-center justify-center rounded-2xl border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_28px_-8px_hsl(var(--primary)/.8)] transition hover:brightness-110 active:scale-95">
+        <Plus className="h-7 w-7"/><span className="text-[9px] font-black uppercase tracking-wider">LOG</span>
+      </Link>
+      <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>SPLIT</Link>
+      {profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>PROFILE</Link> : <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
+    </div>
+  </nav>;
 }
 
 export function PageShell({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen pb-24 lg:pb-0"><SiteHeader/><div className="mx-auto flex max-w-[1600px]"><DesktopSidebar/><main className="min-w-0 flex-1 px-4 py-7 md:px-6 md:py-10 lg:px-9"><div className="mx-auto w-full max-w-7xl">{children}</div></main></div><MobileNav/><InstallPrompt/></div>;
+  return <div className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0"><SiteHeader/><div className="mx-auto flex max-w-[1600px]"><DesktopSidebar/><main className="min-w-0 flex-1 px-4 py-7 md:px-6 md:py-10 lg:px-9"><div className="mx-auto w-full max-w-7xl">{children}</div></main></div><MobileNav/><InstallPrompt/></div>;
 }
 export function SiteFooter() { return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark/><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">Ranks</Link><Link to="/pricing" className="hover:text-foreground">Pricing</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
