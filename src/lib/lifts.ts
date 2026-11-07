@@ -18,6 +18,8 @@ export const STATUS_META: Record<LiftStatus, { label: string; tone: "verified" |
   AI_ANALYZING: { label: "Analyzing", tone: "ai" },
   AI_CHECKED: { label: "AI checked", tone: "ai" },
   NEEDS_REVIEW: { label: "Needs review", tone: "warn" },
+  NEEDS_PROOF: { label: "Needs proof", tone: "warn" },
+  UNDER_REVIEW: { label: "Under review", tone: "warn" },
   VERIFIED: { label: "Logged", tone: "verified" },
   REJECTED: { label: "Rejected", tone: "bad" },
 };
