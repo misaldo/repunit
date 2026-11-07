@@ -43,8 +43,7 @@ begin
     message_body := actor_name || ' challenged you to ' || new.target_weight_kg::text || ' kg.';
   end if;
 
-  insert into public.notifications(user_id, actor_id, kind, title, body, href)
-  values (
+  perform public.repunit_create_notification(
     new.challenged_id,
     new.challenger_id,
     'challenge',
