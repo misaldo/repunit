@@ -68,44 +68,16 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       const crewMap = new Map((crews ?? []).map((c: Crew) => [c.id,c]));
       const adminCrews = (rivalCrews ?? []) as Crew[];
       const battleDetails = await Promise.all((battles ?? []).map(async (battle: Battle) => {
-        const [leftMembersResult,rightMembersResult] = await Promise.all([
-          (supabase as any).from("crew_members").select("user_id").eq("crew_id",battle.challenger_crew_id),
-          (supabase as any).from("crew_members").select("user_id").eq("crew_id",battle.opponent_crew_id),
-        ]);
-        if (leftMembersResult.error) throw leftMembersResult.error;
-        if (rightMembersResult.error) throw rightMembersResult.error;
-        const leftMembers = leftMembersResult.data ?? [];
-        const rightMembers = rightMembersResult.data ?? [];
-        const allMembers = [...leftMembers,...rightMembers];
-        const memberIds = [...new Set(allMembers.map((m:any)=>m.user_id))];
-        const { data: profileRows, error: profileError } = memberIds.length
-          ? await (supabase as any).from("profiles").select("id,username,display_name").in("id",memberIds)
-          : { data: [], error: null };
-        if (profileError) throw profileError;
-        const profilesById = new Map((profileRows ?? []).map((p:any)=>[p.id,p]));
-        const withProfiles = (members:any[]) => members.map((m:any)=>({...m,profiles:profilesById.get(m.user_id)??null}));
-        const from = battle.starts_at.slice(0,10);
-        const to = battle.ends_at.slice(0,10);
-        let liftQuery = (supabase as any).from("lifts")
-          .select("user_id,weight_kg,reps,exercise").in("user_id",memberIds.length?memberIds:["00000000-0000-0000-0000-000000000000"])
-          .eq("status","VERIFIED").gte("lifted_on",from).lt("lifted_on",to);
-        if (battle.category === "volume") liftQuery = liftQuery.in("exercise",["bench","squat","deadlift","ohp","pullup"]);
-        else liftQuery = liftQuery.eq("exercise",battle.category);
-        const { data: lifts, error: liftError } = await liftQuery;
-        if (liftError) throw liftError;
-        const best = new Map<string,number>();
-        for (const lift of lifts ?? []) {
-          const score = battle.category === "volume" ? Number(lift.weight_kg) * Number(lift.reps ?? 1) : Number(lift.weight_kg);
-          best.set(lift.user_id,battle.category === "volume" ? (best.get(lift.user_id) ?? 0) + score : Math.max(best.get(lift.user_id) ?? 0,score));
-        }
-        const makeSide = (members:any[]) => {
-          const contributors: Contributor[] = members.map((m:any)=>({
-            user_id:m.user_id, username:m.profiles?.username ?? "lifter",
-            display_name:m.profiles?.display_name ?? null, weight:best.get(m.user_id) ?? 0,
-          })).filter((m:Contributor)=>m.weight>0).sort((a:Contributor,b:Contributor)=>b.weight-a.weight);
-          return { total:contributors.reduce((sum,m)=>sum+m.weight,0), contributors:contributors.slice(0,3) };
+        const { data: scores, error: scoreError } = await (supabase as any).rpc("crew_battle_score", { _battle: battle.id });
+        if (scoreError) throw scoreError;
+        const emptySide = { total: 0, contributors: [] as Contributor[] };
+        return {
+          battle,
+          left: crewMap.get(battle.challenger_crew_id),
+          right: crewMap.get(battle.opponent_crew_id),
+          leftScore: scores?.left ?? emptySide,
+          rightScore: scores?.right ?? emptySide,
         };
-        return { battle, left:crewMap.get(battle.challenger_crew_id), right:crewMap.get(battle.opponent_crew_id), leftScore:makeSide(withProfiles(leftMembers)), rightScore:makeSide(withProfiles(rightMembers)) };
       }));
       return { battles:battleDetails, adminCrews };
     },
