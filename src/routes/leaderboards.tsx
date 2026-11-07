@@ -34,6 +34,8 @@ async function scoreCrewsLegacy(exercise:Exercise|"total",from:string|null,to:st
   if(!crews?.length)return [];
   const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id");
   if(memberError)throw memberError;
+  const {data:authResult}=await supabase.auth.getUser();
+  const userId=authResult.user?.id;
   let lifts:any[]=[];
   if(members?.length){
     let q=(supabase as any).from("lifts").select("user_id,exercise,weight_kg,reps,lifted_on").in("user_id",[...new Set(members.map((m:any)=>m.user_id))]).eq("status","VERIFIED");
@@ -49,7 +51,7 @@ async function scoreCrewsLegacy(exercise:Exercise|"total",from:string|null,to:st
   }
   const counts=new Map<string,number>();
   for(const member of members??[])counts.set(member.crew_id,(counts.get(member.crew_id)??0)+1);
-  return crews.map((crew:any)=>({...crew,total:totals.get(crew.id)??0,members:counts.get(crew.id)??0,wins:0,is_mine:(members??[]).some((member:any)=>member.crew_id===crew.id&&member.user_id===undefined)}));
+  return crews.map((crew:any)=>({...crew,total:totals.get(crew.id)??0,members:counts.get(crew.id)??0,wins:0,is_mine:(members??[]).some((member:any)=>member.crew_id===crew.id&&member.user_id===userId)}));
 }
 
 function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enabled:boolean) {
