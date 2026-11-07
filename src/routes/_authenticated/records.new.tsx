@@ -48,7 +48,7 @@ function NewRecord() {
     if (busy) return;
     const f = new FormData(e.currentTarget);
     const weight = Number(f.get("weight")); const reps = Number(f.get("reps"));
-    if (!(weight >= 0.5 && weight <= 600) || !Number.isInteger(reps) || !(reps >= 1 && reps <= 100)) { toast.error("Enter a weight from 0.5 to 600 kg and 1–100 whole reps."); return; }
+    if (!Number.isFinite(weight) || !Number.isInteger(reps) || weight < 0 || reps < 1) { toast.error("Enter a valid weight and whole number of reps."); return; }
     const file = f.get("video") as File | null;
     let video_path: string | null = null;
     setBusy(true);
@@ -90,14 +90,14 @@ function NewRecord() {
       const { data, error } = await supabase.from("lifts").insert({
         user_id: user.id, exercise, weight_kg: weight, reps,
         lifted_on: String(f.get("date")), description: null, video_path,
-      }).select("id").single();
+      }).select("id,status").single();
       if (error) throw error;
       if (typeof window !== "undefined") {
         window.localStorage.setItem("repunit.lastExercise", exercise);
         window.localStorage.setItem("repunit.lastWeight", String(weight));
         window.localStorage.setItem("repunit.lastReps", String(reps));
       }
-      toast.success("PR logged", { description: "Your result is on REPUNIT." });
+      if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {\n        toast.warning("Video proof needed", { description: "Your lift is saved but does not count toward rankings yet." });\n      } else {\n        toast.success("PR logged", { description: "Your result is on REPUNIT." });\n      }
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
       let cleanupFailed = false;
@@ -129,8 +129,8 @@ function NewRecord() {
         <div className="space-y-1.5"><Label htmlFor="exercise">Exercise</Label>
           <select id="exercise" name="exercise" value={exercise} onChange={(event) => setExercise(event.target.value as Exercise)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base">{EXERCISES.filter((x) => x.id !== "pullup").map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" value={weight} onChange={(event) => setWeight(event.target.value)} type="number" step="0.5" min="0.5" max="600" inputMode="decimal" placeholder="100" className="h-12 text-lg font-bold" required /></div>
-          <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" value={reps} onChange={(event) => setReps(event.target.value)} type="number" min="1" max="100" inputMode="numeric" className="h-12 text-lg font-bold" required /></div>
+          <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" value={weight} onChange={(event) => setWeight(event.target.value)} type="number" step="0.01" min="0" max="9999.99" inputMode="decimal" placeholder="100" className="h-12 text-lg font-bold" required /></div>
+          <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" value={reps} onChange={(event) => setReps(event.target.value)} type="number" min="1" max="1000" inputMode="numeric" className="h-12 text-lg font-bold" required /></div>
         </div>
         <div className="space-y-1.5"><Label htmlFor="video">Video proof <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /></div>
         {uploadProgress !== null && (
@@ -142,7 +142,7 @@ function NewRecord() {
           </div>
         )}
         <Button variant="hero" className="h-13 w-full text-base font-black uppercase tracking-wide" disabled={busy}>{busy ? (uploadProgress === null ? "Saving PR…" : `Uploading ${uploadProgress}%`) : "Log PR"}</Button>
-        <p className="text-center text-[11px] text-muted-foreground">Video is optional. PRs are self-reported and count toward your rankings.</p>
+        <p className="text-center text-[11px] text-muted-foreground">Video is optional. Unusual jumps, duplicates or suspicious entries are saved as Needs proof and stay out of rankings until you attach a video.</p>
       </form>
     </PageShell>
   );
