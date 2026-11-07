@@ -39,7 +39,7 @@ function Crews() {
     const code = String(new FormData(e.currentTarget).get("code") ?? "").trim();
     setBusy(true);
     try { const { data: id, error } = await supabase.rpc("join_crew", { _code: code }); if (error) throw error; toast.success("Welcome to the crew"); navigate({ to: "/crews/$id", params: { id } }); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Could not join crew."); }
+    catch { toast.error("Could not join this crew. Check the invite code and try again."); }
     finally { setBusy(false); }
   }
   const adminCount = data.filter((m:any)=>m.role==="admin").length;
