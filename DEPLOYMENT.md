@@ -38,7 +38,7 @@
 
 ## Supabase database
 
-The existing project has already used migrations through `0011_complete_backend_setup.sql`. Check the Supabase migration history and apply only migrations that are still pending, in numeric order:
+The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. The browser client uses the Lovable Cloud gateway URL configured in `.env`; the underlying Supabase project for CLI deployments and Edge Functions is this project ref. The existing project has already used migrations through `0011_complete_backend_setup.sql`. Check migration history and apply only pending migrations in the exact order documented in [MIGRATIONS.md](./MIGRATIONS.md):
 
 - `0012_repair_training_splits.sql`
 - `0013_repair_crew_battles.sql`
@@ -69,7 +69,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
    ```bash
    supabase login
-   supabase link --project-ref kqezgcwfqfntazucbbzt
+   supabase link --project-ref sfumcokjwvhxwuanlofw
    ```
 
 4. Set the Edge Function secrets (use your real values; do not commit them):
@@ -88,7 +88,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
 6. In Stripe Dashboard, add a webhook endpoint:
 
-   `https://kqezgcwfqfntazucbbzt.supabase.co/functions/v1/stripe`
+   `https://sfumcokjwvhxwuanlofw.supabase.co/functions/v1/stripe`
 
    Subscribe to:
    - `customer.subscription.created`
@@ -117,7 +117,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
 5. In Supabase Dashboard, create a Database Webhook for `public.notifications`, event `INSERT`, method `POST`, URL:
 
-   `https://kqezgcwfqfntazucbbzt.supabase.co/functions/v1/send-push`
+   `https://sfumcokjwvhxwuanlofw.supabase.co/functions/v1/send-push`
 
    Add the header `x-repunit-webhook-secret` with the exact `PUSH_WEBHOOK_SECRET` value. The webhook body must include the inserted row in `record`. The function sends only to registered subscriptions and removes endpoints that return 404/410.
 
