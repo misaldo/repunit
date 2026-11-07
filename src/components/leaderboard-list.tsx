@@ -34,8 +34,16 @@ export function useLeaderboard(
             _user_ids: userIds ?? null,
             _weight_class: null,
           });
-          if (error) throw error;
-          return data ?? [];
+          if (!error) return data ?? [];
+          // The base leaderboard RPC exists in the original schema. Fall back
+          // to it if the optional friends-scope migration has not been applied.
+          const fallbackArgs: { _exercise: Exercise; _crew?: string; _since?: string } = { _exercise };
+          if (crew) fallbackArgs._crew = crew;
+          if (since) fallbackArgs._since = since;
+          const fallback = await supabase.rpc("leaderboard", fallbackArgs);
+          if (fallback.error) throw fallback.error;
+          const allowedUsers = new Set(userIds ?? []);
+          return (fallback.data ?? []).filter((row) => allowedUsers.has(row.user_id));
         }
         const args: { _exercise: Exercise; _crew?: string; _since?: string } = { _exercise };
         if (crew) args._crew = crew;
