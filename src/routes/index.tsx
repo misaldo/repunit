@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { ArrowRight, Users, Trophy, Zap, Dumbbell } from "lucide-react";
+import { ArrowRight, Users, Trophy, Zap, Dumbbell, Video } from "lucide-react";
 import { SiteHeader, SiteFooter, MobileNav } from "@/components/app-shell";
 import { InstallPrompt } from "@/components/install-prompt";
 import { Button } from "@/components/ui/button";

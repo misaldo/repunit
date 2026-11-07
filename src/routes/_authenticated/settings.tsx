@@ -62,9 +62,9 @@ function Settings() {
         });
       }
       const json = subscription.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) throw new Error("The browser returned an incomplete push subscription.");
+      if (!json.endpoint || !json.keys?.["p256dh"] || !json.keys?.["auth"]) throw new Error("The browser returned an incomplete push subscription.");
       const { error: subscriptionError } = await (supabase as any).from("push_subscriptions").upsert({
-        user_id: user.id, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth,
+        user_id: user.id, endpoint: json.endpoint, p256dh: json.keys["p256dh"], auth: json.keys["auth"],
       }, { onConflict: "user_id,endpoint" });
       if (subscriptionError) throw subscriptionError;
       const { error: preferenceError } = await (supabase as any).from("notification_preferences").upsert({
