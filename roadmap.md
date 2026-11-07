@@ -2,7 +2,7 @@
 
 ## Implemented in the repository
 - [x] Existing sign-in, upload flow, crew invitations, member management and query error states preserved.
-- [x] Mobile-first navigation: Feed, Workouts, Crews, Ranks and Profile; desktop navigation includes Battles and Challenges.
+- [x] Mobile-first navigation: TOP, BATTLES, LOG, SPLIT and PROFILE; Feed remains available from the header, while Crews and Challenges are reachable through TOP and BATTLES.
 - [x] Working social feed with posts, likes and comments.
 - [x] PWA install prompt with browser fallback and iOS instructions.
 - [x] XP for lifts, verified PRs, streak milestones, likes and crew battle acceptance/completion.
