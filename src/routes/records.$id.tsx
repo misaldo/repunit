@@ -45,7 +45,7 @@ function Record() {
     if (busy) return;
     setBusy(true);
     try {
-      const { data: count, error } = await (supabase as any).rpc("flag_lift", { _lift_id: id });
+      const { data: count, error } = await supabase.rpc("flag_lift", { _lift_id: id });
       if (error) throw error;
       toast.success(Number(count) >= 3 ? "Lift moved under review" : "Flag submitted", {
         description: Number(count) >= 3 ? "The lift is hidden from rankings until video proof is added." : "A total of three different Crew members is required.",
@@ -65,7 +65,7 @@ function Record() {
     try {
       const { error: uploadError } = await supabase.storage.from("lift-videos").upload(path, file, { contentType: file.type, upsert: false });
       if (uploadError) throw uploadError;
-      const { error } = await (supabase as any).rpc("attach_lift_video", { _lift_id: id, _video_path: path });
+      const { error } = await supabase.rpc("attach_lift_video", { _lift_id: id, _video_path: path });
       if (error) {
         await supabase.storage.from("lift-videos").remove([path]);
         throw error;
