@@ -56,7 +56,7 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
       else liftQuery=liftQuery.eq("exercise",battle.category);
       const {data:lifts,error:liftError}=await liftQuery;
       if(liftError)throw liftError;
-      const memberCrew=new Map<string,string>((crewMembers??[]).map((member:any)=>[member.user_id,member.crew_id]));
+      const memberCrew=new Map<string,string>((crewMembers??[]).map((member:any):[string,string]=>[String(member.user_id),String(member.crew_id)]));
       const memberScores=new Map<string,number>();
       for(const lift of lifts??[]){
         const score=battle.category==="volume"?Number(lift.weight_kg)*Number(lift.reps??1):Number(lift.weight_kg);
