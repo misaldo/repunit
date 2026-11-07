@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Swords, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell, Plus } from "lucide-react";
+import { Trophy, Swords, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell, Plus, Rss } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -59,6 +59,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-border/60 bg-background/90 px-4 backdrop-blur-2xl md:px-6">
       <div className="flex items-center gap-3"><div className="md:hidden"><Wordmark /></div><div className="hidden md:block"><span className="eyebrow">STRENGTH IS SOCIAL</span><p className="text-xs text-muted-foreground">Your training network</p></div></div>
       <div className="flex items-center gap-3">
+<Link to="/feed" aria-label="Community feed" title="Community feed" className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/50 hover:text-primary"><Rss className="h-4 w-4"/></Link>
 <Link to="/notifications" aria-label="Notifications" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/50 hover:text-primary"><Bell className="h-4 w-4"/>{unreadNotifications > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black text-primary-foreground">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}</Link>
                 <Link to="/records/new" className="hidden rounded-full bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:inline-flex"><Dumbbell className="mr-2 h-3.5 w-3.5"/>Submit a lift</Link>
         <Link to="/pricing" className="hidden rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] text-primary transition hover:bg-primary/20 sm:inline-flex"><Crown className="mr-2 h-3.5 w-3.5" /> GO PRO</Link>
@@ -93,6 +94,7 @@ export function DesktopSidebar() {
       <Link to="/crews" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>CREWS</Link>
       <Link to="/challenges" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Swords className="h-[18px] w-[18px]"/>CHALLENGES</Link>
       <Link to="/people" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>FIND LIFTERS</Link>
+      <Link to="/feed" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Rss className="h-[18px] w-[18px]"/>FEED</Link>
     </nav>
     <div className="mt-auto space-y-2">
       <Link to="/records/new" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-[0_8px_30px_-12px_hsl(var(--primary)/.7)] transition hover:-translate-y-0.5 hover:brightness-110"><Dumbbell className="h-4 w-4"/> Submit a lift</Link>
