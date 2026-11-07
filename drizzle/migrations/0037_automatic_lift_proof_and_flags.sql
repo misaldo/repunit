@@ -159,6 +159,7 @@ begin
     if not exists (
       select 1 from storage.objects o
       where o.bucket_id = 'lift-videos' and o.name = new.video_path
+        and o.metadata->>'mimetype' in ('video/mp4', 'video/quicktime', 'video/webm')
     ) then
       raise exception 'The video upload has not completed. Please retry the submission.' using errcode = '23514';
     end if;
@@ -334,6 +335,7 @@ begin
   if not exists (
     select 1 from storage.objects o
     where o.bucket_id = 'lift-videos' and o.name = _video_path
+      and o.metadata->>'mimetype' in ('video/mp4', 'video/quicktime', 'video/webm')
   ) then
     raise exception 'The uploaded video could not be found' using errcode = '23514';
   end if;
