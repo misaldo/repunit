@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EXERCISES, validateVideo, type Exercise } from "@/lib/lifts";
+import { getFunComparison, formatLiftVolume } from "@/components/fun-stats";
 
 export const Route = createFileRoute("/_authenticated/records/new")({
   head: () => ({ meta: [{ property: "og:title", content: "Submit a lift — REPUNIT" }, { property: "og:description", content: "Log a new lift with video evidence." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Submit a lift — REPUNIT" }, { name: "description", content: "Log a new lift with video evidence." }] }),
@@ -100,7 +101,25 @@ function NewRecord() {
       if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {
         toast.warning("Lift saved — proof needed", { description: data.verification_reason ?? "Your lift is saved but does not count toward rankings yet." });
       } else {
-        toast.success("PR logged", { description: "Your result is on REPUNIT." });
+        const crewFunFact = async () => {
+          try {
+            const { data: memberships } = await supabase.from("crew_members").select("crew_id").eq("user_id", user.id);
+            const crewIds = [...new Set((memberships ?? []).map((m) => m.crew_id))];
+            if (crewIds.length) {
+              const { data: members } = await supabase.from("crew_members").select("user_id").in("crew_id", crewIds);
+              const memberIds = [...new Set((members ?? []).map((m) => m.user_id))];
+              const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
+              const { data: monthLifts } = await supabase.from("lifts").select("weight_kg,reps").in("user_id", memberIds).eq("status", "VERIFIED").gte("created_at", monthStart.toISOString());
+              const total = (monthLifts ?? []).reduce((sum, lift) => sum + Number(lift.weight_kg) * Math.max(1, Number(lift.reps ?? 1)), 0);
+              const comparison = getFunComparison(total);
+              if (comparison) return `Your Crew moved ${formatLiftVolume(total)} this month — about ${comparison.label}.`;
+            }
+          } catch { /* The lift itself is saved; the fun fact is optional. */ }
+          const total = Number(weight) * Number(reps);
+          const comparison = getFunComparison(total);
+          return comparison ? `You just moved ${formatLiftVolume(total)} — about ${comparison.label}.` : "Your result is on REPUNIT.";
+        };
+        toast.success("PR logged", { description: await crewFunFact() });
       }
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
