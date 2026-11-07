@@ -33,7 +33,7 @@ The automatic video verification migration is `drizzle/migrations/0026_auto_veri
 
 The privacy hardening migration is `drizzle/migrations/0027_privacy_hardening.sql`. Apply it after `0026_auto_verify_uploaded_lifts.sql`. It removes anonymous read access to `lift-videos`, keeps signed-in playback, and grants anon only the public profile columns needed by public pages. The matching pgTAP checks are in `supabase/tests/privacy_hardening.sql`.
 
-The pgTAP permission test is `supabase/tests/admin_lift_review_permissions.sql`. Run it against a local Supabase test database with `supabase test db` after applying the migration. Do not run it against production as a substitute for a backup or deployment check.
+Run the database tests against a local Supabase test database with `supabase test db` after applying the migrations. Do not run them against production as a substitute for a backup or deployment check.
 
 ## Check which migrations are already applied
 
