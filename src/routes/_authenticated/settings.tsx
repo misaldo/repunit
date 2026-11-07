@@ -119,7 +119,7 @@ function Settings() {
         toast.success("Web push notifications enabled");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update web push settings.");
+      toast.error("Could not update web push settings. Check your browser permissions and try again.");
     } finally {
       setPushBusy(false);
     }
