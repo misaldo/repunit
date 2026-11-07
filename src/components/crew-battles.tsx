@@ -27,6 +27,44 @@ function timeLeft(target: number, now: number) {
   return days ? `${days}d ${hours}h ${minutes}m` : `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${secs.toString().padStart(2,"0")}`;
 }
 
+async function scoreBattleLegacy(battle: Battle) {
+  const [leftMembersResult, rightMembersResult] = await Promise.all([
+    (supabase as any).from("crew_members").select("user_id").eq("crew_id", battle.challenger_crew_id),
+    (supabase as any).from("crew_members").select("user_id").eq("crew_id", battle.opponent_crew_id),
+  ]);
+  if (leftMembersResult.error) throw leftMembersResult.error;
+  if (rightMembersResult.error) throw rightMembersResult.error;
+  const leftMembers = leftMembersResult.data ?? [];
+  const rightMembers = rightMembersResult.data ?? [];
+  const memberIds = [...new Set([...leftMembers, ...rightMembers].map((member: any) => member.user_id))];
+  const { data: profiles, error: profileError } = memberIds.length
+    ? await (supabase as any).from("profiles").select("id,username,display_name").in("id", memberIds)
+    : { data: [], error: null };
+  if (profileError) throw profileError;
+  const profileById = new Map((profiles ?? []).map((profile: any) => [profile.id, profile]));
+  const from = battle.starts_at.slice(0, 10);
+  const to = battle.ends_at.slice(0, 10);
+  let query = (supabase as any).from("lifts").select("user_id,weight_kg,reps,exercise")
+    .in("user_id", memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"])
+    .eq("status", "VERIFIED").gte("lifted_on", from).lt("lifted_on", to);
+  if (battle.category !== "volume") query = query.eq("exercise", battle.category);
+  const { data: lifts, error: liftError } = await query;
+  if (liftError) throw liftError;
+  const scores = new Map<string, number>();
+  for (const lift of lifts ?? []) {
+    const value = battle.category === "volume" ? Number(lift.weight_kg) * Number(lift.reps ?? 1) : Number(lift.weight_kg);
+    scores.set(lift.user_id, battle.category === "volume" ? (scores.get(lift.user_id) ?? 0) + value : Math.max(scores.get(lift.user_id) ?? 0, value));
+  }
+  const makeSide = (members: any[]) => {
+    const contributors: Contributor[] = members.map((member: any) => {
+      const profile = profileById.get(member.user_id) as any;
+      return { user_id: member.user_id, username: profile?.username ?? "lifter", display_name: profile?.display_name ?? null, weight: scores.get(member.user_id) ?? 0 };
+    }).filter((member: Contributor) => member.weight > 0).sort((a: Contributor, b: Contributor) => b.weight - a.weight);
+    return { total: contributors.reduce((sum, member) => sum + member.weight, 0), contributors: contributors.slice(0, 3) };
+  };
+  return { leftScore: makeSide(leftMembers), rightScore: makeSide(rightMembers) };
+}
+
 export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId: string; userId: string; isAdmin: boolean; focusBattleId?: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -69,14 +107,22 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       const adminCrews = (rivalCrews ?? []) as Crew[];
       const battleDetails = await Promise.all((battles ?? []).map(async (battle: Battle) => {
         const { data: scores, error: scoreError } = await (supabase as any).rpc("crew_battle_score", { _battle: battle.id });
-        if (scoreError) throw scoreError;
+        let leftScore = scores?.left;
+        let rightScore = scores?.right;
+        if (scoreError && (scoreError.code === "42883" || scoreError.code === "PGRST202")) {
+          const legacy = await scoreBattleLegacy(battle);
+          leftScore = legacy.leftScore;
+          rightScore = legacy.rightScore;
+        } else if (scoreError) {
+          throw scoreError;
+        }
         const emptySide = { total: 0, contributors: [] as Contributor[] };
         return {
           battle,
           left: crewMap.get(battle.challenger_crew_id),
           right: crewMap.get(battle.opponent_crew_id),
-          leftScore: scores?.left ?? emptySide,
-          rightScore: scores?.right ?? emptySide,
+          leftScore: leftScore ?? emptySide,
+          rightScore: rightScore ?? emptySide,
         };
       }));
       return { battles:battleDetails, adminCrews };
