@@ -28,6 +28,9 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
       if(memberError)throw memberError;
       const ids=[...new Set((members??[]).map((member:any)=>member.crew_id))];
       if(!ids.length)return null;
+      const weeklySetup=await Promise.all(ids.map((crewId:string)=>(supabase as any).rpc("ensure_weekly_crew_battles",{_crew:crewId})));
+      const setupError=weeklySetup.find((result:any)=>result.error)?.error;
+      if(setupError)throw setupError;
       const {data:battles,error}=await (supabase as any).from("crew_battles")
         .select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,is_weekly")
         .eq("is_weekly",true).in("status",["scheduled","active","pending"])
@@ -80,7 +83,7 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
     <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl"/>
     <div className="relative flex items-center justify-between gap-3">
       <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-primary"><span className="h-2 w-2 animate-pulse rounded-full bg-primary"/>{battle?"Weekly battle":"Weekly battle"}</span>
-      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Clock3 className="h-3 w-3"/>{battle&&battle.status!=="pending"?countdown(new Date(battle.ends_at).getTime(),now):"See matchups"}</span>
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Clock3 className="h-3 w-3"/>{battle?countdown(new Date(battle.status==="pending"?battle.starts_at:battle.ends_at).getTime(),now):"See matchups"}</span>
     </div>
     {isLoading?<div className="relative mt-3 grid grid-cols-3 items-center gap-2"><div className="h-10 animate-pulse rounded-lg bg-muted"/><div className="h-5 animate-pulse rounded bg-muted"/><div className="h-10 animate-pulse rounded-lg bg-muted"/></div>
     :isError?<div className="relative mt-3 flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Battle status is temporarily unavailable.</p><span className="text-xs font-bold text-primary">Open battles</span></div>
