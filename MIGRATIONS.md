@@ -64,3 +64,5 @@ A row is evidence that the corresponding version was registered in Supabase migr
 Use the SQL Editor query above if the project has migration-history records. Otherwise, compare the schema and policies created by each migration with the corresponding SQL file. Keep a written record of every successfully applied filename. Do not blindly rerun a migration just because it is absent from the CLI history; inspect its SQL first, even if it is intended to be repeatable.
 
 After applying a migration, wait for the SQL Editor to report success before moving to the next file. If a migration fails, stop and resolve that error before continuing.
+
+The PR flow refocus migration is `drizzle/migrations/0028_optional_pr_video.sql`. Apply it after `0027_privacy_hardening.sql`. It makes video evidence optional for a PR while preserving owner checks and verifying that any supplied video object exists in the private bucket. User-submitted PRs count as self-reported results; `VERIFIED` does not mean AI or human technique verification.
