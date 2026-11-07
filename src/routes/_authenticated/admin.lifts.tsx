@@ -45,7 +45,7 @@ function AdminLifts() {
     queryFn: async (): Promise<PendingLift[]> => {
       // This RPC performs the admin-role check in PostgreSQL. UI checks are not
       // used as the security boundary.
-      const { data, error } = await supabase.rpc("admin_list_pending_lifts" as never);
+      const { data, error } = await (supabase as any).rpc("admin_list_pending_lifts");
       if (error) throw error;
       const lifts = (data ?? []) as unknown as Array<Record<string, any>>;
       if (!lifts.length) return [];
@@ -77,10 +77,10 @@ function AdminLifts() {
   async function review(liftId: string, decision: "approve" | "reject") {
     if (busyId) return;
     setBusyId(liftId);
-    const { error } = await supabase.rpc("admin_review_lift" as never, {
+    const { error } = await (supabase as any).rpc("admin_review_lift", {
       _lift_id: liftId,
       _decision: decision,
-    } as never);
+    });
     setBusyId(null);
     if (error) {
       toast.error(error.message || "Could not review this lift.");
