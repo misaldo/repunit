@@ -27,6 +27,10 @@ The repository's documented baseline is migrations `0000`–`0011`. If that base
 
 The onboarding/avatar migration was previously also numbered `0019`. Its filename has been changed to `0024_first_run_onboarding_and_avatars.sql`; its SQL contents were preserved unchanged. Apply it only after 0012–0023.
 
+The admin lift review migration is `drizzle/migrations/0025_admin_lift_review.sql`. Apply it after `0024_first_run_onboarding_and_avatars.sql`. It adds the admin-only pending-lift queue RPC, the admin approve/reject RPC, and a guarded exception in the lift verification trigger so only that admin RPC can change a submitted lift's status. The original XP, achievement and throne triggers remain in place.
+
+The pgTAP permission test is `supabase/tests/admin_lift_review_permissions.sql`. Run it against a local Supabase test database with `supabase test db` after applying the migration. Do not run it against production as a substitute for a backup or deployment check.
+
 ## Check which migrations are already applied
 
 ### If migrations were applied with the Supabase CLI
