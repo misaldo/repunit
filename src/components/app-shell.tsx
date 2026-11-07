@@ -3,14 +3,13 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Swords, Users, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Plus } from "lucide-react";
+import { Trophy, Swords, Users, LogOut, Settings, ChevronDown, UserRound, Dumbbell, Plus, Flame } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { InstallPrompt } from "./install-prompt";
-import { ProgressionCard } from "./progression-card";
 import { FirstRunSetup } from "./first-run-setup";
 import { useI18n, LANGUAGES, LANGUAGE_LABELS } from "@/i18n/i18n-provider";
 
@@ -27,13 +26,9 @@ export function SiteHeader() {
   const { data: progress, isError: progressError } = useQuery({
     queryKey: ["user-progression", user?.id], enabled: !!user?.id,
     queryFn: async () => {
-      const [{ data: stats, error: statsError }, { data: badges, error: badgesError }] = await Promise.all([
-        (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", user!.id).maybeSingle(),
-        (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", user!.id),
-      ]);
+      const { data: stats, error: statsError } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", user!.id).maybeSingle();
       if (statsError) throw statsError;
-      if (badgesError) throw badgesError;
-      return { xp: Number(stats?.xp ?? 0), streak: stats?.current_streak ?? 0, longest: stats?.longest_streak ?? 0, achievements: (badges ?? []).map((x: {achievement_key:string}) => x.achievement_key) };
+      return { streak: Number(stats?.current_streak ?? 0) };
     },
   });
   const qc = useQueryClient();
@@ -54,7 +49,7 @@ export function SiteHeader() {
       <div className="flex items-center gap-3">
 
                 <Link to="/records/new" className="hidden rounded-full bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:inline-flex"><Dumbbell className="mr-2 h-3.5 w-3.5"/>Submit a lift</Link>
-        <Link to="/pricing" className="hidden rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] text-primary transition hover:bg-primary/20 sm:inline-flex"><Crown className="mr-2 h-3.5 w-3.5" /> GO PRO</Link>
+
         {ready && !user && <Button asChild size="sm" variant="hero"><Link to="/auth">{t("signIn")}</Link></Button>}
         {user && <details className="group relative">
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-border bg-card p-1 pr-2 transition hover:border-primary/50 [&::-webkit-details-marker]:hidden">
@@ -62,11 +57,10 @@ export function SiteHeader() {
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition group-open:rotate-180" />
           </summary>
           <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-2xl shadow-black/40">
-            <div className="border-b border-border px-3 py-3"><p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p><div className="mt-3">{progressError && !progress ? <p className="text-xs text-muted-foreground">Progress stats unavailable.</p> : progress ? <ProgressionCard xp={progress.xp} streak={progress.streak} longestStreak={progress.longest} achievements={progress.achievements} compact /> : <p className="text-xs text-muted-foreground">Loading progress…</p>}</div></div>
+            <div className="border-b border-border px-3 py-3"><p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p><div className="mt-3">{progressError && !progress ? <p className="text-xs text-muted-foreground">Streak unavailable.</p> : progress ? <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" /><span>{progress.streak} day streak</span></div> : <p className="text-xs text-muted-foreground">Loading streak…</p>}</div></div>
             {profile && <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><UserRound className="h-4 w-4" /> {t("myProfile")}</Link>}
             <div className="px-3 py-2"><label htmlFor="repunit-language" className="mb-2 block text-xs font-semibold text-muted-foreground">{t("language")}</label><select id="repunit-language" value={language} onChange={(event) => setLanguage(event.target.value as (typeof LANGUAGES)[number])} className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground">{LANGUAGES.map((code) => <option key={code} value={code}>{t(LANGUAGE_LABELS[code])}</option>)}</select></div>
             <Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><Settings className="h-4 w-4" /> {t("settings")}</Link>
-            <Link to="/pricing" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-primary transition hover:bg-elevated"><Crown className="h-4 w-4" /> {t("upgrade")}</Link>
             <button onClick={signOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-muted-foreground transition hover:bg-elevated hover:text-foreground"><LogOut className="h-4 w-4" /> {t("logOut")}</button>
           </div>
         </details>}
@@ -117,4 +111,4 @@ export function MobileNav() {
 export function PageShell({ children }: { children: ReactNode }) {
   return <div className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0"><SiteHeader/><div className="mx-auto flex max-w-[1600px]"><DesktopSidebar/><main className="min-w-0 flex-1 px-4 py-7 md:px-6 md:py-10 lg:px-9"><div className="mx-auto w-full max-w-7xl">{children}</div></main></div><MobileNav/><InstallPrompt/><FirstRunSetup/></div>;
 }
-export function SiteFooter() { const { t } = useI18n(); return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark/><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">{t("top")}</Link><Link to="/pricing" className="hover:text-foreground">Pricing</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
+export function SiteFooter() { const { t } = useI18n(); return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark/><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">{t("top")}</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
