@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Swords, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell, Plus, Rss } from "lucide-react";
+import { Trophy, Swords, Users, LogOut, Settings, Crown, ChevronDown, UserRound, Dumbbell, Bell, Plus, Rss } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
