@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent } from "react";
 import { toast } from "sonner";
+import { UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
@@ -13,7 +14,7 @@ import { useMyProfile } from "@/hooks/use-session";
 import { USERNAME_RE } from "@/lib/lifts";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ property: "og:title", content: "Settings — REPUNIT" }, { property: "og:description", content: "Edit your REPUNIT profile and notification preferences." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Settings — REPUNIT" }, { name: "description", content: "Edit your REPUNIT profile and notification preferences." }] }),
+  head: () => ({ meta: [{ property: "og:title", content: "Settings — REPUNIT" }, { property: "og:description", content: "Edit your REPUNIT profile and profile settings." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Settings — REPUNIT" }, { name: "description", content: "Edit your REPUNIT profile and profile settings." }] }),
   component: Settings,
 });
 
@@ -53,7 +54,7 @@ function Settings() {
   if (!p) return <PageShell><div className="py-10 text-center"><p className="font-semibold">Your settings could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p><Button className="mt-4" variant="line" onClick={() => void refetchProfile()}>Try again</Button></div></PageShell>;
   return (
     <PageShell>
-      <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Bell className="h-5 w-5"/></div><div><p className="eyebrow text-primary">YOUR ACCOUNT</p><h1 className="font-stat text-4xl uppercase">Settings</h1></div></div>
+      <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><UserRound className="h-5 w-5"/></div><div><p className="eyebrow text-primary">YOUR ACCOUNT</p><h1 className="font-stat text-4xl uppercase">Settings</h1></div></div>
       {profileError && <div className="mt-4 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">Showing your last saved settings. <button type="button" onClick={() => void refetchProfile()} className="font-semibold text-primary underline">Refresh</button></div>}
       <form onSubmit={save} className="mt-6 max-w-xl space-y-4 rounded-2xl border border-border bg-card p-5">
         <h2 className="font-stat text-2xl uppercase">Edit profile</h2>
