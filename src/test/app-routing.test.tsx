@@ -61,6 +61,12 @@ describe("App routing", () => {
     expect(router.matchRoutes("/people").at(-1)?.routeId).toBe("/_authenticated/people");
   });
 
+  it("keeps battle details and lift evidence routes reachable", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/battles/example").at(-1)?.routeId).toBe("/_authenticated/battles/$id");
+    expect(router.matchRoutes("/records/example").at(-1)?.routeId).toBe("/_authenticated/records/$id");
+  });
+
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
