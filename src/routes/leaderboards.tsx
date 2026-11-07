@@ -123,7 +123,11 @@ function Boards() {
   const skeleton=<div className="space-y-3" aria-label="Loading leaderboard">{[0,1,2,3,4].map((n)=><div key={n} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"><div className="h-10 w-10 animate-pulse rounded-full bg-muted"/><div className="flex-1 space-y-2"><div className="h-3 w-1/3 animate-pulse rounded bg-muted"/><div className="h-2 w-1/2 animate-pulse rounded bg-muted"/></div><div className="h-6 w-16 animate-pulse rounded bg-muted"/></div>)}</div>;
   const tabButton=(value:"lifters"|"crews"|"friends",label:string,Icon:any)=><button key={value} type="button" onClick={()=>setTab(value)} aria-pressed={tab===value} className={cn("flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-xs font-black uppercase tracking-wide transition",tab===value?"bg-primary text-primary-foreground shadow-glow":"text-muted-foreground hover:bg-elevated hover:text-foreground")}><Icon className="h-4 w-4"/>{label}</button>;
   return <PageShell>
-    <div className="mb-5"><LiveBattleCard compact/></div>
+    <div className="mb-3"><LiveBattleCard compact/></div>
+    <Link to="/battles" className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-black uppercase tracking-wide text-foreground transition hover:border-primary/50 hover:bg-elevated">
+      <span className="flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/>BATTLES <span className="text-xs font-medium normal-case tracking-normal text-muted-foreground">All battles & challenges</span></span>
+      <span className="text-primary">→</span>
+    </Link>
     <p className="eyebrow">REPUNIT GLOBAL STRENGTH</p>
     <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="font-stat mt-1 text-5xl uppercase sm:text-6xl">TOP<span className="text-primary">.</span></h1>{tab==="crews"?<Button asChild variant="hero" className="min-h-11"><Link to="/crews/new">Create crew</Link></Button>:tab==="friends"?<Button asChild variant="hero" className="min-h-11"><Link to="/people">Find lifters</Link></Button>:<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
     <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card p-1">{tabButton("lifters","Lifters",Trophy)}{tabButton("crews","Crews",Users)}{tabButton("friends","Friends",Users)}</div>
