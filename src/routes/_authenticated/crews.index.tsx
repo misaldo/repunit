@@ -50,10 +50,9 @@ function Crews() {
         <div><p className="eyebrow text-primary">STRENGTH IS BETTER TOGETHER</p><h1 className="font-stat mt-2 text-6xl uppercase md:text-7xl">Your crews</h1><p className="mt-3 max-w-lg text-sm text-muted-foreground">Your people. Your lifts. Your leaderboard. Build a squad and make every rep count.</p></div>
         <Button asChild variant="hero" className="h-12 shrink-0 px-6"><Link to="/crews/new"><Plus className="mr-2 h-4 w-4"/>Create a crew</Link></Button>
       </div>
-      <div className="relative mt-7 grid grid-cols-3 gap-2 border-t border-border/70 pt-5">
-        <div><p className="font-stat text-3xl">{data.length}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your crews</p></div>
+      <div className="relative mt-7 grid grid-cols-2 gap-2 border-t border-border/70 pt-5">
+        <div><p className="font-stat text-3xl">{data.length}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Crews joined</p></div>
         <div><p className="font-stat text-3xl">{adminCount}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Admin roles</p></div>
-        <div><p className="font-stat text-3xl">{data.length}</p><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Squads joined</p></div>
       </div>
     </div>
     <section className="mt-8 rounded-2xl border border-border bg-card p-4 md:p-5">
