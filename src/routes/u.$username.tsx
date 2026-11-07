@@ -21,6 +21,7 @@ function Profile() {
   const { user } = useUser();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [friendBusy, setFriendBusy] = useState(false);
   const [copyBusyId, setCopyBusyId] = useState<string | null>(null);
   const [challengeOpen, setChallengeOpen] = useState(false);
   const [challengeBusy, setChallengeBusy] = useState(false);
@@ -185,6 +186,36 @@ function Profile() {
     setBusy(false);
   }
 
+  async function sendFriendRequest() {
+    if (!user || !data || friendBusy) return;
+    setFriendBusy(true);
+    const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.p.id });
+    if (error) toast.error(error.message?.includes("already sent") ? "This person already sent you a request. Accept it below." : "Could not send friend request. Please try again.");
+    else toast.success("Friend request sent.");
+    await refetchSocial();
+    setFriendBusy(false);
+  }
+
+  async function respondFriendRequest(accept: boolean) {
+    if (!user || !social?.incomingRequestId || friendBusy) return;
+    setFriendBusy(true);
+    const { error } = await (supabase as any).rpc("respond_friend_request", { _request: social.incomingRequestId, _accept: accept });
+    if (error) toast.error("Could not update this friend request. Please try again.");
+    else toast.success(accept ? "You're now friends." : "Friend request ignored.");
+    await refetchSocial();
+    setFriendBusy(false);
+  }
+
+  async function removeFriend() {
+    if (!user || !data || friendBusy) return;
+    setFriendBusy(true);
+    const { error } = await (supabase as any).rpc("remove_friend", { _other: data.p.id });
+    if (error) toast.error("Could not remove this friend. Please try again.");
+    else toast.success("Friend removed.");
+    await refetchSocial();
+    setFriendBusy(false);
+  }
+
   async function sendChallenge() {
     if (!user || !data || !social?.isFriend || challengeBusy) return;
     const target = Number(challengeWeight);
@@ -220,11 +251,17 @@ function Profile() {
               <Button asChild variant="line"><Link to="/settings">Edit profile</Link></Button>
             </>
           ) : user ? (
-            <Button variant={social?.isFollowing ? "line" : "hero"} onClick={() => void toggleFollow()} disabled={busy || !social}>
-              {social?.isFollowing ? <><UserCheck className="mr-2 h-4 w-4" />Following</> : <><UserPlus className="mr-2 h-4 w-4" />Follow</>}
-            </Button>
+            <>
+              <Button variant={social?.isFollowing ? "line" : "hero"} onClick={() => void toggleFollow()} disabled={busy || !social}>
+                {social?.isFollowing ? <><UserCheck className="mr-2 h-4 w-4" />Following</> : <><UserPlus className="mr-2 h-4 w-4" />Follow</>}
+              </Button>
+              {social?.isFriend ? <Button variant="line" disabled={friendBusy} onClick={() => void removeFriend()}><Users className="mr-2 h-4 w-4"/>Remove friend</Button>
+                : social?.incomingRequestId ? <><Button variant="hero" disabled={friendBusy} onClick={() => void respondFriendRequest(true)}>Accept request</Button><Button variant="line" disabled={friendBusy} onClick={() => void respondFriendRequest(false)}>Ignore</Button></>
+                : social?.outgoingRequestId ? <Button variant="line" disabled>Request sent</Button>
+                : <Button variant="hero" disabled={friendBusy || !social} onClick={() => void sendFriendRequest()}><UserPlus className="mr-2 h-4 w-4"/>Add friend</Button>}
+            </>
           ) : (
-            <Button asChild variant="hero"><Link to="/auth">Sign in to follow</Link></Button>
+            <Button asChild variant="hero"><Link to="/auth">Sign in to connect</Link></Button>
           )}
           {workoutPlans.length > 0 && <Button asChild variant="line"><a href="#training-split"><Dumbbell className="mr-2 h-4 w-4" />View SPLIT</a></Button>}
           {!isOwnProfile && user && social?.isFriend && <Button variant="hero" onClick={() => setChallengeOpen(v => !v)}><Swords className="mr-2 h-4 w-4"/>Challenge</Button>}
