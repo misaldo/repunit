@@ -52,8 +52,8 @@ export function HomeEngagement({ userId }: Props) {
       if (crewLiftsError) throw crewLiftsError;
       if (crewError) throw crewError;
       if (monthLiftsError) throw monthLiftsError;
-      const profileMap = new Map<string, ProfileRow>((profiles ?? []).map((p) => [p.id, p as ProfileRow]));
-      const crewMap = new Map((crewRows ?? []).map((c) => [c.id, c]));
+      const profileMap = new Map<string, ProfileRow>((profiles ?? []).map((p) => [p.id, p as ProfileRow] as const));
+      const crewMap = new Map((crewRows ?? []).map((c) => [c.id, c] as const));
       const primaryCrewId = crewIds[0];
       const primaryCrew = primaryCrewId ? crewMap.get(primaryCrewId) : null;
       const membersOfPrimary = crewMembers.filter((m) => m.crew_id === primaryCrewId).map((m) => m.user_id);
