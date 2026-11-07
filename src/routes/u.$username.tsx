@@ -139,7 +139,6 @@ function Profile() {
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts, posts } = data;
   const isOwnProfile = user?.id === p.id;
-  const now = new Date();
 
   return (
     <PageShell>
