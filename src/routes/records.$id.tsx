@@ -24,13 +24,13 @@ function Record() {
         const { data: s } = await supabase.storage.from("lift-videos").createSignedUrl(l.video_path, 3600);
         video = s?.signedUrl ?? null;
       }
-      return { l, video };
+      return { l, video, videoUnavailable: Boolean(l.video_path && !video) };
     },
   });
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
   if (isError) return <PageShell><p>Could not load this lift. Please try again.</p><Button className="mt-4" variant="line" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Record not found.</p></PageShell>;
-  const { l, video } = data;
+  const { l, video, videoUnavailable } = data;
   return (
     <PageShell>
       <StatusBadge status={l.status} />
@@ -40,7 +40,7 @@ function Record() {
         {l.profiles && <Link to="/u/$username" params={{ username: l.profiles.username }} className="text-foreground underline">@{l.profiles.username}</Link>}</p>
       {l.description && <p className="mt-4 max-w-xl">{l.description}</p>}
       {video ? <video src={video} controls playsInline className="mt-6 w-full max-w-xl rounded-xl border border-border" /> :
-        l.video_path ? <p className="mt-6 text-sm text-muted-foreground">Sign in to watch the video evidence.</p> : <p className="mt-6 text-sm text-muted-foreground">No video evidence attached.</p>}
+        videoUnavailable ? <p className="mt-6 text-sm text-muted-foreground">Video evidence is temporarily unavailable.</p> : <p className="mt-6 text-sm text-muted-foreground">No video evidence attached.</p>}
       <p className="mt-6 text-xs text-muted-foreground">Uploading a video does not verify a lift. AI analysis and manual review are not active yet.</p>
     </PageShell>
   );
