@@ -13,10 +13,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { user } = Route.useRouteContext();
-  const { data: p } = useMyProfile(user.id);
+  const { data: p, isLoading: profileLoading, isError: profileError, refetch: refetchProfile } = useMyProfile(user.id);
   return (
     <PageShell>
-      <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">YOUR REPUNIT</p><h1 className="font-stat mt-2 text-6xl uppercase">{p ? `@${p.username}` : "Home"}</h1><p className="mt-2 text-sm text-muted-foreground">Your lifts. Your crew. Your next battle.</p></div><Button asChild variant="hero" className="h-12"><Link to="/records/new"><Dumbbell className="mr-2 h-4 w-4"/>Submit a lift<ArrowRight className="ml-2 h-4 w-4"/></Link></Button></div>
+      <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">YOUR REPUNIT</p><h1 className="font-stat mt-2 text-6xl uppercase">{p ? `@${p.username}` : profileLoading ? "Loading profile…" : "Home"}</h1>{profileError && <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span>Profile could not be loaded.</span><button type="button" onClick={() => void refetchProfile()} className="font-semibold text-primary underline underline-offset-4">Try again</button></div>}<p className="mt-2 text-sm text-muted-foreground">Your lifts. Your crew. Your next battle.</p></div><Button asChild variant="hero" className="h-12"><Link to="/records/new"><Dumbbell className="mr-2 h-4 w-4"/>Submit a lift<ArrowRight className="ml-2 h-4 w-4"/></Link></Button></div>
       <div className="mt-6"><ThroneBanner/></div>
       <section className="mt-8"><LiveBattleCard/></section>
       <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
