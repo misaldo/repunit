@@ -82,7 +82,7 @@ Deploy the `stripe` Supabase Edge Function. Configure a Stripe webhook pointing 
 4. Add `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` and (when configured) `VITE_VAPID_PUBLIC_KEY` to Vercel's environment variables.
 5. Add the production domain as an allowed redirect URL in Supabase Authentication.
 6. Deploy the Supabase migrations, Edge Functions, Stripe webhook and push webhook separately as described above.
-7. Run a production smoke test: sign up, log in, create/join a Crew, submit a lift, open Ranks, and verify the Settings and Notifications pages.
+7. Run a production smoke test: sign up, log in, create/join a Crew, submit a lift, open TOP, and verify the Settings and Notifications pages.
 
 Do not put server secrets in Vercel `VITE_*` variables. Stripe and push secrets belong in Supabase Edge Function secrets.
 
