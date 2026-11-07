@@ -1,16 +1,20 @@
 # REPUNIT database migrations
 
-## Target backend
+## One canonical backend
 
-Apply these migrations only to the REPUNIT Supabase project with project ref:
+All app environments and database operations must use this single Supabase project:
 
-`sfumcokjwvhxwuanlofw`
+- Project ref: `sfumcokjwvhxwuanlofw`
+- Project URL: `https://sfumcokjwvhxwuanlofw.supabase.co`
+- Supabase CLI link: `supabase link --project-ref sfumcokjwvhxwuanlofw`
 
-The browser client currently reaches this backend through the Lovable Cloud gateway URL configured as `VITE_SUPABASE_URL` in the local `.env`. Supabase CLI linking and Edge Function deployment use the project ref above.
+Do not use the Lovable Cloud gateway as `SUPABASE_URL` or `VITE_SUPABASE_URL`. The committed `.env.example` points both variables to the canonical project. Real `.env` files are local-only and must never be committed.
 
-## Exact application order: 0012–0023
+## Exact migration order
 
-The repository's documented baseline is migrations `0000`–`0011`. If that baseline is present, apply the following SQL files in this exact order. Do not skip a pending migration or apply them alphabetically by description.
+The existing database baseline is documented as migrations `0000`–`0011`. Confirm that baseline before continuing. Apply each missing file below once, in this exact order, and stop immediately if any file fails.
+
+### Existing-project repairs: 0012–0023
 
 1. `drizzle/migrations/0012_repair_training_splits.sql`
 2. `drizzle/migrations/0013_repair_crew_battles.sql`
@@ -25,67 +29,77 @@ The repository's documented baseline is migrations `0000`–`0011`. If that base
 11. `drizzle/migrations/0022_streak_xp_bonus.sql`
 12. `drizzle/migrations/0023_crew_achievement_awards.sql`
 
-The onboarding/avatar migration was previously also numbered `0019`. Its filename has been changed to `0024_first_run_onboarding_and_avatars.sql`; its SQL contents were preserved unchanged. Apply it only after 0012–0023.
+The onboarding/avatar migration was assigned a duplicate `0019` in an earlier version. Its unique filename is `0024_first_run_onboarding_and_avatars.sql`; apply it after all of 0012–0023.
 
-The admin lift review migration is `drizzle/migrations/0025_admin_lift_review.sql`. Apply it after `0024_first_run_onboarding_and_avatars.sql`. It adds the admin-only pending-lift queue RPC, the admin approve/reject RPC, and a guarded exception in the lift verification trigger so only that admin RPC can change a submitted lift's status. The original XP, achievement and throne triggers remain in place.
+### Subsequent migrations: 0024–0040
 
-The automatic video verification migration is `drizzle/migrations/0026_auto_verify_uploaded_lifts.sql`. Apply it after `0025_admin_lift_review.sql`. It requires an actual object in the private `lift-videos` bucket, owned by the submitting user, before a normal authenticated submission is inserted as `VERIFIED`. This is automatic MVP approval based on video upload presence; it does not use computer vision or judge lifting technique. The manual admin review RPC/page is removed by migration 0037; older pending submissions can be resolved by their owners with video proof.
+13. `drizzle/migrations/0024_first_run_onboarding_and_avatars.sql`
+14. `drizzle/migrations/0025_admin_lift_review.sql`
+15. `drizzle/migrations/0026_auto_verify_uploaded_lifts.sql`
+16. `drizzle/migrations/0027_privacy_hardening.sql`
+17. `drizzle/migrations/0028_optional_pr_video.sql`
+18. `drizzle/migrations/0029_friend_challenge_copy.sql`
+19. `drizzle/migrations/0030_crew_battle_score_rpc.sql`
+20. `drizzle/migrations/0031_crew_leaderboard_rpc.sql`
+21. `drizzle/migrations/0032_schedule_weekly_crew_battles.sql`
+22. `drizzle/migrations/0033_friends_split_visibility.sql`
+23. `drizzle/migrations/0034_competition_notifications.sql`
+24. `drizzle/migrations/0035_friend_requests.sql`
+25. `drizzle/migrations/0036_crew_total_include_overhead_press.sql`
+26. `drizzle/migrations/0037_automatic_lift_proof_and_flags.sql`
+27. `drizzle/migrations/0038_proof_transition_hardening.sql`
+28. `drizzle/migrations/0039_pr_celebrations_always_fire.sql`
+29. `drizzle/migrations/0040_weekly_winners_badge_trigger.sql`
 
-The privacy hardening migration is `drizzle/migrations/0027_privacy_hardening.sql`. Apply it after `0026_auto_verify_uploaded_lifts.sql`. It removes anonymous read access to `lift-videos`, keeps signed-in playback, and grants anon only the public profile columns needed by public pages. The matching pgTAP checks are in `supabase/tests/privacy_hardening.sql`.
+The proof-transition hardening migration previously shared the `0038` number with the PR-celebration migration. The PR-celebration and Weekly Winners migrations are now numbered `0039` and `0040` so the sequence is unique. Their SQL behavior is unchanged.
 
-Run the database tests against a local Supabase test database with `supabase test db` after applying the migrations. Do not run them against production as a substitute for a backup or deployment check.
+## Applying migrations safely
 
-## Check which migrations are already applied
+The SQL files live under `drizzle/migrations/`; do not assume Supabase CLI migration commands discover them automatically.
 
-### If migrations were applied with the Supabase CLI
+1. Back up the target database.
+2. Link the intended project: `supabase link --project-ref sfumcokjwvhxwuanlofw`.
+3. Inspect `supabase_migrations.schema_migrations` and the actual schema before deciding what is pending. A manually pasted SQL Editor migration may not be registered in that table.
+4. Apply each missing SQL file in the exact order above using the Supabase SQL Editor, one file at a time.
+5. Wait for success before moving to the next file. If any statement fails, stop and resolve it before continuing.
+6. Record the applied filename and date. Never blindly replay a migration solely because it is absent from CLI history.
 
-From the repository root, link the intended project and compare local and remote migration history:
-
-```bash
-supabase link --project-ref sfumcokjwvhxwuanlofw
-supabase migration list --linked
-```
-
-The CLI only lists migrations it recognizes in its configured migrations directory. These REPUNIT SQL files are currently under `drizzle/migrations/`, so do not assume the CLI will discover them automatically. Review the remote history before using CLI migration commands.
-
-You can also inspect the remote history table in the Supabase SQL Editor:
+To inspect recorded history:
 
 ```sql
 select version, name
 from supabase_migrations.schema_migrations
-where version between '0012' and '0023'
 order by version;
 ```
 
-A row is evidence that the corresponding version was registered in Supabase migration history. No row is not proof that the SQL was never run: SQL pasted manually into the SQL Editor is not automatically registered in this table.
+This history is not conclusive if SQL was previously pasted manually into the SQL Editor. Compare the database objects/policies with the migration SQL before replaying anything.
 
-### If migrations were run manually in the SQL Editor
+## Privacy requirements
 
-Use the SQL Editor query above if the project has migration-history records. Otherwise, compare the schema and policies created by each migration with the corresponding SQL file. Keep a written record of every successfully applied filename. Do not blindly rerun a migration just because it is absent from the CLI history; inspect its SQL first, even if it is intended to be repeatable.
+Migration `0027_privacy_hardening.sql` must be applied to the canonical project. It removes anonymous reads from the private `lift-videos` bucket and grants the anonymous role access only to safe public profile columns. The anonymous public TOP leaderboard remains available through its public RPC.
 
-After applying a migration, wait for the SQL Editor to report success before moving to the next file. If a migration fails, stop and resolve that error before continuing.
+The corresponding checks are in `supabase/tests/privacy_hardening.sql`.
 
-The PR flow refocus migration is `drizzle/migrations/0028_optional_pr_video.sql`. Apply it after `0027_privacy_hardening.sql`. It makes video evidence optional for a PR while preserving owner checks and verifying that any supplied video object exists in the private bucket. User-submitted PRs count as self-reported results; `VERIFIED` does not mean AI or human technique verification.
-The friend-challenge notification migration is `drizzle/migrations/0029_friend_challenge_copy.sql`. Apply it after `0028_optional_pr_video.sql`. Automatic mutual-friend call-outs now include the lift, weight and suggested target in the notification; the existing Accept / Ignore and win/loss challenge workflow is retained.
-The battle-score RPC migration is `drizzle/migrations/0030_crew_battle_score_rpc.sql`. Apply it after `0029_friend_challenge_copy.sql`. It computes battle totals and top contributors in Postgres and only returns the aggregate scores plus the top three contributors for each crew; the client no longer downloads all battle lifts to calculate the scoreboard.
-The Crew leaderboard RPC migration is `drizzle/migrations/0031_crew_leaderboard_rpc.sql`. Apply it after `0030_crew_battle_score_rpc.sql`. Crew totals, member counts, weekly wins and the current user's Crew membership are aggregated in Postgres; private Crews are only returned to their own members.
-The weekly battle scheduler migration is `drizzle/migrations/0032_schedule_weekly_crew_battles.sql`. Apply it after `0031_crew_leaderboard_rpc.sql`. It enables Supabase `pg_cron` and schedules Monday 00:00 UTC matchup generation plus 15-minute battle finalization; the existing on-visit fallback remains available.
-The Friends-only SPLIT visibility migration is `drizzle/migrations/0033_friends_split_visibility.sql`. Apply it after `0032_schedule_weekly_crew_battles.sql`. It keeps the existing `followers` database value for compatibility, but only users who follow each other can read a Friends-only split and its exercises; the UI labels this option Friends.
-The competition-notifications migration is `drizzle/migrations/0034_competition_notifications.sql`. Apply it after `0033_friends_split_visibility.sql`. It sends the previous top lifter a clear King of the Throne takeover notification and includes the winning Crew or draw in battle-result notifications.
-The explicit friend-request migration is `drizzle/migrations/0035_friend_requests.sql`. Apply it after `0034_competition_notifications.sql`. It adds separate friend requests with Accept / Ignore / Remove, keeps Follow independent, switches automatic friend call-outs to accepted friends, and secures Friends-only SPLIT access to accepted friends.
+## Lift proof and ranking behavior
 
-The Crew-total correction is `drizzle/migrations/0036_crew_total_include_overhead_press.sql`. Apply it after `0035_friend_requests.sql`. It includes all four core REPUNIT lifts (bench, squat, deadlift and overhead press) in the Crew all-lifts total; the global TOP Total remains the Big Three.
+Migration `0037_automatic_lift_proof_and_flags.sql` adds database-side plausibility checks, duplicate detection, a 10-submission daily cap, PR-jump proof requirements, and Crew flags. `NEEDS_PROOF` and `UNDER_REVIEW` results must not count in rankings. Three distinct Crew members can flag a result; the owner can resolve it with video proof through the guarded RPC. Clients cannot set lift status directly.
 
+This is rule-based validation, not computer vision and not an AI assessment of lifting technique. A video being attached does not prove that the lift was performed correctly.
 
-The automatic lift checks and Crew proof-flag workflow is `drizzle/migrations/0037_automatic_lift_proof_and_flags.sql`. Apply it after `0036_crew_total_include_overhead_press.sql`. The database classifies normal submissions as VERIFIED or NEEDS_PROOF, applies exercise-specific weight/reps plausibility limits (bench 400 kg, squat/deadlift 500 kg, overhead press 250 kg, weighted pull-up 200 kg; 1–30 reps), a 10-lift UTC-day cap, duplicate detection, and a maximum one unproven PR jump of up to 10% over the user's previous best per UTC day. NEEDS_PROOF and UNDER_REVIEW lifts are excluded from rankings because leaderboard and battle queries count VERIFIED rows only. Three distinct members who share a Crew with the lifter can flag a result; the owner must attach or replace a private video through the guarded RPC to restore VERIFIED status. Clients cannot directly update lift status. The proof workflow also prevents XP being awarded twice when a flagged lift is restored.
+The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review.
 
-The matching pgTAP permission/schema checks are in `supabase/tests/automatic_lift_proof_and_flags.sql`. Run them with `supabase test db` against a local test database after applying the migration. The former admin review route and RPC are removed; there is no admin queue. Legacy pending rows can be resolved by their owners through the same video-proof RPC.
+## Database tests
 
-The proof-transition hardening migration is `drizzle/migrations/0038_proof_transition_hardening.sql`. Apply it after `0037_automatic_lift_proof_and_flags.sql`. It clears stale verification timestamps when a lift is flagged, so an under-review result cannot influence later PR checks, and restricts the proof RPC to lifts actually waiting for proof/review (including legacy PENDING rows). The expanded pgTAP checks are in `supabase/tests/automatic_lift_proof_and_flags.sql`.
+Run these against a local Supabase test database, not production:
 
+```bash
+supabase test db
+```
 
-The retention and celebration migration is `drizzle/migrations/0038_pr_celebrations_always_fire.sql`. Apply it after `0037_automatic_lift_proof_and_flags.sql`. It guarantees the owner's in-app PR event is created for every newly verified personal record, independent of optional notification preferences, so the existing realtime confetti celebration can fire consistently.
+The repository includes:
 
-The Weekly Winners badge automation is `drizzle/migrations/0039_weekly_winners_badge_trigger.sql`. Apply it after `0038_pr_celebrations_always_fire.sql`. It awards the persistent `weekly_winners` Crew badge whenever a weekly battle is completed with a winner; the existing 100 Ton Club and Iron Squad awards remain in place.
+- `supabase/tests/privacy_hardening.sql`
+- `supabase/tests/automatic_lift_proof_and_flags.sql`
+- `supabase/tests/home_retention_features.sql`
 
-The database checks for the retention work are in `supabase/tests/home_retention_features.sql`. Run alongside the other pgTAP tests with `supabase test db` after migrations 0038 and 0039.
+The local test database must first have the complete migration sequence applied. A passing local pgTAP run does not by itself prove the remote production database has been migrated.
