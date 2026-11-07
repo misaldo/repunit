@@ -53,12 +53,6 @@ export type Database = {
           },
         ]
       }
-      crew_achievements: {
-        Row: { id: string; crew_id: string; achievement_key: string; awarded_at: string }
-        Insert: { id?: string; crew_id: string; achievement_key: string; awarded_at?: string }
-        Update: { id?: string; crew_id?: string; achievement_key?: string; awarded_at?: string }
-        Relationships: []
-      }
       crew_members: {
         Row: {
           crew_id: string
@@ -99,7 +93,6 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          emblem: string
           id: string
           invite_code: string
           logo_url: string | null
@@ -110,7 +103,6 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
-          emblem?: string
           id?: string
           invite_code?: string
           logo_url?: string | null
@@ -121,7 +113,6 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
-          emblem?: string
           id?: string
           invite_code?: string
           logo_url?: string | null
@@ -138,12 +129,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      friend_requests: {
-        Row: { id: string; requester_id: string; recipient_id: string; status: string; created_at: string; responded_at: string | null }
-        Insert: { id?: string; requester_id: string; recipient_id: string; status?: string; created_at?: string; responded_at?: string | null }
-        Update: { id?: string; requester_id?: string; recipient_id?: string; status?: string; created_at?: string; responded_at?: string | null }
-        Relationships: []
       }
       follows: {
         Row: {
@@ -187,11 +172,8 @@ export type Database = {
           lifted_on: string
           reps: number
           status: Database["public"]["Enums"]["lift_status"]
-          verification_reason: string | null
-          xp_awarded_at: string | null
           updated_at: string
           user_id: string
-          verified_at: string | null
           video_path: string | null
           weight_kg: number
         }
@@ -203,11 +185,8 @@ export type Database = {
           lifted_on?: string
           reps: number
           status?: Database["public"]["Enums"]["lift_status"]
-          verification_reason?: string | null
-          xp_awarded_at?: string | null
           updated_at?: string
           user_id: string
-          verified_at?: string | null
           video_path?: string | null
           weight_kg: number
         }
@@ -219,11 +198,8 @@ export type Database = {
           lifted_on?: string
           reps?: number
           status?: Database["public"]["Enums"]["lift_status"]
-          verification_reason?: string | null
-          xp_awarded_at?: string | null
           updated_at?: string
           user_id?: string
-          verified_at?: string | null
           video_path?: string | null
           weight_kg?: number
         }
@@ -233,52 +209,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lift_flags: {
-        Row: {
-          created_at: string
-          crew_id: string
-          flagger_id: string
-          id: string
-          lift_id: string
-        }
-        Insert: {
-          created_at?: string
-          crew_id: string
-          flagger_id: string
-          id?: string
-          lift_id: string
-        }
-        Update: {
-          created_at?: string
-          crew_id?: string
-          flagger_id?: string
-          id?: string
-          lift_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lift_flags_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crews"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lift_flags_flagger_id_fkey"
-            columns: ["flagger_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lift_flags_lift_id_fkey"
-            columns: ["lift_id"]
-            isOneToOne: false
-            referencedRelation: "lifts"
             referencedColumns: ["id"]
           },
         ]
@@ -413,14 +343,6 @@ export type Database = {
         Relationships: []
       }
     }
-      user_progress: {
-        Row: { user_id: string; xp: number; current_streak: number; longest_streak: number; last_activity_on: string | null; updated_at: string }
-        Insert: { user_id: string; xp?: number; current_streak?: number; longest_streak?: number; last_activity_on?: string | null; updated_at?: string }
-        Update: { user_id?: string; xp?: number; current_streak?: number; longest_streak?: number; last_activity_on?: string | null; updated_at?: string }
-        Relationships: [
-          { foreignKeyName: "user_progress_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "profiles"; referencedColumns: ["id"] }
-        ]
-      }
     Views: {
       leaderboard_lifts: {
         Row: {
@@ -478,14 +400,6 @@ export type Database = {
           name: string
         }[]
       }
-      attach_lift_video: {
-        Args: { _lift_id: string; _video_path: string }
-        Returns: Database["public"]["Tables"]["lifts"]["Row"]
-      }
-      flag_lift: {
-        Args: { _lift_id: string }
-        Returns: number
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -525,8 +439,6 @@ export type Database = {
         | "AI_ANALYZING"
         | "AI_CHECKED"
         | "NEEDS_REVIEW"
-        | "NEEDS_PROOF"
-        | "UNDER_REVIEW"
         | "VERIFIED"
         | "REJECTED"
     }
