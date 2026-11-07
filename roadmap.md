@@ -51,6 +51,6 @@ Do not delete existing working code or database history just to hide an out-of-s
 
 ## Implementation and release verification
 
-The repository contains implementations for the main flows and migrations through `0035_friend_requests.sql`. This file is a scope contract, not proof that every migration is deployed or that every live flow has passed a device test.
+The repository contains implementations for the main flows and migrations through `0036_crew_total_include_overhead_press.sql`. This file is a scope contract, not proof that every migration is deployed or that every live flow has passed a device test.
 
 Before release, verify the exact Supabase migration state, authentication and RLS on the configured project, push-notification configuration, and the full mobile flows on a real phone. A successful local typecheck, lint, test run and production build must also be recorded before claiming the app is release-ready.
