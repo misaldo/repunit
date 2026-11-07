@@ -97,7 +97,11 @@ function NewRecord() {
         window.localStorage.setItem("repunit.lastWeight", String(weight));
         window.localStorage.setItem("repunit.lastReps", String(reps));
       }
-      if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {\n        toast.warning("Video proof needed", { description: "Your lift is saved but does not count toward rankings yet." });\n      } else {\n        toast.success("PR logged", { description: "Your result is on REPUNIT." });\n      }
+      if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {
+        toast.warning("Video proof needed", { description: "Your lift is saved but does not count toward rankings yet." });
+      } else {
+        toast.success("PR logged", { description: "Your result is on REPUNIT." });
+      }
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
       let cleanupFailed = false;
