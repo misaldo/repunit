@@ -156,6 +156,7 @@ function WorkoutsPage() {
     },
   });
   const subscriptionQuery = useQuery({
+    enabled: false,
     queryKey: ["subscription", user.id],
     queryFn: async () => {
       const { data, error } = await db.from("user_subscriptions").select("status").eq("user_id", user.id).maybeSingle();
@@ -163,7 +164,7 @@ function WorkoutsPage() {
       return data;
     },
   });
-  const isPro = ["active", "trialing"].includes(subscriptionQuery.data?.status ?? "");
+  const isPro = true;
 
   const exercisesQuery = useQuery({
     queryKey: ["workout-plan-exercises", expanded],
@@ -212,7 +213,7 @@ function WorkoutsPage() {
   }
 
   async function createPlan() {
-    if (subscriptionQuery.isError || plansQuery.isError) {
+    if (plansQuery.isError) {
       toast.error("Workout limits could not be checked. Reload the page and try again.");
       return;
     }
@@ -284,7 +285,7 @@ function WorkoutsPage() {
           <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workout name</label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Push day / Upper body" /></div>
           <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Training day</label><select value={workoutDay} onChange={(e) => setWorkoutDay(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{DAYS.map((day) => <option key={day}>{day}</option>)}</select></div>
         </div>
-        <div className="mt-3"><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Who can see this workout?</label><select value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:max-w-sm"><option value="private">Private — only me</option><option value="public">Public — everyone</option><option value="followers">Followers</option></select></div>
+        <div className="mt-3"><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Who can see this workout?</label><select value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:max-w-sm"><option value="private">Private — only me</option><option value="public">Public — everyone</option><option value="followers">Friends — mutual follows</option></select></div>
 
         <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
           <div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="font-semibold">Exercises</h3><p className="text-xs text-muted-foreground">Add movements from the exercise library.</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{draftExercises.length} added</span></div>
@@ -322,7 +323,7 @@ function WorkoutsPage() {
         {plansQuery.isLoading && !plansQuery.data ? <p className="text-muted-foreground">Loading SPLIT…</p> : plansQuery.isError && !plansQuery.data ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your SPLIT could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved SPLIT has not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No SPLIT yet. Create your first plan above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete workout" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
-            <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility}</div>
+            <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility === "followers" ? "Friends" : plan.visibility}</div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
             {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading && !exercisesQuery.data ? <p className="text-sm text-muted-foreground">Loading exercises…</p> : exercisesQuery.isError && !exercisesQuery.data ? <div className="rounded-lg bg-background p-3"><p className="text-sm text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void exercisesQuery.refetch()}>Try again</Button></div> : (exercisesQuery.data ?? []).length === 0 ? <p className="rounded-lg bg-background p-3 text-sm text-muted-foreground">No exercises in this workout yet.</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
           </article>)}</div>
