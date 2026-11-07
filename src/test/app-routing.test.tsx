@@ -18,6 +18,36 @@ describe("App routing", () => {
     const matches = router.matchRoutes("/feed");
     expect(matches.at(-1)?.routeId).toBe("/_authenticated/feed");
   });
+  it("matches every destination in the five-tab mobile navigation", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const destinations = [
+      ["/leaderboards", "/leaderboards"],
+      ["/battles", "/_authenticated/battles/"],
+      ["/records/new", "/_authenticated/records/new"],
+      ["/workouts", "/_authenticated/workouts"],
+      ["/u/example", "/u/$username"],
+    ] as const;
+
+    for (const [path, expectedRouteId] of destinations) {
+      const matches = router.matchRoutes(path);
+      expect(matches.at(-1)?.routeId, path).toBe(expectedRouteId);
+    }
+  });
+
+  it("keeps crews, challenges and notifications reachable", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const destinations = [
+      ["/crews", "/_authenticated/crews/"],
+      ["/challenges", "/_authenticated/challenges"],
+      ["/notifications", "/_authenticated/notifications"],
+    ] as const;
+
+    for (const [path, expectedRouteId] of destinations) {
+      const matches = router.matchRoutes(path);
+      expect(matches.at(-1)?.routeId, path).toBe(expectedRouteId);
+    }
+  });
+
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
