@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Crown, Dumbbell, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/hooks/use-session";
 import type { Exercise } from "@/lib/lifts";
 import { AvatarChip } from "./avatar-chip";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,7 @@ type Row = NonNullable<ReturnType<typeof useLeaderboard>["data"]>[number] & { ra
 const PODIUM = ["text-gold", "text-silver", "text-bronze"];
 
 export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: string }) {
+  const { user } = useUser();
   const order = [rows[1], rows[0], rows[2]];
   const [activeLiftId, setActiveLiftId] = useState<string | null>(null);
   return <>
@@ -95,7 +97,9 @@ export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: s
           <Dumbbell className="h-3 w-3" /> View SPLIT
         </Link>
         {r.has_video
-          ? <button type="button" onClick={() => setActiveLiftId(r.lift_id)} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:bg-primary/20 sm:text-xs"><Camera className="h-3.5 w-3.5"/> Watch video</button>
+          ? user
+            ? <button type="button" onClick={() => setActiveLiftId(r.lift_id)} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:bg-primary/20 sm:text-xs"><Camera className="h-3.5 w-3.5"/> Watch video</button>
+            : <Link to="/auth" className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 sm:text-xs">Sign in to watch</Link>
           : <Link to="/records/$id" params={{ id: r.lift_id }} className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-elevated/60 px-2 text-[10px] font-bold uppercase tracking-wide text-foreground transition hover:border-primary/40 sm:text-xs">View result</Link>}
       </div>;
     })}
@@ -105,6 +109,7 @@ export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: s
 }
 
 export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; start?: number; currentUserId?: string }) {
+  const { user } = useUser();
   const navigate = useNavigate();
   const [activeLiftId, setActiveLiftId] = useState<string | null>(null);
   return <>
@@ -125,7 +130,9 @@ export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; star
           <p className="font-stat text-3xl">{Number(r.weight_kg)}<span className="text-sm text-muted-foreground">kg</span></p>
           <p className="text-[10px] text-muted-foreground">{r.reps > 1 ? `× ${r.reps} · ` : ""}{gap !== null ? `−${gap.toFixed(1)} kg` : rank === 1 ? "leader" : `rank #${rank}`}</p>
           {r.has_video && rank <= 10
-            ? <button type="button" onClick={(event) => { event.stopPropagation(); setActiveLiftId(r.lift_id); }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline"><Camera className="h-3 w-3"/> Watch video</button>
+            ? user
+              ? <button type="button" onClick={(event) => { event.stopPropagation(); setActiveLiftId(r.lift_id); }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline"><Camera className="h-3 w-3"/> Watch video</button>
+              : <Link to="/auth" className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}>Sign in to watch</Link>
             : <Link to="/records/$id" params={{ id: r.lift_id }} className="relative z-10 mt-1 inline-flex items-center justify-end gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}>View result</Link>}
         </div>
       </li>;
