@@ -61,7 +61,7 @@ function Crews() {
     </section>
     <div className="mt-9 flex items-end justify-between"><div><p className="eyebrow">YOUR SQUADS</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew list</h2></div><span className="text-xs text-muted-foreground">{data.length} joined</span></div>
     {isLoading&&<p className="mt-5 text-sm text-muted-foreground">Loading your crews…</p>}
-    {isError&&<div className="mt-5"><p>Could not load your crews.</p><Button variant="line" className="mt-3" onClick={()=>refetch()}>Try again</Button></div>}
+    {isError&&<div className="mt-5"><p>Showing your last loaded crews. Refresh to check for updates.</p><Button variant="line" className="mt-3" onClick={()=>void refetch()}>Retry</Button></div>}
     {!isLoading&&!isError&&data.length===0&&<div className="mt-4 rounded-2xl border border-dashed border-border px-5 py-10 text-center"><Users className="mx-auto h-8 w-8 text-muted-foreground"/><h3 className="mt-3 font-bold">No crew yet</h3><p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">Create your own squad or join one with an invite code. Your next PR could be a team effort.</p><Button asChild variant="hero" className="mt-5"><Link to="/crews/new"><Plus className="mr-2 h-4 w-4"/>Create your first crew</Link></Button></div>}
     <div className="mt-4 grid gap-4 md:grid-cols-2">{data.map((m:any)=>m.crews&&<Link key={m.crew_id} to="/crews/$id" params={{id:m.crews.id}} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[0_12px_45px_-24px_hsl(var(--primary)/0.35)]">
       <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-primary/5 blur-2xl group-hover:bg-primary/15"/>
