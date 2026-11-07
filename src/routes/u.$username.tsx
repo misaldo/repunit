@@ -58,18 +58,20 @@ function Profile() {
     },
   });
 
-  const { data: progression } = useQuery({
+  const { data: progression, isError: progressionError, refetch: refetchProgression } = useQuery({
     queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
     queryFn: async () => {
-      const [{ data: stats }, { data: badges }] = await Promise.all([
+      const [{ data: stats, error: statsError }, { data: badges, error: badgesError }] = await Promise.all([
         (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", data!.p.id).maybeSingle(),
         (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", data!.p.id),
       ]);
+      if (statsError) throw statsError;
+      if (badgesError) throw badgesError;
       return { xp: Number(stats?.xp ?? 0), streak: stats?.current_streak ?? 0, longest: stats?.longest_streak ?? 0, achievements: (badges ?? []).map((x: {achievement_key:string}) => x.achievement_key) };
     },
   });
 
-  const { data: workoutPlans = [] } = useQuery({
+  const { data: workoutPlans = [], isLoading: workoutPlansLoading, isError: workoutPlansError, refetch: refetchWorkoutPlans } = useQuery({
     queryKey: ["profile-workouts", data?.p.id, user?.id === data?.p.id],
     enabled: !!data?.p.id,
     queryFn: async () => {
@@ -196,13 +198,13 @@ function Profile() {
         </div>
       </section>
 
-      <div className="mt-6"><ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} /></div>
+      <div className="mt-6">{progressionError ? <div className="rounded-xl border border-border bg-card p-4"><p className="text-sm text-muted-foreground">Progress information could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchProgression()}>Try again</Button></div> : <ProgressionCard xp={progression?.xp ?? 0} streak={progression?.streak ?? 0} longestStreak={progression?.longest ?? 0} achievements={progression?.achievements ?? []} />}</div>
       {isProProfile && <ProInsightsCard lifts={lifts as any} />}
       <FunStatsCard kg={monthlyVolume} headline="THIS MONTH · PERSONAL POWER" prefix={`${p.display_name ?? p.username} lifted`} />
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Workouts</h2></div>
-        {workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No public workouts shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>}
+        {workoutPlansLoading ? <p className="text-sm text-muted-foreground">Loading workouts…</p> : workoutPlansError ? <div className="rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">Workouts could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchWorkoutPlans()}>Try again</Button></div> : workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No public workouts shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : workoutExercises.isError ? <div className="mt-3"><p className="text-xs text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void workoutExercises.refetch()}>Try again</Button></div> : items.length === 0 ? <p className="mt-3 text-xs text-muted-foreground">No exercises in this workout.</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}</article>; })}</div>}
       </section>
 
       <div className="mt-8">
