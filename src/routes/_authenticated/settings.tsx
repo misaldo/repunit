@@ -86,7 +86,7 @@ function Settings() {
     return true;
   }
   async function toggleWebPush() {
-    if (!pushSupported) { toast.error("Web push is not supported or VAPID is not configured."); return; }
+    if (!pushSupported) { toast.error("Push notifications are not available in this browser right now."); return; }
     setPushBusy(true);
     try {
       const registration = await navigator.serviceWorker.ready;
