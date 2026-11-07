@@ -33,11 +33,11 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
       if(setupError)throw setupError;
       const {data:battles,error}=await (supabase as any).from("crew_battles")
         .select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,is_weekly")
-        .eq("is_weekly",true).in("status",["scheduled","active","pending"])
+        .eq("is_weekly",true)
         .or(ids.map((id:string)=>`challenger_crew_id.eq.${id},opponent_crew_id.eq.${id}`).join(","))
         .order("starts_at",{ascending:false}).limit(10);
       if(error)throw error;
-      const battle=(battles??[]).find((item:any)=>new Date(item.ends_at).getTime()>Date.now()||item.status==="pending");
+      const battle=(battles??[]).find((item:any)=>!["cancelled","completed"].includes(item.status)&&(new Date(item.ends_at).getTime()>Date.now()||item.status==="pending"));
       if(!battle)return null;
       const crewIds=[battle.challenger_crew_id,battle.opponent_crew_id];
       const [{data:crews,error:crewError},{data:crewMembers,error:crewMembersError}]=await Promise.all([
