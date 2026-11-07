@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Flame, Crown, Medal, Users, ArrowUpRight, Zap } from "lucide-react";
+import { Flame, Medal, Users, ArrowUpRight, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FunStatsCard } from "@/components/fun-stats";
 import { ThroneBanner } from "@/components/throne-banner";
@@ -38,14 +38,17 @@ export function HomeEngagement({ userId }: Props) {
       const crewMembers = crewMembersResult.data ?? [];
       const crewMemberIds = [...new Set(crewMembers.map((m) => m.user_id))];
       const allIds = [...new Set([...crewMemberIds, ...friendIds])];
-      const [{ data: profiles, error: profilesError }, { data: crewLifts, error: crewLiftsError }, { data: crewRows, error: crewError }] = await Promise.all([
+      const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
+      const [{ data: profiles, error: profilesError }, { data: crewLifts, error: crewLiftsError }, { data: crewRows, error: crewError }, { data: monthLifts, error: monthLiftsError }] = await Promise.all([
         allIds.length ? supabase.from("profiles").select("id,username,display_name,avatar_url").in("id", allIds) : Promise.resolve({ data: [], error: null }),
         crewMemberIds.length ? supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").in("user_id", crewMemberIds).eq("status", "VERIFIED").order("weight_kg", { ascending: false }).limit(1000) : Promise.resolve({ data: [], error: null }),
         crewIds.length ? supabase.from("crews").select("id,name,emblem").in("id", crewIds) : Promise.resolve({ data: [], error: null }),
+        crewMemberIds.length ? supabase.from("lifts").select("user_id,weight_kg,reps,created_at").in("user_id", crewMemberIds).eq("status", "VERIFIED").gte("created_at", monthStart.toISOString()).limit(5000) : Promise.resolve({ data: [], error: null }),
       ]);
       if (profilesError) throw profilesError;
       if (crewLiftsError) throw crewLiftsError;
       if (crewError) throw crewError;
+      if (monthLiftsError) throw monthLiftsError;
       const profileMap = new Map<string, ProfileRow>((profiles ?? []).map((p) => [p.id, p as ProfileRow]));
       const crewMap = new Map((crewRows ?? []).map((c) => [c.id, c]));
       const primaryCrewId = crewIds[0];
@@ -71,8 +74,8 @@ export function HomeEngagement({ userId }: Props) {
         const scores = ["bench", "squat", "deadlift"].map((exercise) => Number(bestByUserExercise.get(id + ":" + exercise)?.weight_kg ?? 0));
         return { id, score: scores.reduce((a, b) => a + b, 0), profile: profileMap.get(id) };
       }).filter((m) => m.profile).sort((a, b) => b.score - a.score).slice(0, 3);
-      const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
-      const monthVolume = crewLiftRows.filter((l) => l.created_at >= monthStart.toISOString() && crewMembers.some((m) => m.user_id === l.user_id && m.crew_id === primaryCrewId)).reduce((sum, l) => sum + Number(l.weight_kg) * Math.max(1, Number(l.reps ?? 1)), 0);
+      const primaryMemberIds = new Set(crewMembers.filter((m) => m.crew_id === primaryCrewId).map((m) => m.user_id));
+      const monthVolume = (monthLifts ?? []).filter((l) => primaryMemberIds.has(l.user_id)).reduce((sum, l) => sum + Number(l.weight_kg) * Math.max(1, Number(l.reps ?? 1)), 0);
       const weeklyDates = new Set(((mine ?? []) as LiftRow[]).map((l) => {
         const d = new Date(l.created_at); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day); d.setUTCHours(0, 0, 0, 0); return d.toISOString().slice(0, 10);
       }));
