@@ -6,7 +6,7 @@ export const LEVELS = [
   { name: "Tungsten", min: 1500, max: 3000, icon: "🔩" },
   { name: "Osmium", min: 3000, max: 6000, icon: "💎" },
   { name: "Neutron Star", min: 6000, max: 6000, icon: "🌌" },
-] as const;;
+] as const;
 
 export function getLevel(xp: number) {
   const safeXp = Math.max(0, xp || 0);
