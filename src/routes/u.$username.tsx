@@ -126,7 +126,7 @@ function Profile() {
     const result = social?.isFollowing
       ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.p.id)
       : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.p.id });
-    if (result.error) toast.error(result.error.message);
+    if (result.error) toast.error("Could not update this follow. Check your connection and try again.");
     else {
       await Promise.all([refetchSocial(), qc.invalidateQueries({ queryKey: ["profile-social"] })]);
       toast.success(social?.isFollowing ? "Unfollowed" : "Following");
