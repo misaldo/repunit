@@ -25,7 +25,6 @@ import { Route as AuthenticatedWorkoutsRouteImport } from './routes/_authenticat
 import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as RecordsIdRouteImport } from './routes/records.$id'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as AuthenticatedAdminLiftsRouteImport } from './routes/_authenticated/admin.lifts'
 import { Route as AuthenticatedBattlesIndexRouteImport } from './routes/_authenticated/battles.index'
 import { Route as AuthenticatedBattlesIdRouteImport } from './routes/_authenticated/battles.$id'
 import { Route as AuthenticatedCrewsIndexRouteImport } from './routes/_authenticated/crews.index'
@@ -112,11 +111,6 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminLiftsRoute = AuthenticatedAdminLiftsRouteImport.update({
-  id: '/admin/lifts',
-  path: '/admin/lifts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBattlesIndexRoute =
   AuthenticatedBattlesIndexRouteImport.update({
     id: '/battles/',
@@ -165,7 +159,6 @@ export interface FileRoutesByFullPath {
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
-  '/admin/lifts': typeof AuthenticatedAdminLiftsRoute
   '/battles/$id': typeof AuthenticatedBattlesIdRoute
   '/crews/$id': typeof AuthenticatedCrewsIdRoute
   '/crews/new': typeof AuthenticatedCrewsNewRoute
@@ -215,7 +208,6 @@ export interface FileRoutesById {
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
-  '/_authenticated/admin/lifts': typeof AuthenticatedAdminLiftsRoute
   '/_authenticated/battles/$id': typeof AuthenticatedBattlesIdRoute
   '/_authenticated/crews/$id': typeof AuthenticatedCrewsIdRoute
   '/_authenticated/crews/new': typeof AuthenticatedCrewsNewRoute
@@ -241,7 +233,6 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
-    | '/admin/lifts'
     | '/battles/$id'
     | '/crews/$id'
     | '/crews/new'
@@ -265,7 +256,6 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
-    | '/admin/lifts'
     | '/battles/$id'
     | '/crews/$id'
     | '/crews/new'
@@ -290,7 +280,6 @@ export interface FileRouteTypes {
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
-    | '/_authenticated/admin/lifts'
     | '/_authenticated/battles/$id'
     | '/_authenticated/crews/$id'
     | '/_authenticated/crews/new'
@@ -427,13 +416,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/lifts': {
-      id: '/_authenticated/admin/lifts'
-      path: '/admin/lifts'
-      fullPath: '/admin/lifts'
-      preLoaderRoute: typeof AuthenticatedAdminLiftsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/battles/': {
       id: '/_authenticated/battles/'
       path: '/battles'
@@ -485,7 +467,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWorkoutsRoute: typeof AuthenticatedWorkoutsRoute
-  AuthenticatedAdminLiftsRoute: typeof AuthenticatedAdminLiftsRoute
   AuthenticatedBattlesIdRoute: typeof AuthenticatedBattlesIdRoute
   AuthenticatedCrewsIdRoute: typeof AuthenticatedCrewsIdRoute
   AuthenticatedCrewsNewRoute: typeof AuthenticatedCrewsNewRoute
@@ -500,7 +481,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWorkoutsRoute: AuthenticatedWorkoutsRoute,
-  AuthenticatedAdminLiftsRoute: AuthenticatedAdminLiftsRoute,
   AuthenticatedBattlesIdRoute: AuthenticatedBattlesIdRoute,
   AuthenticatedCrewsIdRoute: AuthenticatedCrewsIdRoute,
   AuthenticatedCrewsNewRoute: AuthenticatedCrewsNewRoute,
