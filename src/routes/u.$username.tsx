@@ -69,13 +69,15 @@ function Profile() {
       if (error) throw error;
       let isFriend = false;
       if (user?.id && user.id !== data!.p.id) {
-        const [{ data: outgoing, error: outgoingError }, { data: incoming, error: incomingError }] = await Promise.all([
-          (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.p.id).maybeSingle(),
-          (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.p.id).eq("following_id", user.id).maybeSingle(),
-        ]);
-        if (outgoingError) throw outgoingError;
-        if (incomingError) throw incomingError;
-        isFriend = Boolean(outgoing && incoming);
+        const { data: friendStatus, error: friendStatusError } = await (supabase as any).rpc("friendship_status", { _other: data!.p.id });
+        if (!friendStatusError) isFriend = Boolean(friendStatus?.is_friend);
+        else if (friendStatusError.code === "42883" || friendStatusError.code === "PGRST202") {
+          const [{ data: outgoing }, { data: incoming }] = await Promise.all([
+            (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.p.id).maybeSingle(),
+            (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.p.id).eq("following_id", user.id).maybeSingle(),
+          ]);
+          isFriend = Boolean(outgoing && incoming);
+        } else throw friendStatusError;
       }
       return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || (plan.visibility === "followers" && isFriend) || user?.id === data!.p.id);
     },
@@ -135,21 +137,37 @@ function Profile() {
     enabled: !!data?.p.id,
     queryFn: async () => {
       const profileId = data!.p.id;
-      const [{ count: followers, error: followersError }, { count: following, error: followingError }, { data: relation, error: relationError }, { data: mutualRelation, error: mutualError }] = await Promise.all([
+      const [{ count: followers, error: followersError }, { count: following, error: followingError }, { data: relation, error: relationError }] = await Promise.all([
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileId),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileId),
         user && user.id !== profileId
           ? supabase.from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", profileId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
-        user && user.id !== profileId
-          ? supabase.from("follows").select("follower_id").eq("follower_id", profileId).eq("following_id", user.id).maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
       ]);
       if (followersError) throw followersError;
       if (followingError) throw followingError;
       if (relationError) throw relationError;
-      if (mutualError) throw mutualError;
-      return { followers: followers ?? 0, following: following ?? 0, isFollowing: !!relation, isFriend: !!relation && !!mutualRelation };
+
+      let friendStatus: any = { is_friend: false, outgoing_request_id: null, incoming_request_id: null };
+      if (user && user.id !== profileId) {
+        const result = await (supabase as any).rpc("friendship_status", { _other: profileId });
+        if (!result.error) friendStatus = result.data ?? friendStatus;
+        else if (result.error.code === "42883" || result.error.code === "PGRST202") {
+          const [{ data: outgoing }, { data: incoming }] = await Promise.all([
+            supabase.from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", profileId).maybeSingle(),
+            supabase.from("follows").select("follower_id").eq("follower_id", profileId).eq("following_id", user.id).maybeSingle(),
+          ]);
+          friendStatus.is_friend = Boolean(outgoing && incoming);
+        } else throw result.error;
+      }
+      return {
+        followers: followers ?? 0,
+        following: following ?? 0,
+        isFollowing: !!relation,
+        isFriend: Boolean(friendStatus.is_friend),
+        outgoingRequestId: friendStatus.outgoing_request_id ?? null,
+        incomingRequestId: friendStatus.incoming_request_id ?? null,
+      };
     },
   });
 
