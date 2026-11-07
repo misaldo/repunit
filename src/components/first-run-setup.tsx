@@ -33,7 +33,7 @@ export function FirstRunSetup() {
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const open = Boolean(user?.id && profile && (profile as any).onboarding_completed !== true && !locallyCompleted);
+  const open = Boolean(user?.id && profile && user.user_metadata?.repunit_onboarding_required === true && (profile as any).onboarding_completed !== true && !locallyCompleted);
   if (!open || !profile || !user) return null;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -88,16 +88,18 @@ export function FirstRunSetup() {
 
   async function finish(destination: "/leaderboards" | "/crews/new" | "/people") {
     setSaving(true);
-    const { error } = await (supabase as any).from("profiles")
+    // Clear the registration-only flag so future logins never reopen setup.
+    const { error: metadataError } = await supabase.auth.updateUser({
+      data: { ...user.user_metadata, repunit_onboarding_required: false },
+    });
+    const { error: profileError } = await (supabase as any).from("profiles")
       .update({ onboarding_completed: true }).eq("id", user.id);
-    // Keep onboarding from blocking the app if the new migration has not yet
-    // reached a preview database; local completion is a safe fallback.
-    if (error) {
+    // Local fallback also protects this browser if either backend update is unavailable.
+    if (metadataError || profileError) {
       try { window.localStorage.setItem("repunit-onboarding-done:" + user.id, "1"); } catch { /* storage may be disabled */ }
-      setLocallyCompleted(true);
-    } else {
-      await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
     }
+    setLocallyCompleted(true);
+    await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
     setSaving(false);
     void navigate({ to: destination });
   }
