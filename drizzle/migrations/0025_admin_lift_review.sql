@@ -34,6 +34,28 @@ begin
 end;
 $$;
 
+-- A client must not be able to submit a row that is already verified.
+-- The only normal-user insert state is PENDING, regardless of client payload.
+create or replace function public.require_pending_lift_submission()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+begin
+  if auth.role() <> 'service_role' and new.status <> 'PENDING' then
+    raise exception 'New lift submissions must start as PENDING'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists lifts_require_pending_on_insert on public.lifts;
+create trigger lifts_require_pending_on_insert
+before insert on public.lifts
+for each row execute function public.require_pending_lift_submission();
+
 create or replace function public.admin_list_pending_lifts()
 returns setof public.lifts
 language plpgsql
