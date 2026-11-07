@@ -87,7 +87,7 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
     <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl"/>
     <div className="relative flex items-center justify-between gap-3">
       <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.18em] text-primary"><span className="h-2 w-2 animate-pulse rounded-full bg-primary"/>{battle?"Weekly battle":"Weekly battle"}</span>
-      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Clock3 className="h-3 w-3"/>{battle?countdown(new Date(battle.status==="pending"?battle.starts_at:battle.ends_at).getTime(),now):"See matchups"}</span>
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Clock3 className="h-3 w-3"/>{battle?countdown(new Date(new Date(battle.starts_at).getTime()>now?battle.starts_at:battle.ends_at).getTime(),now):"See matchups"}</span>
     </div>
     {isLoading&&!data?<div className="relative mt-3 grid grid-cols-3 items-center gap-2"><div className="h-10 animate-pulse rounded-lg bg-muted"/><div className="h-5 animate-pulse rounded bg-muted"/><div className="h-10 animate-pulse rounded-lg bg-muted"/></div>
     :isError&&!data?<div className="relative mt-3 flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Battle status is temporarily unavailable. Tap to retry.</p><span className="text-xs font-bold text-primary">Retry</span></div>
