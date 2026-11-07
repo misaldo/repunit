@@ -25,7 +25,7 @@ function NewRecord() {
     if (busy) return;
     const f = new FormData(e.currentTarget);
     const weight = Number(f.get("weight")); const reps = Number(f.get("reps"));
-    if (!(weight >= 0 && weight <= 600) || !(reps >= 1 && reps <= 100)) { toast.error("Check weight and reps."); return; }
+    if (!(weight >= 0.5 && weight <= 600) || !Number.isInteger(reps) || !(reps >= 1 && reps <= 100)) { toast.error("Enter a weight from 0.5 to 600 kg and 1–100 whole reps."); return; }
     const file = f.get("video") as File | null;
     let video_path: string | null = null;
     setBusy(true);
@@ -73,11 +73,25 @@ function NewRecord() {
       toast.success("Lift submitted", { description: comparison ? `That’s about the weight of ${comparison.label}. Keep stacking reps.` : "Another session logged. Keep stacking reps." });
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
+      let cleanupFailed = false;
       if (video_path) {
         const { error: cleanupError } = await supabase.storage.from("lift-videos").remove([video_path]);
-        if (cleanupError) toast.error("The lift was not saved, and its video could not be removed. Please try again later.");
+        cleanupFailed = Boolean(cleanupError);
       }
-      toast.error(err instanceof Error ? err.message : "Upload failed");
+      if (cleanupFailed) {
+        toast.error("Your lift could not be saved and its uploaded video could not be removed. Please contact support.");
+      } else {
+        const message = err instanceof Error ? err.message : "";
+        const safeMessages = [
+          "Use an MP4, MOV or WebM video.",
+          "Video must be 100 MB or smaller.",
+          "Your session expired. Please sign in again.",
+          "Storage is not configured.",
+          "Network error while uploading the video.",
+          "Video upload was cancelled.",
+        ];
+        toast.error(safeMessages.includes(message) ? message : "Could not submit your lift. Check your connection and try again.");
+      }
     } finally { setBusy(false); setUploadProgress(null); }
   }
   return (
@@ -87,7 +101,7 @@ function NewRecord() {
         <div className="space-y-1.5"><Label htmlFor="exercise">Exercise</Label>
           <select id="exercise" name="exercise" className="h-10 w-full rounded-md border border-input bg-card px-3">{EXERCISES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" type="number" step="0.5" min="0" max="600" inputMode="decimal" required /></div>
+          <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" type="number" step="0.5" min="0.5" max="600" inputMode="decimal" required /></div>
           <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" type="number" min="1" max="100" defaultValue={1} required /></div>
         </div>
         <div className="space-y-1.5"><Label htmlFor="date">Date</Label><Input id="date" name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
