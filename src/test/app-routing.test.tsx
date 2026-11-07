@@ -48,6 +48,12 @@ describe("App routing", () => {
     }
   });
 
+  it("keeps crew creation and the restored community feed reachable", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/crews/new").at(-1)?.routeId).toBe("/_authenticated/crews/new");
+    expect(router.matchRoutes("/feed").at(-1)?.routeId).toBe("/_authenticated/feed");
+  });
+
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
