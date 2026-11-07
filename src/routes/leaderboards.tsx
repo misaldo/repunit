@@ -92,7 +92,7 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region) {
 function Boards() {
   const [tab,setTab]=useState<"lifters"|"crews"|"friends">("lifters");
   const [ex,setEx]=useState<Exercise|"total">("bench");
-  const [period,setPeriod]=useState<Period>("week");
+  const [period,setPeriod]=useState<Period>("all");
   const {user}=useUser();
   const since=periodStart(period);
   const audience=useQuery({
