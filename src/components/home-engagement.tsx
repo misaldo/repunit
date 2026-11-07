@@ -22,7 +22,7 @@ export function HomeEngagement({ userId }: Props) {
       const [{ data: memberships, error: membershipError }, { data: friendships, error: friendError }, { data: mine, error: mineError }] = await Promise.all([
         supabase.from("crew_members").select("crew_id").eq("user_id", userId),
         supabase.from("friend_requests").select("requester_id,recipient_id").eq("status", "accepted").or(`requester_id.eq.${userId},recipient_id.eq.${userId}`),
-        supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").eq("user_id", userId).eq("status", "VERIFIED").gte("created_at", since(7 * 14)).order("created_at", { ascending: false }).limit(100),
+        supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").eq("user_id", userId).eq("status", "VERIFIED").gte("created_at", since(365)).order("created_at", { ascending: false }).limit(1000),
       ]);
       if (membershipError) throw membershipError;
       if (friendError) throw friendError;
@@ -40,7 +40,7 @@ export function HomeEngagement({ userId }: Props) {
       const allIds = [...new Set([...crewMemberIds, ...friendIds])];
       const [{ data: profiles, error: profilesError }, { data: crewLifts, error: crewLiftsError }, { data: crewRows, error: crewError }] = await Promise.all([
         allIds.length ? supabase.from("profiles").select("id,username,display_name,avatar_url").in("id", allIds) : Promise.resolve({ data: [], error: null }),
-        crewMemberIds.length ? supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").in("user_id", crewMemberIds).eq("status", "VERIFIED").gte("created_at", since(90)).order("created_at", { ascending: false }).limit(300) : Promise.resolve({ data: [], error: null }),
+        crewMemberIds.length ? supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").in("user_id", crewMemberIds).eq("status", "VERIFIED").order("weight_kg", { ascending: false }).limit(1000) : Promise.resolve({ data: [], error: null }),
         crewIds.length ? supabase.from("crews").select("id,name,emblem").in("id", crewIds) : Promise.resolve({ data: [], error: null }),
       ]);
       if (profilesError) throw profilesError;
