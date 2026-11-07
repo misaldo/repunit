@@ -316,7 +316,6 @@ function Profile() {
           </ul>
         </section>
         {false && <section>
-<section>
           <div className="mb-3 flex items-center gap-2"><Rss className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Recent posts</h2></div>
           <div className="space-y-3">
             {posts.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">No posts yet.</div>}
