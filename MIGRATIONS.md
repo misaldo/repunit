@@ -1,0 +1,58 @@
+# REPUNIT database migrations
+
+## Target backend
+
+Apply these migrations only to the REPUNIT Supabase project with project ref:
+
+`sfumcokjwvhxwuanlofw`
+
+The browser client currently reaches this backend through the Lovable Cloud gateway URL configured as `VITE_SUPABASE_URL` in the local `.env`. Supabase CLI linking and Edge Function deployment use the project ref above.
+
+## Exact application order: 0012–0023
+
+The repository's documented baseline is migrations `0000`–`0011`. If that baseline is present, apply the following SQL files in this exact order. Do not skip a pending migration or apply them alphabetically by description.
+
+1. `drizzle/migrations/0012_repair_training_splits.sql`
+2. `drizzle/migrations/0013_repair_crew_battles.sql`
+3. `drizzle/migrations/0014_friend_callouts.sql`
+4. `drizzle/migrations/0015_notifications_center.sql`
+5. `drizzle/migrations/0016_progression_reward_fixes.sql`
+6. `drizzle/migrations/0017_leaderboard_audience_and_weight_classes.sql`
+7. `drizzle/migrations/0018_pro_subscriptions.sql`
+8. `drizzle/migrations/0019_throne_events.sql`
+9. `drizzle/migrations/0020_lift_video_engagement.sql`
+10. `drizzle/migrations/0021_volume_crew_battles.sql`
+11. `drizzle/migrations/0022_streak_xp_bonus.sql`
+12. `drizzle/migrations/0023_crew_achievement_awards.sql`
+
+The onboarding/avatar migration was previously also numbered `0019`. Its filename has been changed to `0024_first_run_onboarding_and_avatars.sql`; its SQL contents were preserved unchanged. Apply it only after 0012–0023.
+
+## Check which migrations are already applied
+
+### If migrations were applied with the Supabase CLI
+
+From the repository root, link the intended project and compare local and remote migration history:
+
+```bash
+supabase link --project-ref sfumcokjwvhxwuanlofw
+supabase migration list --linked
+```
+
+The CLI only lists migrations it recognizes in its configured migrations directory. These REPUNIT SQL files are currently under `drizzle/migrations/`, so do not assume the CLI will discover them automatically. Review the remote history before using CLI migration commands.
+
+You can also inspect the remote history table in the Supabase SQL Editor:
+
+```sql
+select version, name
+from supabase_migrations.schema_migrations
+where version between '0012' and '0023'
+order by version;
+```
+
+A row is evidence that the corresponding version was registered in Supabase migration history. No row is not proof that the SQL was never run: SQL pasted manually into the SQL Editor is not automatically registered in this table.
+
+### If migrations were run manually in the SQL Editor
+
+Use the SQL Editor query above if the project has migration-history records. Otherwise, compare the schema and policies created by each migration with the corresponding SQL file. Keep a written record of every successfully applied filename. Do not blindly rerun a migration just because it is absent from the CLI history; inspect its SQL first, even if it is intended to be repeatable.
+
+After applying a migration, wait for the SQL Editor to report success before moving to the next file. If a migration fails, stop and resolve that error before continuing.
