@@ -57,6 +57,12 @@ async function scoreCrews(exercise:Exercise|"total",from:string|null,to:string|n
 function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region) {
   return useQuery({
     queryKey:["crew-ranks-v2",exercise,period,region],
+    staleTime:30000,
+    gcTime:5*60*1000,
+    retry:2,
+    retryDelay:(attempt)=>Math.min(1000*2**attempt,5000),
+    placeholderData:(previousData)=>previousData,
+    refetchOnWindowFocus:true,
     queryFn:async()=>{
       const from=periodStart(period);
       const [current,previous,battleResult,authResult]=await Promise.all([
