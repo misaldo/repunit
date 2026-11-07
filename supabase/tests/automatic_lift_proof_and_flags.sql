@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(12);
 
 select ok(
   exists (
@@ -46,6 +46,16 @@ select ok(
 select ok(
   not has_column_privilege('authenticated', 'public.lifts', 'status', 'UPDATE'),
   'authenticated clients cannot directly update lift status'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.lifts', 'status', 'INSERT'),
+  'authenticated clients cannot choose status during lift insertion'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.lifts', 'video_path', 'UPDATE'),
+  'authenticated clients must use the guarded proof RPC to attach video'
 );
 
 select * from finish();
