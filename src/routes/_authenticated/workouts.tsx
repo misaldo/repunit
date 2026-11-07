@@ -117,7 +117,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 const CATEGORIES = ["All", "Chest", "Back", "Shoulders", "Arms", "Legs", "Core"];
 
 export const Route = createFileRoute("/_authenticated/workouts")({
-  head: () => ({ meta: [{ title: "SPLIT — REPUNIT" }, { name: "description", content: "Build, save and share your workouts." }] }),
+  head: () => ({ meta: [{ title: "SPLIT — REPUNIT" }, { name: "description", content: "Build, save and share your training split." }] }),
   component: WorkoutsPage,
 });
 
@@ -273,7 +273,7 @@ function WorkoutsPage() {
       <div className="mb-8">
         <p className="eyebrow">PLAN YOUR TRAINING</p>
         <h1 className="font-stat mt-2 text-6xl uppercase">SPLIT<span className="text-primary">.</span></h1>
-        <p className="mt-2 text-sm text-muted-foreground">Build your workouts, choose training days and share your routines.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Build your SPLIT, choose training days and share your routine.</p>
       </div>
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
@@ -318,8 +318,8 @@ function WorkoutsPage() {
       </Dialog>
 
       <section className="mt-10">
-        <h2 className="mb-4 text-xl font-bold">Your workouts</h2>
-        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading workouts…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your workouts could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved workouts have not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No workouts yet. Create your first one above.</div> : (
+        <h2 className="mb-4 text-xl font-bold">Your SPLIT</h2>
+        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading SPLIT…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your SPLIT could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved SPLIT has not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No SPLIT yet. Create your first plan above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete workout" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
             <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility}</div>
