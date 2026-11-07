@@ -28,7 +28,7 @@ function Record() {
     },
   });
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
-  if (isError) return <PageShell><p>Could not load this lift. Please try again.</p><Button className="mt-4" variant="line" onClick={() => refetch()}>Try again</Button></PageShell>;
+  if (isError && !data) return <PageShell><p>Could not load this lift. Please try again.</p><Button className="mt-4" variant="line" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Record not found.</p></PageShell>;
   const { l, video, videoUnavailable } = data;
   return (
