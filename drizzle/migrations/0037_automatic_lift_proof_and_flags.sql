@@ -117,16 +117,14 @@ begin
   from public.lifts l
   where l.user_id = submitting_user
     and l.exercise = new.exercise
-    and l.status = 'VERIFIED'
-    and l.created_at < (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC');
+    and l.verified_at < (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC');
 
   select max(l.weight_kg) into same_day_best
   from public.lifts l
   where l.user_id = submitting_user
     and l.exercise = new.exercise
-    and l.status = 'VERIFIED'
-    and l.created_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
-    and l.created_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC');
+    and l.verified_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
+    and l.verified_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC');
 
   if new.weight_kg > greatest(coalesce(previous_best, 0), coalesce(same_day_best, 0)) then
     if previous_best is not null and new.weight_kg > previous_best * 1.10 then
@@ -137,14 +135,14 @@ begin
     where same_day.user_id = submitting_user
       and same_day.created_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
       and same_day.created_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC')
-      and same_day.status = 'VERIFIED'
+      and same_day.verified_at >= (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
+      and same_day.verified_at < ((date_trunc('day', now() at time zone 'UTC') + interval '1 day') at time zone 'UTC')
       and same_day.weight_kg > coalesce((
         select max(prior.weight_kg)
         from public.lifts prior
         where prior.user_id = same_day.user_id
           and prior.exercise = same_day.exercise
-          and prior.status = 'VERIFIED'
-          and prior.created_at < (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
+          and prior.verified_at < (date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')
       ), 0);
 
     if coalesce(daily_pr_jump_count, 0) > 0 then
