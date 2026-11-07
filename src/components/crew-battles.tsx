@@ -87,12 +87,13 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       let { data: battles, error } = await (supabase as any).from("crew_battles")
         .select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,winner_crew_id,is_weekly,week_start")
         .or(`challenger_crew_id.eq.${crewId},opponent_crew_id.eq.${crewId}`)
+        .eq("is_weekly", true)
         .order("starts_at", { ascending: false }).limit(20);
       if (error) throw error;
       const expired = (battles ?? []).filter((b:Battle)=>!["pending","cancelled","completed"].includes(b.status)&&Date.now()>=new Date(b.ends_at).getTime());
       if (expired.length) {
         await Promise.all(expired.map((b:Battle)=>(supabase as any).rpc("complete_crew_battle",{_battle:b.id})));
-        const refreshed = await (supabase as any).from("crew_battles").select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,winner_crew_id,is_weekly,week_start").or(`challenger_crew_id.eq.${crewId},opponent_crew_id.eq.${crewId}`).order("starts_at",{ascending:false}).limit(20);
+        const refreshed = await (supabase as any).from("crew_battles").select("id,challenger_crew_id,opponent_crew_id,category,starts_at,ends_at,status,winner_crew_id,is_weekly,week_start").or(`challenger_crew_id.eq.${crewId},opponent_crew_id.eq.${crewId}`).eq("is_weekly",true).order("starts_at",{ascending:false}).limit(20);
         if (refreshed.error) throw refreshed.error;
         battles = refreshed.data;
       }
