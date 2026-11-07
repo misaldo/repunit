@@ -81,7 +81,7 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] w-[calc(100%-1.5rem)] max-w-3xl overflow-y-auto border-border bg-card p-4 sm:p-6">
         {query.isLoading ? <div className="space-y-4"><div className="h-7 w-48 animate-pulse rounded bg-elevated"/><div className="aspect-video animate-pulse rounded-xl bg-elevated"/><div className="h-20 animate-pulse rounded-xl bg-elevated"/></div>
-        : query.isError || !data ? <div className="py-8 text-center"><Video className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 text-sm font-semibold">Lift video unavailable</p><p className="mt-1 text-xs text-muted-foreground">The video may have been removed or the evidence database is not ready.</p><Button className="mt-4" variant="line" onClick={() => void query.refetch()}>Try again</Button></div>
+        : query.isError || !data ? <div className="py-8 text-center"><Video className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 text-sm font-semibold">Lift video unavailable</p><p className="mt-1 text-xs text-muted-foreground">The video may have been removed or is temporarily unavailable.</p><Button className="mt-4" variant="line" onClick={() => void query.refetch()}>Try again</Button></div>
         : <>
           <DialogHeader>
             <DialogTitle className="font-stat text-3xl uppercase">{exerciseLabel(data.lift.exercise)} · {Number(data.lift.weight_kg)} kg</DialogTitle>
