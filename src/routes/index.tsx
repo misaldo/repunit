@@ -48,7 +48,7 @@ export function Landing() {
             <h1 className="rise mt-5 max-w-5xl text-5xl font-extrabold uppercase leading-[0.94] tracking-[-0.055em] sm:text-6xl md:text-8xl lg:text-[7.4rem]">
               Who is the<br />strongest in your <span className="text-primary">crew?</span>
             </h1>
-            <p className="rise mt-6 max-w-md text-base text-muted-foreground md:text-lg">Build your crew. Prove your strength. Own your rank.</p>
+            <p className="rise mt-6 max-w-xl text-base font-semibold uppercase tracking-wide text-foreground md:text-lg">STRENGTH IS SOCIAL. WHO IS THE STRONGEST IN YOUR CREW?</p>
             <div className="rise mt-8 flex max-w-sm flex-col gap-3">
               <Button asChild size="lg" variant="hero" className="h-14 w-full justify-center text-base shadow-[0_0_32px_hsl(var(--primary)/0.22)]">
                 <Link to="/records/new"><Dumbbell className="mr-2 h-5 w-5" />Submit a lift<ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -105,7 +105,7 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-20">
+      {false && <section className="mx-auto max-w-6xl px-4 py-20">
         <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card p-8 md:p-12">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
           <p className="eyebrow">REPUNIT Pro</p>
@@ -113,7 +113,7 @@ export function Landing() {
           <p className="mt-3 max-w-md text-muted-foreground">Track your progress over time and get more detail on your training.</p>
           <Button asChild variant="line" className="mt-6"><Link to="/pricing">See plans</Link></Button>
         </div>
-      </section>
+      </section>}
       <SiteFooter />
       <MobileNav />
       <InstallPrompt />
