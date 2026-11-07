@@ -38,7 +38,7 @@
 
 ## Supabase database
 
-The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. The browser client uses the Lovable Cloud gateway URL configured in `.env`; the underlying Supabase project for CLI deployments and Edge Functions is this project ref. The existing project has already used migrations through `0011_complete_backend_setup.sql`. Check migration history and apply only pending migrations in the exact order documented in [MIGRATIONS.md](./MIGRATIONS.md):
+The single canonical backend is `https://sfumcokjwvhxwuanlofw.supabase.co` (project ref `sfumcokjwvhxwuanlofw`). Browser and server clients, Supabase CLI, migrations and Edge Functions must all target this exact project. The documented baseline is migrations through `0011_complete_backend_setup.sql`. Check the remote schema/history and apply only pending migrations in the exact order documented in [MIGRATIONS.md](./MIGRATIONS.md):
 
 - `0012_repair_training_splits.sql`
 - `0013_repair_crew_battles.sql`
