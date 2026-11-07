@@ -1,14 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { EXERCISES, validateVideo, type Exercise } from "@/lib/lifts";
-import { getFunComparison } from "@/components/fun-stats";
 
 export const Route = createFileRoute("/_authenticated/records/new")({
   head: () => ({ meta: [{ property: "og:title", content: "Submit a lift — REPUNIT" }, { property: "og:description", content: "Log a new lift with video evidence." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Submit a lift — REPUNIT" }, { name: "description", content: "Log a new lift with video evidence." }] }),
@@ -18,8 +17,32 @@ export const Route = createFileRoute("/_authenticated/records/new")({
 function NewRecord() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
+  const savedExercise = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastExercise") : null;
+  const savedWeight = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastWeight") : null;
+  const savedReps = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastReps") : null;
+  const hasSavedPrefill = Boolean(savedWeight);
+  const [exercise, setExercise] = useState<Exercise>(EXERCISES.some((item) => item.id === savedExercise && item.id !== "pullup") ? savedExercise as Exercise : "bench");
+  const [weight, setWeight] = useState(savedWeight ?? "");
+  const [reps, setReps] = useState(savedReps ?? "1");
   const [busy, setBusy] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const { data: lastLift } = useQuery({
+    queryKey: ["last-pr-prefill", user.id],
+    enabled: !hasSavedPrefill,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lifts").select("exercise,weight_kg,reps")
+        .eq("user_id", user.id).order("lifted_on", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  useEffect(() => {
+    if (!lastLift || hasSavedPrefill || !EXERCISES.some((item) => item.id === lastLift.exercise && item.id !== "pullup")) return;
+    setExercise(lastLift.exercise as Exercise);
+    setWeight(String(lastLift.weight_kg));
+    setReps(String(lastLift.reps ?? 1));
+  }, [lastLift, hasSavedPrefill]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
@@ -65,12 +88,16 @@ function NewRecord() {
         });
       }
       const { data, error } = await supabase.from("lifts").insert({
-        user_id: user.id, exercise: f.get("exercise") as Exercise, weight_kg: weight, reps,
-        lifted_on: String(f.get("date")), description: String(f.get("description") || "").slice(0, 500) || null, video_path,
+        user_id: user.id, exercise, weight_kg: weight, reps,
+        lifted_on: String(f.get("date")), description: null, video_path,
       }).select("id").single();
       if (error) throw error;
-      const comparison = getFunComparison(weight * reps, new Date().getDate());
-      toast.success("Lift submitted", { description: comparison ? `That’s about the weight of ${comparison.label}. Keep stacking reps.` : "Another session logged. Keep stacking reps." });
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("repunit.lastExercise", exercise);
+        window.localStorage.setItem("repunit.lastWeight", String(weight));
+        window.localStorage.setItem("repunit.lastReps", String(reps));
+      }
+      toast.success("PR logged", { description: "Your result is on REPUNIT." });
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
       let cleanupFailed = false;
@@ -96,17 +123,16 @@ function NewRecord() {
   }
   return (
     <PageShell>
-      <h1 className="font-stat text-6xl uppercase">Submit a lift</h1>
-      <form onSubmit={submit} className="mt-6 max-w-md space-y-4">
+      <div className="mb-5"><p className="eyebrow text-primary">QUICK PR LOG</p><h1 className="font-stat mt-2 text-4xl uppercase sm:text-5xl">Log your PR<span className="text-primary">.</span></h1><p className="mt-2 text-sm text-muted-foreground">A few taps and your Crew sees the result.</p></div>
+      <form onSubmit={submit} className="mt-6 max-w-md space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <input type="hidden" name="date" value={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })()} />
         <div className="space-y-1.5"><Label htmlFor="exercise">Exercise</Label>
-          <select id="exercise" name="exercise" className="h-10 w-full rounded-md border border-input bg-card px-3">{EXERCISES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></div>
+          <select id="exercise" name="exercise" value={exercise} onChange={(event) => setExercise(event.target.value as Exercise)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base">{EXERCISES.filter((x) => x.id !== "pullup").map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" type="number" step="0.5" min="0.5" max="600" inputMode="decimal" required /></div>
-          <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" type="number" min="1" max="100" defaultValue={1} required /></div>
+          <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" value={weight} onChange={(event) => setWeight(event.target.value)} type="number" step="0.5" min="0.5" max="600" inputMode="decimal" placeholder="100" className="h-12 text-lg font-bold" required /></div>
+          <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" value={reps} onChange={(event) => setReps(event.target.value)} type="number" min="1" max="100" inputMode="numeric" className="h-12 text-lg font-bold" required /></div>
         </div>
-        <div className="space-y-1.5"><Label htmlFor="date">Date</Label><Input id="date" name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-        <div className="space-y-1.5"><Label htmlFor="video">Video (MP4/MOV/WebM, max 100 MB)</Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" required /></div>
-        <div className="space-y-1.5"><Label htmlFor="description">Notes</Label><Textarea id="description" name="description" maxLength={500} /></div>
+        <div className="space-y-1.5"><Label htmlFor="video">Video proof <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /></div>
         {uploadProgress !== null && (
           <div className="space-y-2" aria-live="polite">
             <div className="flex justify-between text-xs text-muted-foreground"><span>Uploading video</span><span>{uploadProgress}%</span></div>
@@ -115,8 +141,8 @@ function NewRecord() {
             </div>
           </div>
         )}
-        <Button variant="hero" className="h-12 w-full" disabled={busy}>{busy ? (uploadProgress === null ? "Saving lift…" : `Uploading ${uploadProgress}%`) : "Submit"}</Button>
-        <p className="text-xs text-muted-foreground">Upload a video to submit your lift. Once the upload is complete, it is automatically marked VERIFIED and progression rewards are applied.</p>
+        <Button variant="hero" className="h-13 w-full text-base font-black uppercase tracking-wide" disabled={busy}>{busy ? (uploadProgress === null ? "Saving PR…" : `Uploading ${uploadProgress}%`) : "Log PR"}</Button>
+        <p className="text-center text-[11px] text-muted-foreground">Video is optional. PRs are self-reported and count toward your rankings.</p>
       </form>
     </PageShell>
   );
