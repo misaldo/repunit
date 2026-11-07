@@ -5,6 +5,14 @@ alter type public.lift_status add value if not exists 'UNDER_REVIEW';
 
 begin;
 
+-- Keep the database's hard safety bounds broad enough to save out-of-range
+-- submissions as NEEDS_PROOF instead of rejecting them before classification.
+alter table public.lifts drop constraint if exists lifts_weight_kg_check;
+alter table public.lifts drop constraint if exists lifts_reps_check;
+alter table public.lifts
+  add constraint lifts_weight_kg_check check (weight_kg >= 0 and weight_kg <= 9999.99),
+  add constraint lifts_reps_check check (reps between 1 and 1000);
+
 alter table public.lifts
   add column if not exists verification_reason text,
   add column if not exists xp_awarded_at timestamptz;
