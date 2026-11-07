@@ -293,7 +293,7 @@ function Profile() {
       <div className="mt-8">
         <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Personal records</h2></div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          {EXERCISES.map((e) => {
+          {EXERCISES.filter((e) => e.id !== "pullup").map((e) => {
             const best = lifts.filter((l) => l.exercise === e.id && l.status !== "REJECTED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
             return <div key={e.id} className="rounded-xl border border-border bg-card p-4">
               <p className="eyebrow">{e.short}</p>
@@ -315,7 +315,8 @@ function Profile() {
             </Link></li>)}
           </ul>
         </section>
-        <section>
+        {false && <section>
+<section>
           <div className="mb-3 flex items-center gap-2"><Rss className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Recent posts</h2></div>
           <div className="space-y-3">
             {posts.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">No posts yet.</div>}
@@ -324,7 +325,8 @@ function Profile() {
               <p className="mt-3 text-xs text-muted-foreground">{new Date(post.created_at).toLocaleString()}</p>
             </article>)}
           </div>
-        </section>
+        </section>}
+
       </div>
     </PageShell>
   );
