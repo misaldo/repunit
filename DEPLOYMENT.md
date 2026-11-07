@@ -52,6 +52,7 @@ The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. The browser client
 - `0021_volume_crew_battles.sql`
 - `0022_streak_xp_bonus.sql`
 - `0023_crew_achievement_awards.sql`
+- `0024_first_run_onboarding_and_avatars.sql` (run after 0012–0023)
 
 Run each pending SQL file in the Supabase SQL Editor. These repair migrations are designed to be repeatable, but do not skip ahead in the sequence.
 
