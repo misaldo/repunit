@@ -97,7 +97,7 @@ function Profile() {
     },
   });
 
-  const { data: social, refetch: refetchSocial } = useQuery({
+  const { data: social, isError: socialError, refetch: refetchSocial } = useQuery({
     queryKey: ["profile-social", data?.p.id, user?.id],
     enabled: !!data?.p.id,
     queryFn: async () => {
@@ -184,6 +184,7 @@ function Profile() {
           </div>
         </div>
         {p.bio && <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-6">{p.bio}</p>}
+        {socialError && <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>Follow information could not be loaded.</span><button type="button" onClick={() => void refetchSocial()} className="font-semibold text-primary underline underline-offset-4">Try again</button></div>}
         {challengeOpen && <form onSubmit={e => { e.preventDefault(); void sendChallenge(); }} className="mt-5 grid gap-3 rounded-xl border border-primary/25 bg-primary/[0.05] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <div><label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lift</label><select value={challengeExercise} onChange={e=>setChallengeExercise(e.target.value)} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm">{EXERCISES.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></div>
           <div><label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Target (kg)</label><input value={challengeWeight} onChange={e=>setChallengeWeight(e.target.value)} type="number" min="0.5" max="600" step="0.5" required className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"/></div>
