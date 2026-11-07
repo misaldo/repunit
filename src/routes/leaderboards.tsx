@@ -40,7 +40,7 @@ async function scoreCrewsLegacy(exercise:Exercise|"total",from:string|null,to:st
   if(members?.length){
     let q=(supabase as any).from("lifts").select("user_id,exercise,weight_kg,reps,lifted_on").in("user_id",[...new Set(members.map((m:any)=>m.user_id))]).eq("status","VERIFIED");
     if(exercise!=="total")q=q.eq("exercise",exercise);
-    else q=q.in("exercise",["bench","squat","deadlift"]);
+    else q=q.in("exercise",["bench","squat","deadlift","ohp"]);
     if(from)q=q.gte("lifted_on",from);
     if(to)q=q.lt("lifted_on",to);
     const result=await q;if(result.error)throw result.error;lifts=result.data??[];
