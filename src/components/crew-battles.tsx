@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X } from "lucide-react";
+import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -149,6 +149,25 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
     } catch { toast.error("Could not send this crew challenge. Check your permissions and try again."); }
     finally { setBusy(false); }
   }
+  async function shareResult(item: NonNullable<typeof data>["battles"][number]) {
+    const { battle, left, right, leftScore, rightScore } = item;
+    const winner = battle.winner_crew_id === left?.id ? left?.name
+      : battle.winner_crew_id === right?.id ? right?.name
+      : leftScore.total === rightScore.total ? "Draw"
+      : leftScore.total > rightScore.total ? left?.name : right?.name;
+    const summary = `REPUNIT WEEKLY BATTLE · ${categoryName[battle.category]}\n${left?.name ?? "Crew"} ${leftScore.total.toLocaleString()} — ${rightScore.total.toLocaleString()} ${right?.name ?? "Crew"}\n${winner === "Draw" ? "It's a draw." : `${winner ?? "A Crew"} wins.`}`;
+    const url = `${window.location.origin}/battles/${battle.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: "REPUNIT Battle result", text: summary, url });
+      else {
+        await navigator.clipboard.writeText(`${summary}\n${url}`);
+        toast.success("Battle result copied");
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) toast.error("Could not share this result.");
+    }
+  }
+
   async function respond(id:string, accept:boolean) {
     setBusy(true);
     try {
@@ -186,7 +205,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-700" style={{width:`${rightTotal/max*100}%`}}/></div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
-        {[leftScore.contributors,rightScore.contributors].map((list,i)=><div key={i}><p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Top contributors</p>{list.length?list.map((p,n)=><Link key={p.user_id} to="/u/$username" params={{username:p.username}} onClick={e=>e.stopPropagation()} className="flex items-center justify-between gap-2 rounded-md py-1 text-xs transition hover:bg-elevated hover:text-primary"><span className="truncate"><span className="mr-1 text-primary">{n+1}.</span>{p.display_name||p.username}</span><b className="shrink-0 tabular-nums">{p.weight.toLocaleString("en-US")} {battle.category==="volume"?"kg vol":"kg"}</b></Link>):<p className="text-xs text-muted-foreground">No verified lifts yet</p>}</div>)}
+        {[leftScore.contributors,rightScore.contributors].map((list,i)=><div key={i}><p className="mb-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Top contributors</p>{list.length?list.map((p,n)=><Link key={p.user_id} to="/u/$username" params={{username:p.username}} onClick={e=>e.stopPropagation()} className="flex items-center justify-between gap-2 rounded-md py-1 text-xs transition hover:bg-elevated hover:text-primary"><span className="truncate"><span className="mr-1 text-primary">{n+1}.</span>{p.display_name||p.username}</span><b className="shrink-0 tabular-nums">{p.weight.toLocaleString("en-US")} {battle.category==="volume"?"kg vol":"kg"}</b></Link>):<p className="text-xs text-muted-foreground">No PRs logged yet</p>}</div>)}
       </div>
       {isPending && battle.opponent_crew_id===crewId && isAdmin && <div className="mt-4 flex gap-2 border-t border-border pt-3"><Button size="sm" variant="hero" disabled={busy} onClick={e=>{e.stopPropagation();respond(battle.id,true)}}><Check className="mr-1 h-3.5 w-3.5"/>Accept battle</Button><Button size="sm" variant="line" disabled={busy} onClick={e=>{e.stopPropagation();respond(battle.id,false)}}><X className="mr-1 h-3.5 w-3.5"/>Decline</Button></div>}
       <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -195,11 +214,12 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         {isEnded&&(leftWon||rightWon)&&<span className="inline-flex items-center gap-1 text-primary"><ShieldCheck className="h-3.5 w-3.5"/>Crew badge earned</span>}
       </div>
       {isEnded&&(leftWon||rightWon)&&<div className="battle-winner mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-xs font-black uppercase tracking-widest text-primary"><Trophy className="h-4 w-4"/> {leftWon?left?.name:right?.name} wins the battle!</div>}
+      {isEnded && <button type="button" onClick={(event) => { event.stopPropagation(); void shareResult(item); }} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-black uppercase tracking-wider text-muted-foreground transition hover:border-primary/50 hover:text-primary"><Share2 className="h-4 w-4"/>Share result</button>}
     </article>;
   };
 
   return <section className="mt-10">
-    <div className="flex items-end justify-between gap-3"><div><p className="eyebrow text-primary">THE WEEKLY SHOWDOWN</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew battles</h2><p className="mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">Build your rivalry. Stack verified kilos. Earn your place at the top.</p><p className="mt-1 text-xs text-muted-foreground">Verified lifts only · One category every week</p></div><Swords className="mb-1 h-6 w-6 text-primary"/></div>
+    <div className="flex items-end justify-between gap-3"><div><p className="eyebrow text-primary">THE WEEKLY SHOWDOWN</p><h2 className="font-stat mt-1 text-3xl uppercase">Crew battles</h2><p className="mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">Build your rivalry. Stack PRs. Earn your place at the top.</p><p className="mt-1 text-xs text-muted-foreground">Logged PRs count · One category every week</p></div><Swords className="mb-1 h-6 w-6 text-primary"/></div>
     {isAdmin&&data?.adminCrews.length>0&&<div className="mt-4 rounded-2xl border border-border bg-card p-4">
       <p className="text-xs font-black uppercase tracking-widest">Challenge a crew</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
