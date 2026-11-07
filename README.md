@@ -28,6 +28,10 @@ npm.cmd run preview
 
 The development server uses the local environment in `.env`. Start from `.env.example` and add the Supabase project URL and publishable key. Never commit `.env`, a Supabase service-role key, Stripe secret, or VAPID private key.
 
+## Backend configuration
+
+The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. `VITE_SUPABASE_URL` in the local `.env` currently points to the Lovable Cloud gateway for this project; the app's browser client uses that URL. Supabase CLI and Edge Function deployments use the canonical project ref.
+
 ## Environment variables
 
 Copy `.env.example` to `.env` and set:
@@ -41,17 +45,7 @@ The browser must only receive `VITE_*` values that are safe to expose. Keep serv
 
 ## Database setup
 
-The original schema and backend setup are migrations `0000` through `0011`. If those have already been applied to your project, run the following additional SQL files **in numerical order** in Supabase → SQL Editor:
-
-1. `drizzle/migrations/0012_repair_training_splits.sql`
-2. `drizzle/migrations/0013_repair_crew_battles.sql`
-3. `drizzle/migrations/0014_friend_callouts.sql`
-4. `drizzle/migrations/0015_notifications_center.sql`
-5. `drizzle/migrations/0016_progression_reward_fixes.sql`
-6. `drizzle/migrations/0017_leaderboard_audience_and_weight_classes.sql`
-7. `drizzle/migrations/0018_pro_subscriptions.sql`
-
-Run each migration once, wait for Supabase to report success, then continue. If you already applied migrations `0013`, `0015`, `0016` or `0018` before the latest fixes, re-run those files after pulling the latest code; they are written to be safely repeatable. Migration `0016` also creates the lift-video likes/comments tables, wires like notifications and XP rewards, awards XP for streak milestones, and grants the Iron Squad / 100 Ton Club crew badges. Do not run these against a different Supabase project from the one configured in `.env`.
+The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. The browser client uses the Lovable Cloud gateway URL in `.env`; Supabase CLI deployments, database migrations and Edge Functions target the canonical project ref. Apply the additional SQL migrations in the exact order in [MIGRATIONS.md](./MIGRATIONS.md). Do not run them against another project.
 
 ## Web Push setup (optional)
 
