@@ -56,12 +56,16 @@ export function LiveBattleCard({compact=false}:{compact?:boolean}) {
       else liftQuery=liftQuery.eq("exercise",battle.category);
       const {data:lifts,error:liftError}=await liftQuery;
       if(liftError)throw liftError;
-      const scores=new Map<string,number>();
+      const memberCrew=new Map<string,string>((crewMembers??[]).map((member:any)=>[member.user_id,member.crew_id]));
+      const memberScores=new Map<string,number>();
       for(const lift of lifts??[]){
-        const member=(crewMembers??[]).find((item:any)=>item.user_id===lift.user_id);
-        if(!member)continue;
         const score=battle.category==="volume"?Number(lift.weight_kg)*Number(lift.reps??1):Number(lift.weight_kg);
-        scores.set(member.crew_id,(scores.get(member.crew_id)??0)+score);
+        memberScores.set(lift.user_id,battle.category==="volume"?(memberScores.get(lift.user_id)??0)+score:Math.max(memberScores.get(lift.user_id)??0,score));
+      }
+      const scores=new Map<string,number>();
+      for(const [memberId,score] of memberScores){
+        const crewId=memberCrew.get(memberId);
+        if(crewId)scores.set(crewId,(scores.get(crewId)??0)+score);
       }
       return {
         battle,
