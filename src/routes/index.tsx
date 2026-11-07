@@ -93,8 +93,8 @@ export function Landing() {
         <div className="mx-auto grid max-w-6xl gap-px bg-border md:grid-cols-3">
           {[
             { icon: Users, n: "01", t: "Build your crew", d: "Bring your training partners together and keep your results in one place." },
-            { icon: Video, n: "02", t: "Submit with video", d: "Add the weight, reps and a video so your crew can see the lift." },
-            { icon: ShieldCheck, n: "03", t: "Earn verification", d: "Every result has a clear status, so the leaderboard shows what has actually been checked." },
+            { icon: Dumbbell, n: "02", t: "Log your PR", d: "Add weight and reps in a few taps. Video proof is optional." },
+            { icon: Trophy, n: "03", t: "Climb the TOP", d: "Your PRs move your rank and help your Crew compete each week." },
           ].map((s) => (
             <div key={s.n} className="bg-surface p-8">
               <div className="flex items-center justify-between"><s.icon className="h-6 w-6 text-primary" /><span className="font-stat text-4xl text-muted-foreground/40">{s.n}</span></div>
