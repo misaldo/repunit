@@ -51,7 +51,7 @@ export function ThroneBanner() {
           <p className="mt-1 text-sm font-bold leading-snug"><Link to="/u/$username" params={{username:data.lifter.username}} className="hover:text-primary">{name}</Link> just took 1st place with <span className="text-primary">{Number(data.weight_kg).toLocaleString("en-US")} kg</span> {exerciseLabel(data.exercise).toLowerCase()}.</p>
           {data.previous?.username && <p className="mt-1 text-[11px] text-muted-foreground">The previous leader was @{data.previous.username} · {new Date(data.created_at).toLocaleString()}</p>}
         </div>
-        {data.hasVideo && <button type="button" onClick={() => setVideoOpen(true)} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground transition hover:brightness-110"><span>Watch the lift</span><ArrowUpRight className="h-4 w-4"/></button>}
+        {data.hasVideo && <button type="button" onClick={() => setVideoOpen(true)} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground transition hover:brightness-110"><span>Watch video</span><ArrowUpRight className="h-4 w-4"/></button>}
       <LiftVideoDialog liftId={videoOpen ? data.lift_id : null} open={videoOpen} onOpenChange={setVideoOpen} />
       </div>
     </section>
