@@ -32,7 +32,6 @@ export function useLeaderboard(
             _crew: crew ?? null,
             _since: since ?? null,
             _user_ids: userIds ?? null,
-            _weight_class: null,
           });
           if (!error) return data ?? [];
           // The base leaderboard RPC exists in the original schema. Fall back
