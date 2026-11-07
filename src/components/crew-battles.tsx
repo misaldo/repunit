@@ -40,7 +40,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
     return () => window.clearInterval(timer);
   }, []);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["crew-battles", crewId, userId],
     refetchInterval: 15000,
     queryFn: async () => {
@@ -128,7 +128,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       toast.success("Crew challenge sent");
       setOpponent("");
       await refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not send challenge"); }
+    } catch { toast.error("Could not send this crew challenge. Check your permissions and try again."); }
     finally { setBusy(false); }
   }
   async function respond(id:string, accept:boolean) {
@@ -138,7 +138,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       if (error) throw error;
       toast.success(accept ? "Battle accepted — let's go!" : "Challenge declined");
       await refresh();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not respond to challenge"); }
+    } catch { toast.error("Could not update this battle. Please try again."); }
     finally { setBusy(false); }
   }
 
@@ -190,7 +190,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         <Button variant="hero" disabled={!opponent||busy} onClick={challenge}><Zap className="mr-1 h-4 w-4"/>Challenge</Button>
       </div>
     </div>}
-    {isLoading?<p className="mt-5 text-sm text-muted-foreground">Loading battles…</p>:isError?<p className="mt-5 text-sm text-muted-foreground">Could not load crew battles. The battles database update may need to be applied first.</p>:<>
+    {isLoading&&!data?<p className="mt-5 text-sm text-muted-foreground">Loading battles…</p>:isError&&!data?<div className="mt-5 rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">Battle information is temporarily unavailable.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void refetch()}>Retry</Button></div>:<>
       <div className="mt-5 space-y-4">{current.length?current.map(x=>card(x)): <div className="rounded-2xl border border-dashed border-border p-6 text-center"><Swords className="mx-auto h-7 w-7 text-muted-foreground"/><p className="mt-2 text-sm font-bold">No active battles yet</p><p className="mt-1 text-xs text-muted-foreground">Weekly matchups are paired automatically. You can also challenge another crew above.</p></div>}</div>
       {history.length>0&&<div className="mt-8"><p className="eyebrow">PAST SHOWDOWNS</p><h3 className="font-stat mt-1 text-2xl uppercase">Battle history</h3><div className="mt-3 space-y-3">{history.map(x=>card(x,true))}</div></div>}
     </>}
