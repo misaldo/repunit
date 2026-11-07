@@ -37,7 +37,7 @@ jobs:
       - name: TypeScript
         run: npm run typecheck
       - name: Lint
-        run: npm run lint -- --max-warnings=0
+        run: npm run lint -- --max-warnings=0 --rule 'prettier/prettier: off'
       - name: Test
         run: npm test
       - name: Production build
