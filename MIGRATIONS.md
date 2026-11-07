@@ -87,3 +87,5 @@ The proof-transition hardening migration is `drizzle/migrations/0038_proof_trans
 The retention and celebration migration is `drizzle/migrations/0038_pr_celebrations_always_fire.sql`. Apply it after `0037_automatic_lift_proof_and_flags.sql`. It guarantees the owner's in-app PR event is created for every newly verified personal record, independent of optional notification preferences, so the existing realtime confetti celebration can fire consistently.
 
 The Weekly Winners badge automation is `drizzle/migrations/0039_weekly_winners_badge_trigger.sql`. Apply it after `0038_pr_celebrations_always_fire.sql`. It awards the persistent `weekly_winners` Crew badge whenever a weekly battle is completed with a winner; the existing 100 Ton Club and Iron Squad awards remain in place.
+
+The database checks for the retention work are in `supabase/tests/home_retention_features.sql`. Run alongside the other pgTAP tests with `supabase test db` after migrations 0038 and 0039.
