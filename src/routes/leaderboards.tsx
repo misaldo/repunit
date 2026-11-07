@@ -32,7 +32,7 @@ async function scoreCrews(exercise:Exercise|"total",from:string|null,to:string|n
   const {data:crews,error}=await (supabase as any).from("crews").select("id,name").order("name");
   if(error)throw error;
   if(!crews?.length)return [];
-  const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id,profiles(country_code)").in("crew_id",crews.map((c:any)=>c.id));
+  const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id").in("crew_id",crews.map((c:any)=>c.id));
   if(memberError)throw memberError;
   const ids=[...new Set((members??[]).map((m:any)=>m.user_id))];
   let lifts:any[]=[];
@@ -54,9 +54,10 @@ async function scoreCrews(exercise:Exercise|"total",from:string|null,to:string|n
   for(const member of members??[])counts.set(member.crew_id,(counts.get(member.crew_id)??0)+1);
   return crews.map((c:any)=>({...c,total:totals.get(c.id)??0,members:counts.get(c.id)??0,country_code:null as string|null}));
 }
-function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region) {
+function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enabled:boolean) {
   return useQuery({
     queryKey:["crew-ranks-v2",exercise,period,region],
+    enabled,
     staleTime:30000,
     gcTime:5*60*1000,
     retry:2,
@@ -73,16 +74,27 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region) {
       ]);
       if(battleResult.error)throw battleResult.error;
       const userId=authResult.data.user?.id;
-      const {data:myProfile}=userId?await (supabase as any).from("profiles").select("country_code").eq("id",userId).maybeSingle():{data:null};
-      const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id,profiles(country_code)").in("crew_id",current.map((c:any)=>c.id));
+      const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id").in("crew_id",current.map((c:any)=>c.id));
       if(memberError)throw memberError;
+      let myProfile:any=null;
+      let regionalMembers:any[]=[];
+      if(region==="country"&&userId){
+        const [profileResult,membersResult]=await Promise.all([
+          (supabase as any).from("profiles").select("country_code").eq("id",userId).maybeSingle(),
+          (supabase as any).from("crew_members").select("crew_id,user_id,profiles(country_code)").in("crew_id",current.map((c:any)=>c.id)),
+        ]);
+        if(profileResult.error)throw profileResult.error;
+        if(membersResult.error)throw membersResult.error;
+        myProfile=profileResult.data;
+        regionalMembers=membersResult.data??[];
+      }
       const prevRank=new Map(previous.sort((a:any,b:any)=>b.total-a.total).map((c:any,i:number)=>[c.id,i+1]));
       const wins=new Map<string,number>();
       for(const battle of battleResult.data??[])wins.set(battle.winner_crew_id,(wins.get(battle.winner_crew_id)??0)+1);
       const countryByCrew=new Map<string,string|null>();
-      for(const member of members??[])if(member.profiles?.country_code&&!countryByCrew.has(member.crew_id))countryByCrew.set(member.crew_id,member.profiles.country_code);
+      for(const member of regionalMembers)if(member.profiles?.country_code&&!countryByCrew.has(member.crew_id))countryByCrew.set(member.crew_id,member.profiles.country_code);
       const ranked=current.map((c:any)=>({...c,country_code:countryByCrew.get(c.id)??null,wins:wins.get(c.id)??0}))
-        .filter((c:any)=>region==="global"||(myProfile?.country_code&&members?.some((m:any)=>m.crew_id===c.id&&m.profiles?.country_code===myProfile.country_code)))
+        .filter((c:any)=>region==="global"||(myProfile?.country_code&&regionalMembers.some((m:any)=>m.crew_id===c.id&&m.profiles?.country_code===myProfile.country_code)))
         .sort((a:any,b:any)=>b.total-a.total);
       return {rows:ranked.map((c:any,i:number)=>({...c,movement:(prevRank.get(c.id) as number|undefined)?(prevRank.get(c.id) as number)-(i+1):0})),myCrewIds:[...new Set((members??[]).filter((m:any)=>m.user_id===userId).map((m:any)=>m.crew_id))],countryCode:myProfile?.country_code??null};
     }
@@ -114,7 +126,7 @@ function Boards() {
   const {data:rows=[],isLoading,isError,isFetching,refetch}=useLeaderboard(ex,null,since,friendIds);
   const myRow=user?.id?rows.find((row:any)=>row.user_id===user.id):null;
   const myRank=myRow?(myRow.rank_position??rows.findIndex((row:any)=>row.user_id===user.id)+1):0;
-  const {data:crewData,isLoading:crewsLoading,isError:crewsError,isFetching:crewsFetching,refetch:refetchCrews}=useCrewRanks(ex,period,"global");
+  const {data:crewData,isLoading:crewsLoading,isError:crewsError,isFetching:crewsFetching,refetch:refetchCrews}=useCrewRanks(ex,period,"global",!!user?.id);
   const crewRows:CrewRank[]=crewData?.rows??[];
   const ownRank=crewRows.findIndex(c=>crewData?.myCrewIds.includes(c.id))+1;
   const meta=EXERCISES.find(e=>e.id===ex);
@@ -139,7 +151,7 @@ function Boards() {
     </div>
     <p className="mt-4 text-xs text-muted-foreground">{tab==="crews"?"Crews ranked by verified lifting volume in the selected period.":ex==="total"?"Combined best verified bench press, squat and deadlift results.":`Ranked by verified ${meta?.label.toLowerCase()??"lift"} weight.`}</p>
     {tab==="crews"?<div className="mt-6 space-y-5">
-      {crewsLoading&&!crewRows.length?skeleton:crewsError&&!crewRows.length?<div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">Crew rankings are temporarily unavailable.</p><p className="mt-1 text-sm text-muted-foreground">Your previous results will remain visible when available.</p><Button variant="line" className="mt-4" onClick={()=>void refetchCrews()}>Retry</Button></div>:crewRows.length===0?<div className="rounded-2xl border border-dashed border-border p-8 text-center"><Users className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">No crew results yet</p><p className="mt-1 text-sm text-muted-foreground">Create or join a crew to start competing.</p><Button asChild variant="hero" className="mt-4"><Link to="/crews">Explore crews</Link></Button></div>:<>
+      {!user?<div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">Sign in to view crew rankings.</p><Button asChild variant="hero" className="mt-4"><Link to="/auth">Sign in</Link></Button></div>:crewsLoading&&!crewRows.length?skeleton:crewsError&&!crewRows.length?<div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">Crew rankings are temporarily unavailable.</p><p className="mt-1 text-sm text-muted-foreground">Your previous results will remain visible when available.</p><Button variant="line" className="mt-4" onClick={()=>void refetchCrews()}>Retry</Button></div>:crewRows.length===0?<div className="rounded-2xl border border-dashed border-border p-8 text-center"><Users className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">No crew results yet</p><p className="mt-1 text-sm text-muted-foreground">Create or join a crew to start competing.</p><Button asChild variant="hero" className="mt-4"><Link to="/crews">Explore crews</Link></Button></div>:<>
         {crewsError&&<p className="text-xs text-muted-foreground">Showing the last available crew rankings. <button type="button" onClick={()=>void refetchCrews()} className="font-bold text-primary underline">Retry</button></p>}
         {crewsFetching&&!crewsError&&<p className="text-xs text-muted-foreground">Updating crew rankings…</p>}
         {ownRank>0&&<div className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"><span className="text-xs font-black uppercase tracking-widest text-primary">Your crew is #{ownRank}</span><Crown className="h-4 w-4 text-primary"/></div>}
