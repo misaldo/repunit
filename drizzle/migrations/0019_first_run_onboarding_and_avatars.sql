@@ -5,6 +5,10 @@ alter table public.profiles
   add column if not exists onboarding_completed boolean not null default false;
 
 insert into storage.buckets (id, name, public)
+values ('lift-videos', 'lift-videos', false)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do update set public = true;
 
