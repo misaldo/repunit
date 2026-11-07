@@ -16,15 +16,24 @@ function Record() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["lift", id],
     queryFn: async () => {
-      const { data: l, error } = await supabase.from("lifts").select("*, profiles(username)").eq("id", id).maybeSingle();
+      // Fetch the lift independently of the PostgREST profile relationship cache.
+      // Lovable preview projects can have stale/missing relationship metadata even
+      // when the lift itself is readable.
+      const { data: lift, error } = await supabase.from("lifts").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
-      if (!l) return null;
+      if (!lift) return null;
+      const { data: profile } = await supabase.from("profiles").select("username").eq("id", lift.user_id).maybeSingle();
+      const l = { ...lift, profiles: profile };
       let video: string | null = null;
-      if (l.video_path) {
-        const { data: s } = await supabase.storage.from("lift-videos").createSignedUrl(l.video_path, 3600);
-        video = s?.signedUrl ?? null;
+      if (lift.video_path) {
+        try {
+          const { data: signed, error: signedError } = await supabase.storage.from("lift-videos").createSignedUrl(lift.video_path, 3600);
+          if (!signedError) video = signed?.signedUrl ?? null;
+        } catch {
+          video = null;
+        }
       }
-      return { l, video, videoUnavailable: Boolean(l.video_path && !video) };
+      return { l, video, videoUnavailable: Boolean(lift.video_path && !video) };
     },
   });
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
