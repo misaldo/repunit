@@ -176,6 +176,7 @@ export type Database = {
           xp_awarded_at: string | null
           updated_at: string
           user_id: string
+          verified_at: string | null
           video_path: string | null
           weight_kg: number
         }
@@ -191,6 +192,7 @@ export type Database = {
           xp_awarded_at?: string | null
           updated_at?: string
           user_id: string
+          verified_at?: string | null
           video_path?: string | null
           weight_kg: number
         }
@@ -206,6 +208,7 @@ export type Database = {
           xp_awarded_at?: string | null
           updated_at?: string
           user_id?: string
+          verified_at?: string | null
           video_path?: string | null
           weight_kg?: number
         }
