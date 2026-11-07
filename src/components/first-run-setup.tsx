@@ -20,7 +20,7 @@ export function FirstRunSetup() {
   const [nickname, setNickname] = useState("");
   const [avatar, setAvatar] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [locallyCompleted, setLocallyCompleted] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("repunit-onboarding-done:" + (user?.id ?? "")) === "1");
+  const [locallyCompleted, setLocallyCompleted] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
