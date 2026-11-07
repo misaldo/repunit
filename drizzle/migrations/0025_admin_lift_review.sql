@@ -41,7 +41,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $function$
 begin
   if auth.role() <> 'service_role' and new.status <> 'PENDING' then
     raise exception 'New lift submissions must start as PENDING'
@@ -49,7 +49,7 @@ begin
   end if;
   return new;
 end;
-$;
+$function$;
 
 drop trigger if exists lifts_require_pending_on_insert on public.lifts;
 create trigger lifts_require_pending_on_insert
