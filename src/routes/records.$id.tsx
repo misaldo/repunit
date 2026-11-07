@@ -70,6 +70,9 @@ function Record() {
         await supabase.storage.from("lift-videos").remove([path]);
         throw error;
       }
+      if (data?.l.video_path && data.l.video_path !== path) {
+        await supabase.storage.from("lift-videos").remove([data.l.video_path]);
+      }
       toast.success("Video proof added", { description: "Your lift is now back in the rankings." });
       await refetch();
     } catch (error) {
