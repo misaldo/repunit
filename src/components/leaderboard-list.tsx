@@ -18,8 +18,14 @@ export function useLeaderboard(
   const scoped = userIds !== undefined || Boolean(weightClass);
   return useQuery({
     queryKey: ["leaderboard", exercise, crew ?? null, since ?? null, scoped, userIds ?? null, weightClass ?? null],
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    refetchOnWindowFocus: true,
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
-      const exercises: Exercise[] = exercise === "total" ? ["bench", "squat", "deadlift", "ohp", "pullup"] : [exercise];
+      const exercises: Exercise[] = exercise === "total" ? ["bench", "squat", "deadlift"] : [exercise];
       const results = await Promise.all(exercises.map(async (_exercise) => {
         if (scoped) {
           const { data, error } = await (supabase as any).rpc("leaderboard_scoped", {
