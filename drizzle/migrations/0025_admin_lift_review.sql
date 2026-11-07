@@ -88,7 +88,7 @@ begin
 
   perform set_config('repunit.admin_lift_review', 'off', true);
 
-  if not found then
+  if reviewed_lift.id is null then
     raise exception 'Pending lift with uploaded video was not found'
       using errcode = 'P0002';
   end if;
