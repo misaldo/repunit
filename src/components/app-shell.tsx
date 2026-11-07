@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { InstallPrompt } from "./install-prompt";
 import { ProgressionCard } from "./progression-card";
+import { FirstRunSetup } from "./first-run-setup";
 
 const nav = [
   { to: "/leaderboards" as const, label: "TOP", icon: Trophy },
@@ -110,6 +111,6 @@ export function MobileNav() {
 }
 
 export function PageShell({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0"><SiteHeader/><div className="mx-auto flex max-w-[1600px]"><DesktopSidebar/><main className="min-w-0 flex-1 px-4 py-7 md:px-6 md:py-10 lg:px-9"><div className="mx-auto w-full max-w-7xl">{children}</div></main></div><MobileNav/><InstallPrompt/></div>;
+  return <div className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0"><SiteHeader/><div className="mx-auto flex max-w-[1600px]"><DesktopSidebar/><main className="min-w-0 flex-1 px-4 py-7 md:px-6 md:py-10 lg:px-9"><div className="mx-auto w-full max-w-7xl">{children}</div></main></div><MobileNav/><InstallPrompt/><FirstRunSetup/></div>;
 }
 export function SiteFooter() { return <footer className="border-t border-border py-10 pb-28 md:pb-10"><div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 md:flex-row md:items-center md:justify-between md:px-6"><Wordmark/><nav className="flex flex-wrap gap-5 text-sm text-muted-foreground"><Link to="/leaderboards" className="hover:text-foreground">TOP</Link><Link to="/pricing" className="hover:text-foreground">Pricing</Link><Link to="/terms" className="hover:text-foreground">Terms</Link><Link to="/privacy" className="hover:text-foreground">Privacy</Link></nav><p className="eyebrow">Strength is social.</p></div></footer>; }
