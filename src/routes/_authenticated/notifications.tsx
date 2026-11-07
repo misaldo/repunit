@@ -49,7 +49,7 @@ function NotificationsPage() {
   async function markAllRead() {
     const { error } = await (supabase as any).from("notifications").update({ read_at: new Date().toISOString() })
       .eq("user_id", user.id).is("read_at", null);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error("Could not mark notifications as read. Try again."); return; }
     await qc.invalidateQueries({ queryKey: ["notifications", user.id] });
     await qc.invalidateQueries({ queryKey: ["unread-notifications", user.id] });
     toast.success("All caught up");
@@ -57,7 +57,9 @@ function NotificationsPage() {
   async function openNotification(item: any) {
     if (!item.read_at) {
       const { error } = await (supabase as any).from("notifications").update({ read_at: new Date().toISOString() }).eq("id", item.id).eq("user_id", user.id);
-      if (!error) {
+      if (error) {
+        toast.error("Could not mark this notification as read.");
+      } else {
         await qc.invalidateQueries({ queryKey: ["notifications", user.id] });
         await qc.invalidateQueries({ queryKey: ["unread-notifications", user.id] });
       }
