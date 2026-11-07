@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 select ok(
   exists (
@@ -25,6 +25,7 @@ select ok(
 select has_table('public', 'lift_flags', 'Crew lift flags are stored in a dedicated table');
 select has_column('public', 'lifts', 'verification_reason', 'The database stores why proof is required');
 select has_column('public', 'lifts', 'xp_awarded_at', 'Verified lift XP is tracked to prevent duplicate rewards');
+select has_column('public', 'lifts', 'verified_at', 'The database records when a lift entered rankings');
 
 select ok(
   has_function_privilege('authenticated', 'public.flag_lift(uuid)', 'EXECUTE'),
