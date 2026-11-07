@@ -90,7 +90,7 @@ function NewRecord() {
       const { data, error } = await supabase.from("lifts").insert({
         user_id: user.id, exercise, weight_kg: weight, reps,
         lifted_on: String(f.get("date")), description: null, video_path,
-      }).select("id,status").single();
+      }).select("id,status,verification_reason").single();
       if (error) throw error;
       if (typeof window !== "undefined") {
         window.localStorage.setItem("repunit.lastExercise", exercise);
@@ -98,7 +98,7 @@ function NewRecord() {
         window.localStorage.setItem("repunit.lastReps", String(reps));
       }
       if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {
-        toast.warning("Video proof needed", { description: "Your lift is saved but does not count toward rankings yet." });
+        toast.warning("Lift saved — proof needed", { description: data.verification_reason ?? "Your lift is saved but does not count toward rankings yet." });
       } else {
         toast.success("PR logged", { description: "Your result is on REPUNIT." });
       }
