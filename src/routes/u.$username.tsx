@@ -222,7 +222,7 @@ function Profile() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
+      <div className="mt-10">
         <section>
           <h2 className="mb-3 text-xl font-bold">Recent lifts</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
