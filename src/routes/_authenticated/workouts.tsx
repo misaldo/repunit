@@ -2,7 +2,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Dumbbell, Plus, Trash2, Globe, Lock, Users, Search, CalendarDays, Flame } from "lucide-react";
+import { Dumbbell, Plus, Trash2, Globe, Lock, Users, Search, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -298,24 +298,24 @@ function WorkoutsPage() {
             <div className="flex gap-2 overflow-x-auto pb-1">{CATEGORIES.map((item) => <button key={item} onClick={() => setCategory(item)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${category === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{item}</button>)}</div>
           </div>
           <div className="max-h-[55vh] space-y-2 overflow-y-auto p-5 pt-2">
-            {filteredCatalog.map((item, index) => <button key={item.name} onClick={() => addExercise(item.name)} className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2 text-left transition hover:border-primary/60 hover:bg-elevated">
+            {filteredCatalog.map((item) => <button key={item.name} onClick={() => addExercise(item.name)} className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2 text-left transition hover:border-primary/60 hover:bg-elevated">
               <div className="relative h-[76px] w-[88px] shrink-0 overflow-hidden rounded-lg bg-muted"><img src={item.image} alt={item.name} loading="lazy" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextElementSibling?.classList.remove("hidden"); e.currentTarget.nextElementSibling?.classList.add("flex"); }} /><div className="absolute inset-0 hidden items-center justify-center text-muted-foreground"><Dumbbell className="h-6 w-6" /></div></div>
-              <span className="min-w-0 flex-1"><span className="block font-semibold">{item.name}</span><span className="mt-1 block text-xs text-muted-foreground">{item.category}</span><span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary">{index < 5 ? <Flame className="h-3 w-3" /> : null}{index < 5 ? "Popular" : "Exercise"}</span></span>
+              <span className="min-w-0 flex-1"><span className="block font-semibold">{item.name}</span><span className="mt-1 block text-xs text-muted-foreground">{item.category}</span></span>
               <Plus className="mr-2 h-5 w-5 shrink-0 text-primary" />
             </button>)}
-            {filteredCatalog.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercises…" : "No exercises found. Try another search."}</p>}
+            {exerciseDbQuery.isError ? <div className="py-8 text-center"><p className="text-sm text-muted-foreground">The exercise library could not be loaded.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void exerciseDbQuery.refetch()}>Try again</Button></div> : filteredCatalog.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercises…" : "No exercises found. Try another search."}</p>}
           </div>
         </DialogContent>
       </Dialog>
 
       <section className="mt-10">
         <h2 className="mb-4 text-xl font-bold">Your splits</h2>
-        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading splits…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Split database is not ready yet.</p><p className="mt-1 text-sm text-muted-foreground">The workout tables or weekday column are missing, or access is not configured. Database setup is needed before workouts can be saved.</p><p className="mt-2 break-words font-mono text-xs text-muted-foreground">{plansQuery.error && typeof plansQuery.error === "object" && "message" in plansQuery.error ? String((plansQuery.error as { message: unknown }).message) : plansQuery.error instanceof Error ? plansQuery.error.message : "Unknown database error"}</p></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No splits yet. Create your first one above.</div> : (
+        {plansQuery.isLoading ? <p className="text-muted-foreground">Loading workouts…</p> : plansQuery.isError ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your workouts could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved workouts have not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No splits yet. Create your first one above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Delete split" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
             <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility}</div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
-            {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading ? <p className="text-sm">Loading…</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
+            {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading exercises…</p> : exercisesQuery.isError ? <div className="rounded-lg bg-background p-3"><p className="text-sm text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void exercisesQuery.refetch()}>Try again</Button></div> : (exercisesQuery.data ?? []).length === 0 ? <p className="rounded-lg bg-background p-3 text-sm text-muted-foreground">No exercises in this workout yet.</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps} · {ex.rest_seconds}s rest</p></div>)}</div>}
           </article>)}</div>
         )}
       </section>
