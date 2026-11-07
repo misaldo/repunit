@@ -70,7 +70,7 @@ function Crew() {
       return { c, code, members, badges: badges ?? [], tonnage: (lifts ?? []).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0), monthTonnage, battleWins: battleWins?.length ?? 0 };
     },
   });
-  const { data: rows = [], isLoading: ranksLoading, isError: ranksError } = useLeaderboard(ex, id);
+  const { data: rows = [], isLoading: ranksLoading, isError: ranksError, refetch: refetchRanks } = useLeaderboard(ex, id);
   const [saving, setSaving] = useState(false);
   const [challengeCrew, setChallengeCrew] = useState("");
   const [challengeCategory, setChallengeCategory] = useState<"bench"|"squat"|"deadlift"|"volume">("bench");
@@ -161,7 +161,7 @@ function Crew() {
         {EXERCISES.map((e) => <Button key={e.id} size="sm" variant={e.id === ex ? "hero" : "line"} onClick={() => setEx(e.id)}>{e.short}</Button>)}
       </div>
       <div className="mt-6 space-y-6">
-        {ranksLoading ? <p>Loading leaderboard…</p> : ranksError ? <p>Could not load the leaderboard.</p> : rows.length === 0 ? <p className="text-muted-foreground">No lifts from this crew yet.</p> : <><Podium rows={rows.slice(0, 3)} />{rows.length > 3 && <RankList rows={rows.slice(3)} start={3} />}</>}
+        {ranksLoading && !rows.length ? <p>Loading leaderboard…</p> : ranksError && !rows.length ? <div className="rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">Crew rankings are temporarily unavailable.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void refetchRanks()}>Retry</Button></div> : rows.length === 0 ? <p className="text-muted-foreground">No lifts from this crew yet.</p> : <><Podium rows={rows.slice(0, 3)} />{rows.length > 3 && <RankList rows={rows.slice(3)} start={3} />}</>}
       </div>
       {isMember ? <CrewBattles crewId={id} userId={user.id} isAdmin={isAdmin} /> : <section className="mt-10 rounded-2xl border border-dashed border-border p-5 text-center"><Swords className="mx-auto h-6 w-6 text-muted-foreground"/><p className="mt-2 text-sm font-bold">Join the crew to view its battle room</p></section>}
       <div className="mt-10 flex items-end justify-between"><div><p className="eyebrow">THE LINEUP</p><h2 className="font-stat mt-1 text-3xl uppercase">Members ({count})</h2></div><Users className="h-6 w-6 text-primary"/></div>
