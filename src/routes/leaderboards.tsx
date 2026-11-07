@@ -21,12 +21,16 @@ type CrewRank = { id:string; name:string; emblem:string|null; accent_color:strin
 type Period = "week"|"month"|"all";
 type Region = "global"|"country";
 
+function localDate(date:Date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+}
 function periodStart(period:Period) {
   const now=new Date();
   if(period==="all")return null;
-  if(period==="month")return new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
-  const monday=new Date(now);monday.setHours(0,0,0,0);monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
-  return monday.toISOString().slice(0,10);
+  if(period==="month")return localDate(new Date(now.getFullYear(),now.getMonth(),1));
+  const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
+  return localDate(monday);
 }
 async function scoreCrewsLegacy(exercise:Exercise|"total",from:string|null,to:string|null) {
   const {data:crews,error}=await (supabase as any).from("crews").select("id,name,emblem,accent_color").order("name");
@@ -66,8 +70,15 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enab
     refetchOnWindowFocus:true,
     queryFn:async()=>{
       const from=periodStart(period);
-      const previousFrom=new Date(Date.now()-14*864e5).toISOString().slice(0,10);
-      const previousTo=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+      const currentMonday=new Date();
+      currentMonday.setHours(0,0,0,0);
+      currentMonday.setDate(currentMonday.getDate()-(currentMonday.getDay()+6)%7);
+      const previousFromDate=new Date(currentMonday);
+      previousFromDate.setDate(previousFromDate.getDate()-14);
+      const previousToDate=new Date(currentMonday);
+      previousToDate.setDate(previousToDate.getDate()-7);
+      const previousFrom=localDate(previousFromDate);
+      const previousTo=localDate(previousToDate);
       const [currentResult,previousResult]=await Promise.all([
         (supabase as any).rpc("crew_leaderboard",{_exercise:exercise,_from:from,_to:null}),
         (supabase as any).rpc("crew_leaderboard",{_exercise:exercise,_from:previousFrom,_to:previousTo}),
