@@ -118,13 +118,13 @@ function Boards() {
     staleTime:30000,
     retry:2,
     queryFn:async()=>{
-      const {data:following,error:followingError}=await (supabase as any).from("follows").select("following_id").eq("follower_id",user!.id);
-      if(followingError)throw followingError;
-      const candidates=(following??[]).map((row:any)=>row.following_id);
-      if(!candidates.length)return [user!.id];
-      const {data:mutual,error:mutualError}=await (supabase as any).from("follows").select("follower_id").eq("following_id",user!.id).in("follower_id",candidates);
-      if(mutualError)throw mutualError;
-      return [...new Set([user!.id,...(mutual??[]).map((row:any)=>row.follower_id)])];
+      const {data:friendships,error}=await (supabase as any).from("friend_requests")
+        .select("requester_id,recipient_id")
+        .eq("status","accepted")
+        .or(`requester_id.eq.${user!.id},recipient_id.eq.${user!.id}`);
+      if(error)throw error;
+      const friendIds=(friendships??[]).map((row:any)=>row.requester_id===user!.id?row.recipient_id:row.requester_id);
+      return [...new Set([user!.id,...friendIds])];
     },
   });
   const friendIds=tab==="friends"?(audience.data??[]):undefined;
