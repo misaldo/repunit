@@ -131,7 +131,7 @@ function FeedPage() {
 
       <div className="mt-6 space-y-3">
         {feed.isLoading && !feed.data ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-36 animate-pulse rounded-2xl border border-border bg-card/70"/>)
-        : feed.isError && !feed.data ? <div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-bold">Your feed could not load.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p><Button className="mt-4" variant="line" onClick={() => void feed.refetch()}>Try again</Button></div>
+        : feed.isError && !feed.data?.length ? <div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-bold">Your feed could not load.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p><Button className="mt-4" variant="line" onClick={() => void feed.refetch()}>Try again</Button></div>
         : feed.data?.length ? <>{feed.isError && <p className="text-xs text-muted-foreground">Showing the last available feed. <button type="button" onClick={() => void feed.refetch()} className="font-bold text-primary underline">Retry</button></p>}{feed.data.map((post) => {
           const liked = post.likes.includes(user.id);
           const commentsVisible = openComments.includes(post.id);
