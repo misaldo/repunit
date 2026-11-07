@@ -125,7 +125,7 @@ function Boards() {
   return <PageShell>
     <div className="mb-5"><LiveBattleCard compact/></div>
     <p className="eyebrow">REPUNIT GLOBAL STRENGTH</p>
-    <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="font-stat mt-1 text-5xl uppercase sm:text-6xl">TOP<span className="text-primary">.</span></h1>{user&&<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
+    <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="font-stat mt-1 text-5xl uppercase sm:text-6xl">TOP<span className="text-primary">.</span></h1>{tab==="crews"?<Button asChild variant="hero" className="min-h-11"><Link to="/crews/new">Create crew</Link></Button>:tab==="friends"?<Button asChild variant="hero" className="min-h-11"><Link to="/people">Find lifters</Link></Button>:<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
     <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card p-1">{tabButton("lifters","Lifters",Trophy)}{tabButton("crews","Crews",Users)}{tabButton("friends","Friends",Users)}</div>
     <div className="mt-5 grid grid-cols-4 gap-2">
       {(["bench","squat","deadlift","total"] as const).map((value)=> <button key={value} type="button" aria-pressed={ex===value} onClick={()=>setEx(value)} className={chip(ex===value)}>{value==="total"?"Total":value[0].toUpperCase()+value.slice(1)}</button>)}
