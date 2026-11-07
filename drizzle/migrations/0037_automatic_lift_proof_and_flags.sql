@@ -97,7 +97,7 @@ begin
     when 'pullup' then 200
   end;
 
-  if new.weight_kg < 0.5 or new.weight_kg > max_weight
+  if new.weight_kg < case when new.exercise = 'pullup' then 0 else 0.5 end or new.weight_kg > max_weight
      or new.reps < 1 or new.reps > max_reps then
     failure_reason := coalesce(failure_reason, 'Weight or reps are outside the plausible range for this exercise.');
   end if;
