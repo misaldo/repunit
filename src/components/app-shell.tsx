@@ -116,7 +116,7 @@ export function MobileNav() {
         <Plus className="h-7 w-7"/><span className="text-[9px] font-black uppercase tracking-wider">LOG</span>
       </Link>
       <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>SPLIT</Link>
-      {user && profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>PROFILE</Link> : <Link to="/auth" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
+      {profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>PROFILE</Link> : user ? <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link> : <Link to="/auth" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
     </div>
   </nav>;
 }
