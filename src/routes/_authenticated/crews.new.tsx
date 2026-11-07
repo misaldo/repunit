@@ -43,16 +43,13 @@ function NewCrew() {
       });
       if (capacityError) {
         console.warn("Crew created with default capacity because capacity update failed:", capacityError.message);
-        toast.message("Crew created with the default capacity of 20 members.");
+        toast.error("Crew created, but the selected member limit could not be applied. The crew currently allows 20 members.");
       }
 
       toast.success("Crew created — you're the admin");
       navigate({ to: "/crews/$id", params: { id: data.id } });
-    } catch (err) {
-      const message = err && typeof err === "object" && "message" in err
-        ? String((err as { message: unknown }).message)
-        : err instanceof Error ? err.message : "Unknown database error";
-      toast.error(`Could not create crew: ${message}`);
+    } catch {
+      toast.error("Could not create your crew. Check your connection and try again.");
     }
     finally { setBusy(false); }
   }
