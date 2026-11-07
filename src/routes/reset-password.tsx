@@ -22,7 +22,7 @@ function Reset() {
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error("Could not update your password. Check the requirements and try again."); return; }
     toast.success("Password updated");
     navigate({ to: "/dashboard" });
   }
