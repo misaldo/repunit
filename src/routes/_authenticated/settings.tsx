@@ -109,16 +109,16 @@ function Settings() {
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
         const keys = subscription.toJSON().keys;
-        if (!keys?.p256dh || !keys?.auth) throw new Error("The browser did not return valid push keys.");
+        if (!keys?.['p256dh'] || !keys?.['auth']) throw new Error("The browser did not return valid push keys.");
         const { error } = await (supabase as any).from("push_subscriptions").upsert({
-          user_id: user.id, endpoint: subscription.endpoint, p256dh: keys.p256dh, auth: keys.auth,
+          user_id: user.id, endpoint: subscription.endpoint, p256dh: keys['p256dh'], auth: keys['auth'],
         }, { onConflict: "user_id,endpoint" });
         if (error) { await subscription.unsubscribe(); throw error; }
         if (!(await setPreference("push_enabled", true, false))) { await subscription.unsubscribe(); throw new Error("Could not save the push setting."); }
         setPushSubscription(true);
         toast.success("Web push notifications enabled");
       }
-    } catch (error) {
+    } catch {
       toast.error("Could not update web push settings. Check your browser permissions and try again.");
     } finally {
       setPushBusy(false);
@@ -136,7 +136,7 @@ function Settings() {
     const profileUpdate: Record<string, unknown> = {
       username, display_name: String(f.get("display_name")).slice(0, 40) || null, bio: String(f.get("bio")).slice(0, 280) || null, country_code: String(f.get("country_code") || "") || null, bodyweight_kg: bodyweight,
     };
-    profileUpdate.profile_theme = isPro ? String(f.get("profile_theme") || "default") : "default";
+    profileUpdate["profile_theme"] = isPro ? String(f.get("profile_theme") || "default") : "default";
     const { error } = await (supabase as any).from("profiles").update(profileUpdate).eq("id", user.id);
     if (error) { toast.error(error.code === "23505" ? "Username already taken." : "Could not save your profile. Check your connection and try again."); return; }
     toast.success("Saved");
