@@ -22,6 +22,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedWorkoutsRouteImport } from './routes/_authenticated/workouts'
+import { Route as AuthenticatedAdminLiftsRouteImport } from './routes/_authenticated/admin.lifts'
 import { Route as InviteCodeRouteImport } from './routes/invite.$code'
 import { Route as RecordsIdRouteImport } from './routes/records.$id'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -96,6 +97,11 @@ const AuthenticatedWorkoutsRoute = AuthenticatedWorkoutsRouteImport.update({
   path: '/workouts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminLiftsRoute = AuthenticatedAdminLiftsRouteImport.update({
+  id: '/admin/lifts',
+  path: '/admin/lifts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const InviteCodeRoute = InviteCodeRouteImport.update({
   id: '/invite/$code',
   path: '/invite/$code',
@@ -156,6 +162,8 @@ export interface FileRoutesByFullPath {
   '/people': typeof AuthenticatedPeopleRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/workouts': typeof AuthenticatedWorkoutsRoute
+  '/admin/lifts': typeof AuthenticatedAdminLiftsRoute
+  '/admin/lifts': typeof AuthenticatedAdminLiftsRoute
   '/invite/$code': typeof InviteCodeRoute
   '/records/$id': typeof RecordsIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -229,6 +237,7 @@ export interface FileRouteTypes {
     | '/people'
     | '/settings'
     | '/workouts'
+    | '/admin/lifts'
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/_authenticated/people'
     | '/_authenticated/settings'
     | '/_authenticated/workouts'
+    | '/_authenticated/admin/lifts'
     | '/invite/$code'
     | '/records/$id'
     | '/u/$username'
@@ -394,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkoutsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/lifts': {
+      id: '/_authenticated/admin/lifts'
+      path: '/admin/lifts'
+      fullPath: '/admin/lifts'
+      preLoaderRoute: typeof AuthenticatedAdminLiftsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/invite/$code': {
       id: '/invite/$code'
       path: '/invite/$code'
@@ -466,6 +483,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWorkoutsRoute: typeof AuthenticatedWorkoutsRoute
+  AuthenticatedAdminLiftsRoute: typeof AuthenticatedAdminLiftsRoute
   AuthenticatedBattlesIdRoute: typeof AuthenticatedBattlesIdRoute
   AuthenticatedCrewsIdRoute: typeof AuthenticatedCrewsIdRoute
   AuthenticatedCrewsNewRoute: typeof AuthenticatedCrewsNewRoute
@@ -480,6 +498,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWorkoutsRoute: AuthenticatedWorkoutsRoute,
+  AuthenticatedAdminLiftsRoute: AuthenticatedAdminLiftsRoute,
   AuthenticatedBattlesIdRoute: AuthenticatedBattlesIdRoute,
   AuthenticatedCrewsIdRoute: AuthenticatedCrewsIdRoute,
   AuthenticatedCrewsNewRoute: AuthenticatedCrewsNewRoute,
