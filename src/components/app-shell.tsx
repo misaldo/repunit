@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy, Swords, Users, LogOut, Settings, ChevronDown, UserRound, Dumbbell, Plus, Flame } from "lucide-react";
+import { Trophy, Swords, Users, LogOut, Settings, ChevronDown, UserRound, Dumbbell, Plus, Flame, Bell } from "lucide-react";
 import { Wordmark } from "./brand";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -31,8 +31,31 @@ export function SiteHeader() {
       return { streak: Number(stats?.current_streak ?? 0) };
     },
   });
+  const { data: notifications = [], isError: notificationsError, refetch: refetchNotifications } = useQuery({
+    queryKey: ["header-notifications", user?.id],
+    enabled: !!user?.id,
+    staleTime: 15000,
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("notifications")
+        .select("id,title,body,href,kind,read_at,created_at")
+        .eq("user_id", user!.id).order("created_at", { ascending: false }).limit(8);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const unreadCount = notifications.filter((item: any) => !item.read_at).length;
   const qc = useQueryClient();
   const navigate = useNavigate();
+  async function openNotification(item: any) {
+    if (!item.read_at) {
+      const { error } = await (supabase as any).from("notifications")
+        .update({ read_at: new Date().toISOString() }).eq("id", item.id).eq("user_id", user!.id);
+      if (error) toast.error("Could not mark notification as read.");
+    }
+    await qc.invalidateQueries({ queryKey: ["header-notifications", user?.id] });
+    navigate({ to: (item.href || "/leaderboards") as any });
+  }
   async function signOut() {
     await qc.cancelQueries();
     const { error } = await supabase.auth.signOut();
@@ -47,7 +70,16 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-border/60 bg-background/90 px-4 backdrop-blur-2xl md:px-6">
       <div className="flex items-center gap-3"><div className="md:hidden"><Wordmark /></div><div className="hidden md:block"><span className="eyebrow">STRENGTH IS SOCIAL</span><p className="text-xs text-muted-foreground">Your training network</p></div></div>
       <div className="flex items-center gap-3">
-
+        {user && <details className="group relative">
+          <summary aria-label={unreadCount ? `${unreadCount} unread notifications` : "Notifications"} className="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/50 hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <Bell className="h-4 w-4" />
+            {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black text-primary-foreground">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+          </summary>
+          <div className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-bold">Notifications</p><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{unreadCount} new</span></div>
+            {notificationsError ? <div className="p-4 text-sm text-muted-foreground"><p>Notifications are temporarily unavailable.</p><button type="button" onClick={() => void refetchNotifications()} className="mt-2 font-semibold text-primary underline">Retry</button></div> : notifications.length ? <div className="max-h-[min(65vh,28rem)] overflow-y-auto">{notifications.map((item: any) => <button key={item.id} type="button" onClick={() => void openNotification(item)} className="flex w-full items-start gap-3 border-b border-border/70 px-4 py-3 text-left transition hover:bg-elevated"><span className={item.read_at ? "mt-1.5 h-2 w-2 shrink-0 rounded-full bg-transparent" : "mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"} /><span className="min-w-0"><span className="block text-sm font-semibold">{item.title}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{item.body}</span><span className="mt-1 block text-[10px] text-muted-foreground">{new Date(item.created_at).toLocaleString()}</span></span></button>)}</div> : <p className="p-5 text-center text-sm text-muted-foreground">You're all caught up.</p>}
+          </div>
+        </details>}
                 <Link to="/records/new" className="hidden rounded-full bg-primary px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary-foreground transition hover:brightness-110 sm:inline-flex"><Dumbbell className="mr-2 h-3.5 w-3.5"/>Submit a lift</Link>
 
         {ready && !user && <Button asChild size="sm" variant="hero"><Link to="/auth">{t("signIn")}</Link></Button>}
