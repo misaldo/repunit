@@ -40,8 +40,9 @@ function Profile() {
         supabase.from("posts").select("id, content, created_at").eq("user_id", p.id).order("created_at", { ascending: false }).limit(20),
       ]);
       if (liftsError) throw liftsError;
-      if (postsError) throw postsError;
-      return { p, lifts: lifts ?? [], posts: posts ?? [] };
+      // Posts are an optional profile feature. A missing posts table or stricter
+      // preview RLS must never prevent the public profile, lifts or SPLIT loading.
+      return { p, lifts: lifts ?? [], posts: postsError ? [] : (posts ?? []) };
     },
   });
 
