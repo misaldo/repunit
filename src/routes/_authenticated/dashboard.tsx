@@ -20,7 +20,7 @@ function Dashboard() {
         <Link to="/crews" className="group rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-elevated active:scale-[.99]"><Users className="h-5 w-5 text-primary transition group-hover:scale-110"/><p className="mt-3 font-bold">My crews</p><p className="mt-1 text-xs text-muted-foreground">Train as a team</p></Link>
         <Link to="/settings" className="group rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-elevated active:scale-[.99]"><Settings className="h-5 w-5 text-primary transition group-hover:scale-110"/><p className="mt-3 font-bold">Edit profile</p><p className="mt-1 text-xs text-muted-foreground">Make it yours</p></Link>
       </div>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/60 p-4"><div><p className="font-bold">Your training split</p><p className="mt-1 text-xs text-muted-foreground">Keep your plan close and share it with your crew.</p></div><Button asChild variant="line"><Link to="/workouts">Open Split<ArrowRight className="ml-2 h-4 w-4"/></Link></Button></div>
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/60 p-4"><div><p className="font-bold">Your workouts</p><p className="mt-1 text-xs text-muted-foreground">Keep your plan close and share it with your crew.</p></div><Button asChild variant="line"><Link to="/workouts">Open Workouts<ArrowRight className="ml-2 h-4 w-4"/></Link></Button></div>
     </PageShell>
   );
 }
