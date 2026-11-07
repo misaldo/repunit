@@ -65,7 +65,7 @@ function Pricing() {
       if (!data?.url) throw new Error("Stripe did not return a checkout URL.");
       window.location.assign(data.url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not start secure checkout.");
+      toast.error("Could not start secure checkout. Please try again later.");
     } finally {
       setBusy(false);
     }
@@ -80,7 +80,7 @@ function Pricing() {
       if (!data?.url) throw new Error("Stripe did not return a portal URL.");
       window.location.assign(data.url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not open subscription settings.");
+      toast.error("Could not open subscription settings. Please try again later.");
     } finally {
       setBusy(false);
     }
