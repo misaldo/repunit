@@ -38,7 +38,7 @@ self.addEventListener("push", (event) => {
     icon: "/icons/repunit-192.svg",
     badge: "/icons/repunit-192.svg",
     tag: payload.tag || "repunit-activity",
-    data: { url: payload.url || "/notifications" },
+    data: { url: payload.url || "/leaderboards" },
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
