@@ -250,7 +250,7 @@ function WorkoutsPage() {
       setTitle(""); setWorkoutDay("Monday"); setDraftExercises([]); setVisibility("private");
       await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
       toast.success("Workout saved.");
-    } catch (error) {
+    } catch {
       toast.error("Could not save your workout. Check your connection and try again.");
     } finally { setSaving(false); }
   }
