@@ -82,3 +82,6 @@ The automatic lift checks and Crew proof-flag workflow is `drizzle/migrations/00
 The matching pgTAP permission/schema checks are in `supabase/tests/automatic_lift_proof_and_flags.sql`. Run them with `supabase test db` against a local test database after applying the migration. The former admin review route and RPC are removed; there is no admin queue. Legacy pending rows can be resolved by their owners through the same video-proof RPC.
 
 The proof-transition hardening migration is `drizzle/migrations/0038_proof_transition_hardening.sql`. Apply it after `0037_automatic_lift_proof_and_flags.sql`. It clears stale verification timestamps when a lift is flagged, so an under-review result cannot influence later PR checks, and restricts the proof RPC to lifts actually waiting for proof/review (including legacy PENDING rows). The expanded pgTAP checks are in `supabase/tests/automatic_lift_proof_and_flags.sql`.
+
+
+The retention and celebration migration is `drizzle/migrations/0038_pr_celebrations_always_fire.sql`. Apply it after `0037_automatic_lift_proof_and_flags.sql`. It guarantees the owner's in-app PR event is created for every newly verified personal record, independent of optional notification preferences, so the existing realtime confetti celebration can fire consistently.
