@@ -48,7 +48,7 @@ function Invite() {
   }
   return <PageShell>
     <Users className="h-10 w-10 text-primary" />
-    {isLoading ? <p className="mt-6">Loading invitation…</p> : isError ? <div className="mt-6"><p>Could not load this invitation.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></div> : !data ? <><h1 className="mt-6 text-3xl font-bold">Invitation not found</h1><p className="mt-3 text-muted-foreground">Ask your friend for a new invite link.</p></> : <>
+    {isLoading && !data ? <p className="mt-6">Loading invitation…</p> : isError && !data ? <div className="mt-6"><p>Could not load this invitation.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></div> : !data ? <><h1 className="mt-6 text-3xl font-bold">Invitation not found</h1><p className="mt-3 text-muted-foreground">Ask your friend for a new invite link.</p></> : <>
       <p className="eyebrow mt-6">Crew invitation · {data.member_count} members</p>
       <h1 className="font-stat mt-3 break-words text-6xl uppercase">{data.name}</h1>
       {data.description && <p className="mt-4 max-w-xl text-muted-foreground">{data.description}</p>}
