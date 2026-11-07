@@ -28,35 +28,9 @@ function periodStart(period:Period) {
   const monday=new Date(now);monday.setHours(0,0,0,0);monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
   return monday.toISOString().slice(0,10);
 }
-async function scoreCrews(exercise:Exercise|"total",from:string|null,to:string|null) {
-  const {data:crews,error}=await (supabase as any).from("crews").select("id,name").order("name");
-  if(error)throw error;
-  if(!crews?.length)return [];
-  const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id").in("crew_id",crews.map((c:any)=>c.id));
-  if(memberError)throw memberError;
-  const ids=[...new Set((members??[]).map((m:any)=>m.user_id))];
-  let lifts:any[]=[];
-  if(ids.length){
-    let q=(supabase as any).from("lifts").select("user_id,exercise,weight_kg,reps,lifted_on").in("user_id",ids).eq("status","VERIFIED");
-    if(exercise!=="total")q=q.eq("exercise",exercise);
-    else q=q.in("exercise",["bench","squat","deadlift"]);
-    if(from)q=q.gte("lifted_on",from);
-    if(to)q=q.lt("lifted_on",to);
-    const result=await q;if(result.error)throw result.error;lifts=result.data??[];
-  }
-  const totals=new Map<string,number>();
-  for(const lift of lifts){
-    const member=(members??[]).find((m:any)=>m.user_id===lift.user_id);
-    if(!member)continue;
-    totals.set(member.crew_id,(totals.get(member.crew_id)??0)+Number(lift.weight_kg)*Number(lift.reps??1));
-  }
-  const counts=new Map<string,number>();
-  for(const member of members??[])counts.set(member.crew_id,(counts.get(member.crew_id)??0)+1);
-  return crews.map((c:any)=>({...c,total:totals.get(c.id)??0,members:counts.get(c.id)??0,country_code:null as string|null}));
-}
 function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enabled:boolean) {
   return useQuery({
-    queryKey:["crew-ranks-v2",exercise,period,region],
+    queryKey:["crew-ranks-rpc-v1",exercise,period,region],
     enabled,
     staleTime:30000,
     gcTime:5*60*1000,
@@ -66,37 +40,23 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enab
     refetchOnWindowFocus:true,
     queryFn:async()=>{
       const from=periodStart(period);
-      const [current,previous,battleResult,authResult]=await Promise.all([
-        scoreCrews(exercise,from,null),
-        scoreCrews(exercise,new Date(Date.now()-14*864e5).toISOString().slice(0,10),new Date(Date.now()-7*864e5).toISOString().slice(0,10)),
-        (supabase as any).from("crew_battles").select("winner_crew_id").eq("status","completed").eq("is_weekly",true).not("winner_crew_id","is",null),
-        supabase.auth.getUser(),
+      const previousFrom=new Date(Date.now()-14*864e5).toISOString().slice(0,10);
+      const previousTo=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+      const [currentResult,previousResult]=await Promise.all([
+        (supabase as any).rpc("crew_leaderboard",{_exercise:exercise,_from:from,_to:null}),
+        (supabase as any).rpc("crew_leaderboard",{_exercise:exercise,_from:previousFrom,_to:previousTo}),
       ]);
-      if(battleResult.error)throw battleResult.error;
-      const userId=authResult.data.user?.id;
-      const {data:members,error:memberError}=await (supabase as any).from("crew_members").select("crew_id,user_id").in("crew_id",current.map((c:any)=>c.id));
-      if(memberError)throw memberError;
-      let myProfile:any=null;
-      let regionalMembers:any[]=[];
-      if(region==="country"&&userId){
-        const [profileResult,membersResult]=await Promise.all([
-          (supabase as any).from("profiles").select("country_code").eq("id",userId).maybeSingle(),
-          (supabase as any).from("crew_members").select("crew_id,user_id,profiles(country_code)").in("crew_id",current.map((c:any)=>c.id)),
-        ]);
-        if(profileResult.error)throw profileResult.error;
-        if(membersResult.error)throw membersResult.error;
-        myProfile=profileResult.data;
-        regionalMembers=membersResult.data??[];
-      }
-      const prevRank=new Map(previous.sort((a:any,b:any)=>b.total-a.total).map((c:any,i:number)=>[c.id,i+1]));
-      const wins=new Map<string,number>();
-      for(const battle of battleResult.data??[])wins.set(battle.winner_crew_id,(wins.get(battle.winner_crew_id)??0)+1);
-      const countryByCrew=new Map<string,string|null>();
-      for(const member of regionalMembers)if(member.profiles?.country_code&&!countryByCrew.has(member.crew_id))countryByCrew.set(member.crew_id,member.profiles.country_code);
-      const ranked=current.map((c:any)=>({...c,country_code:countryByCrew.get(c.id)??null,wins:wins.get(c.id)??0}))
-        .filter((c:any)=>region==="global"||(myProfile?.country_code&&regionalMembers.some((m:any)=>m.crew_id===c.id&&m.profiles?.country_code===myProfile.country_code)))
-        .sort((a:any,b:any)=>b.total-a.total);
-      return {rows:ranked.map((c:any,i:number)=>({...c,movement:(prevRank.get(c.id) as number|undefined)?(prevRank.get(c.id) as number)-(i+1):0})),myCrewIds:[...new Set((members??[]).filter((m:any)=>m.user_id===userId).map((m:any)=>m.crew_id))],countryCode:myProfile?.country_code??null};
+      if(currentResult.error)throw currentResult.error;
+      if(previousResult.error)throw previousResult.error;
+      const current=currentResult.data??[];
+      const previous=previousResult.data??[];
+      const prevRank=new Map([...previous].sort((a:any,b:any)=>Number(b.total)-Number(a.total)).map((crew:any,i:number)=>[crew.id,i+1]));
+      const ranked=[...current].sort((a:any,b:any)=>Number(b.total)-Number(a.total));
+      return {
+        rows:ranked.map((crew:any,i:number)=>({...crew,movement:(prevRank.get(crew.id) as number|undefined)?(prevRank.get(crew.id) as number)-(i+1):0})),
+        myCrewIds:current.filter((crew:any)=>crew.is_mine).map((crew:any)=>crew.id),
+        countryCode:null,
+      };
     }
   });
 }
