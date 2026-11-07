@@ -299,7 +299,7 @@ function WorkoutsPage() {
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-h-[88vh] max-w-2xl overflow-hidden p-0">
-          <DialogHeader className="border-b border-border p-5 pb-3"><DialogTitle className="text-left text-xl">Exercise library</DialogTitle><p className="text-left text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercise library…" : `${filteredCatalog.length} exercises · most popular first`}. Choose one to add it to your workout.</p></DialogHeader>
+          <DialogHeader className="border-b border-border p-5 pb-3"><DialogTitle className="text-left text-xl">Exercise library</DialogTitle><p className="text-left text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercise library…" : `${filteredCatalog.length} exercises · featured exercises first`}. Choose one to add it to your workout.</p></DialogHeader>
           <div className="space-y-3 px-5 pt-3">
             <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={exerciseSearch} onChange={(e) => setExerciseSearch(e.target.value)} placeholder="Search exercises…" className="pl-9" /></div>
             <div className="flex gap-2 overflow-x-auto pb-1">{CATEGORIES.map((item) => <button key={item} onClick={() => setCategory(item)} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${category === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{item}</button>)}</div>
@@ -310,7 +310,7 @@ function WorkoutsPage() {
               <span className="min-w-0 flex-1"><span className="block font-semibold">{item.name}</span><span className="mt-1 block text-xs text-muted-foreground">{item.category}</span></span>
               <Plus className="mr-2 h-5 w-5 shrink-0 text-primary" />
             </button>)}
-            {exerciseDbQuery.isError ? <div className="py-8 text-center"><p className="text-sm text-muted-foreground">The exercise library could not be loaded.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void exerciseDbQuery.refetch()}>Try again</Button></div> : filteredCatalog.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercises…" : "No exercises found. Try another search."}</p>}
+            {exerciseDbQuery.isError ? <div className="py-8 text-center"><p className="text-sm text-muted-foreground">The full exercise library could not be loaded. You can still use the built-in exercises below.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void exerciseDbQuery.refetch()}>Try again</Button></div> : filteredCatalog.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">{exerciseDbQuery.isLoading ? "Loading exercises…" : "No exercises found. Try another search."}</p>}
           </div>
         </DialogContent>
       </Dialog>
