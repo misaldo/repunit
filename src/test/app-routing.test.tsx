@@ -48,6 +48,20 @@ describe("App routing", () => {
     }
   });
 
+  it("keeps profile settings, PRO pricing and lifter discovery reachable", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const destinations = [
+      ["/settings", "/_authenticated/settings"],
+      ["/pricing", "/pricing"],
+      ["/people", "/_authenticated/people"],
+    ] as const;
+
+    for (const [path, expectedRouteId] of destinations) {
+      const matches = router.matchRoutes(path);
+      expect(matches.at(-1)?.routeId, path).toBe(expectedRouteId);
+    }
+  });
+
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
