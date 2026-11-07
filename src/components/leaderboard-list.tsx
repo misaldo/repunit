@@ -65,7 +65,7 @@ export function useLeaderboard(
       }
       if (!rows.length) return rows.map((row) => ({ ...row, has_video: false }));
       const { data: evidence, error: evidenceError } = await supabase.from("lifts").select("id, video_path").in("id", rows.map((row) => row.lift_id));
-      if (evidenceError) throw evidenceError;
+      if (evidenceError) return rows.map((row) => ({ ...row, has_video: false }));
       const videoIds = new Set((evidence ?? []).filter((lift) => Boolean(lift.video_path)).map((lift) => lift.id));
       return rows.map((row) => ({ ...row, has_video: videoIds.has(row.lift_id) }));
     },
