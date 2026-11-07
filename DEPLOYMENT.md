@@ -54,6 +54,8 @@ The canonical Supabase project ref is `sfumcokjwvhxwuanlofw`. The browser client
 - `0023_crew_achievement_awards.sql`
 - `0024_first_run_onboarding_and_avatars.sql` (run after 0012–0023)
 
+Continue with migrations `0025`–`0037` in the exact order listed in [MIGRATIONS.md](./MIGRATIONS.md). In particular, apply `0037_automatic_lift_proof_and_flags.sql` only after `0036_crew_total_include_overhead_press.sql`. Run `supabase/tests/automatic_lift_proof_and_flags.sql` with `supabase test db` on a local test database.
+
 Run each pending SQL file in the Supabase SQL Editor. These repair migrations are designed to be repeatable, but do not skip ahead in the sequence.
 
 The app also expects the `lift-videos` Supabase Storage bucket and the appropriate authenticated-user storage policies for video uploads and signed playback URLs.
