@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, UserCheck, Dumbbell, CalendarDays, Swords, Crown } from "lucide-react";
+import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -35,10 +35,13 @@ function Profile() {
       const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at, profile_theme").eq("username", username).maybeSingle();
       if (error) throw error;
       if (!p) return null;
-      const { data: lifts, error: liftsError } = await supabase.from("lifts")
-        .select("*").eq("user_id", p.id).order("lifted_on", { ascending: false });
+      const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
+        supabase.from("lifts").select("*").eq("user_id", p.id).order("lifted_on", { ascending: false }),
+        supabase.from("posts").select("id, content, created_at").eq("user_id", p.id).order("created_at", { ascending: false }).limit(20),
+      ]);
       if (liftsError) throw liftsError;
-      return { p, lifts: lifts ?? [] };
+      if (postsError) throw postsError;
+      return { p, lifts: lifts ?? [], posts: posts ?? [] };
     },
   });
 
@@ -151,7 +154,7 @@ function Profile() {
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
   if (isError) return <PageShell><p>Could not load this profile.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
-  const { p, lifts } = data;
+  const { p, lifts, posts } = data;
   const isOwnProfile = user?.id === p.id;
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -222,7 +225,7 @@ function Profile() {
         </div>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section>
           <h2 className="mb-3 text-xl font-bold">Recent lifts</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
@@ -232,6 +235,16 @@ function Profile() {
               <span className="flex items-center gap-2"><StatusBadge status={l.status} /><span className="font-stat text-xl">{Number(l.weight_kg)}×{l.reps}</span></span>
             </Link></li>)}
           </ul>
+        </section>
+        <section>
+          <div className="mb-3 flex items-center gap-2"><Rss className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Recent posts</h2></div>
+          <div className="space-y-3">
+            {posts.length === 0 && <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">No posts yet.</div>}
+            {posts.map((post) => <article key={post.id} className="rounded-xl border border-border bg-card p-4">
+              <p className="whitespace-pre-wrap text-sm leading-6">{post.content}</p>
+              <p className="mt-3 text-xs text-muted-foreground">{new Date(post.created_at).toLocaleString()}</p>
+            </article>)}
+          </div>
         </section>
       </div>
     </PageShell>
