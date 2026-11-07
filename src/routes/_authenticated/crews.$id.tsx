@@ -44,18 +44,26 @@ function Crew() {
       const memberIds = (memberRows ?? []).map((m: any) => m.user_id);
       let profiles: any[] = [];
       if (memberIds.length) {
-        const { data: profileRows } = await (supabase as any)
+        const { data: profileRows, error: profileRowsError } = await (supabase as any)
           .from("profiles").select("id, username, display_name, avatar_url").in("id", memberIds);
+        if (profileRowsError) throw profileRowsError;
         profiles = profileRows ?? [];
       }
       const profileById = new Map(profiles.map((p: any) => [p.id, p]));
       const members = (memberRows ?? []).map((m: any) => ({ ...m, profiles: profileById.get(m.user_id) ?? null }));
       const safeIds = memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"];
-      const [{ data: badges }, { data: lifts }, { data: battleWins }] = await Promise.all([
+      const [
+        { data: badges, error: badgesError },
+        { data: lifts, error: liftsError },
+        { data: battleWins, error: battleWinsError },
+      ] = await Promise.all([
         (supabase as any).from("crew_achievements").select("id,achievement_key,awarded_at").eq("crew_id", id).order("awarded_at", { ascending: false }),
         (supabase as any).from("lifts").select("weight_kg,reps,lifted_on").in("user_id", safeIds).eq("status", "VERIFIED"),
         (supabase as any).from("crew_battles").select("id").eq("winner_crew_id", id).eq("status", "completed").eq("is_weekly", true),
       ]);
+      if (badgesError) throw badgesError;
+      if (liftsError) throw liftsError;
+      if (battleWinsError) throw battleWinsError;
       const now = new Date();
       const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const monthTonnage = (lifts ?? []).filter((lift: any) => String(lift.lifted_on ?? "").startsWith(monthKey)).reduce((sum:number,l:any)=>sum+Number(l.weight_kg)*Number(l.reps??1),0);
