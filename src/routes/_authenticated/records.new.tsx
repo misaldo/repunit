@@ -141,7 +141,7 @@ function NewRecord() {
         const code = typeof errorObject?.code === "string" ? errorObject.code : "";
         const safeMessages = [
           "Use an MP4, MOV or WebM video.",
-          "Video must be 100 MB or smaller.",
+          "Video must be 50 MB or smaller.",
           "Your session expired. Please sign in again.",
           "Storage is not configured.",
           "Network error while uploading the video.",
@@ -178,7 +178,7 @@ function NewRecord() {
           </div>
         )}
         <Button variant="hero" className="h-13 w-full text-base font-black uppercase tracking-wide" disabled={busy}>{busy ? (uploadProgress === null ? "Saving PR…" : `Uploading ${uploadProgress}%`) : "Log PR"}</Button>
-        <p className="text-center text-[11px] text-muted-foreground">Every lift requires an MP4, MOV or WebM video (max 100 MB). Lifts without video cannot be submitted.</p>
+        <p className="text-center text-[11px] text-muted-foreground">Every lift requires an MP4, MOV or WebM video (max 50 MB). Lifts without video cannot be submitted.</p>
       </form>
     </PageShell>
   );
