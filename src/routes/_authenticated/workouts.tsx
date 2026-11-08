@@ -133,6 +133,7 @@ function WorkoutsPage() {
   const [draftExercises, setDraftExercises] = useState<Array<{ exercise_name: string; sets: number; reps: string; rest_seconds: number }>>([]);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [updatingVisibility, setUpdatingVisibility] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -256,6 +257,24 @@ function WorkoutsPage() {
     } finally { setSaving(false); }
   }
 
+  async function updatePlanVisibility(plan: Plan, nextVisibility: Plan["visibility"]) {
+    if (plan.visibility === nextVisibility || updatingVisibility) return;
+    setUpdatingVisibility(plan.id);
+    try {
+      const { error } = await db.from("workout_plans")
+        .update({ visibility: nextVisibility })
+        .eq("id", plan.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
+      toast.success(nextVisibility === "public" ? "SPLIT is now public." : nextVisibility === "private" ? "SPLIT is now private." : "SPLIT is now visible to friends.");
+    } catch {
+      toast.error("Could not update SPLIT privacy. Please try again.");
+    } finally {
+      setUpdatingVisibility(null);
+    }
+  }
+
   async function deletePlan(plan: Plan) {
     if (!window.confirm("Remove this SPLIT day?")) return;
     try {
@@ -323,7 +342,18 @@ function WorkoutsPage() {
         {plansQuery.isLoading && !plansQuery.data ? <p className="text-muted-foreground">Loading SPLIT…</p> : plansQuery.isError && !plansQuery.data ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your SPLIT could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved SPLIT has not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No SPLIT yet. Create your first plan above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Remove day" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
-            <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility === "followers" ? "Friends" : plan.visibility}</div>
+            <div className="mt-3">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Who can see this SPLIT?</label>
+              <div className="flex items-center gap-2">
+                {plan.visibility === "private" ? <Lock className="h-4 w-4 shrink-0 text-muted-foreground" /> : plan.visibility === "public" ? <Globe className="h-4 w-4 shrink-0 text-primary" /> : <Users className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                <select aria-label={`Privacy for ${plan.title}`} value={plan.visibility} disabled={updatingVisibility === plan.id || updatingVisibility !== null} onChange={(event) => void updatePlanVisibility(plan, event.target.value as Plan["visibility"])} className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-xs font-semibold uppercase">
+                  <option value="private">Private — only me</option>
+                  <option value="public">Public — everyone</option>
+                  <option value="followers">Friends</option>
+                </select>
+                {updatingVisibility === plan.id && <span className="text-[10px] text-muted-foreground">Saving…</span>}
+              </div>
+            </div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
             {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading && !exercisesQuery.data ? <p className="text-sm text-muted-foreground">Loading exercises…</p> : exercisesQuery.isError && !exercisesQuery.data ? <div className="rounded-lg bg-background p-3"><p className="text-sm text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void exercisesQuery.refetch()}>Try again</Button></div> : (exercisesQuery.data ?? []).length === 0 ? <p className="rounded-lg bg-background p-3 text-sm text-muted-foreground">No exercises in this SPLIT day yet.</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps}</p></div>)}</div>}
           </article>)}</div>
