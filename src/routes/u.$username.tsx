@@ -28,20 +28,24 @@ function Profile() {
   const [challengeExercise, setChallengeExercise] = useState("bench");
   const [challengeWeight, setChallengeWeight] = useState("100");
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error: profileError, refetch } = useQuery({
     queryKey: ["public-profile", username],
     queryFn: async () => {
-      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at, profile_theme").eq("username", username).maybeSingle();
+      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username.toLowerCase()).maybeSingle();
       if (error) throw error;
       if (!p) return null;
       const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
         supabase.from("lifts").select("*").eq("user_id", p.id).order("lifted_on", { ascending: false }),
         supabase.from("posts").select("id, content, created_at").eq("user_id", p.id).order("created_at", { ascending: false }).limit(20),
       ]);
-      if (liftsError) throw liftsError;
-      // Posts are an optional profile feature. A missing posts table or stricter
-      // preview RLS must never prevent the public profile, lifts or SPLIT loading.
-      return { p, lifts: lifts ?? [], posts: postsError ? [] : (posts ?? []) };
+      // A profile must remain usable even if an optional activity query fails.
+      // This also prevents an unavailable lifts table/permission from blanking the whole page.
+      return {
+        p,
+        lifts: liftsError ? [] : (lifts ?? []),
+        liftsError: liftsError?.message ?? null,
+        posts: postsError ? [] : (posts ?? []),
+      };
     },
   });
 
@@ -231,9 +235,9 @@ function Profile() {
   }
 
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
-  if (isError && !data) return <PageShell><p>Could not load this profile.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
+  if (isError && !data) return <PageShell><section className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-6 sm:p-8"><p className="eyebrow">PROFILE UNAVAILABLE</p><h1 className="mt-2 text-2xl font-bold">Could not load this profile.</h1><p className="mt-2 text-sm text-muted-foreground">{profileError instanceof Error ? profileError.message : "Check your connection and try again."}</p><Button variant="line" className="mt-5" onClick={() => void refetch()}>Try again</Button></section></PageShell>;
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
-  const { p, lifts, posts } = data;
+  const { p, lifts, posts, liftsError } = data;
   const isOwnProfile = user?.id === p.id;
 
   return (
@@ -308,7 +312,7 @@ function Profile() {
         <section>
           <h2 className="mb-3 text-xl font-bold">Recent lifts</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
+            {liftsError ? <li className="p-4 text-sm text-muted-foreground"><p>Lift records are temporarily unavailable.</p><button type="button" onClick={() => void refetch()} className="mt-2 font-semibold text-primary underline underline-offset-4">Try again</button></li> : lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
             {lifts.slice(0, 10).map((l) => <li key={l.id}><Link to="/records/$id" params={{ id: l.id }} className="flex items-center justify-between gap-3 p-4 hover:bg-elevated">
               <span><span className="font-semibold">{exerciseLabel(l.exercise)}</span><span className="ml-2 text-xs text-muted-foreground">{l.lifted_on}</span></span>
               <span className="flex items-center gap-2"><StatusBadge status={l.status} /><span className="font-stat text-xl">{Number(l.weight_kg)}×{l.reps}</span></span>
