@@ -31,7 +31,7 @@ The existing database baseline is documented as migrations `0000`–`0011`. Conf
 
 The onboarding/avatar migration was assigned a duplicate `0019` in an earlier version. Its unique filename is `0024_first_run_onboarding_and_avatars.sql`; apply it after all of 0012–0023.
 
-### Subsequent migrations: 0024–0040
+### Subsequent migrations: 0024–0042
 
 13. `drizzle/migrations/0024_first_run_onboarding_and_avatars.sql`
 14. `drizzle/migrations/0025_admin_lift_review.sql`
@@ -49,8 +49,9 @@ The onboarding/avatar migration was assigned a duplicate `0019` in an earlier ve
 26. `drizzle/migrations/0037_automatic_lift_proof_and_flags.sql`
 27. `drizzle/migrations/0038_proof_transition_hardening.sql`
 28. `drizzle/migrations/0039_pr_celebrations_always_fire.sql`
-29. `drizzle/migrations/0040_weekly_winners_badge_trigger.sql
-- `0041_require_video_for_lifts.sql` — require uploaded video proof for every new lift.`
+29. `drizzle/migrations/0040_weekly_winners_badge_trigger.sql`
+30. `drizzle/migrations/0041_require_video_for_lifts.sql` — require uploaded video proof for every new lift.
+31. `drizzle/migrations/0042_pr_rank_movement.sql` — store previous and new exercise ranks on the private PR celebration event.
 
 The proof-transition hardening migration previously shared the `0038` number with the PR-celebration migration. The PR-celebration and Weekly Winners migrations are now numbered `0039` and `0040` so the sequence is unique. Their SQL behavior is unchanged.
 
