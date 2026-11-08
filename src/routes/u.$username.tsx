@@ -260,7 +260,11 @@ function Profile() {
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts, posts, liftsError } = data;
   const isOwnProfile = user?.id === p.id;
-  const bestVerifiedPrKg = lifts.filter((lift) => lift.status === "VERIFIED").reduce((best, lift) => Math.max(best, Number(lift.weight_kg) || 0), 0);
+  const bestVerifiedPrs = lifts.filter((lift) => lift.status === "VERIFIED").reduce((best, lift) => {
+    const exercise = lift.exercise as keyof typeof best;
+    if (exercise in best) best[exercise] = Math.max(best[exercise], Number(lift.weight_kg) || 0);
+    return best;
+  }, { bench: 0, squat: 0, deadlift: 0 });
 
   return (
     <PageShell>
@@ -311,7 +315,7 @@ function Profile() {
 
       <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" />{profileProgress.current_streak} day streak</div>
 
-      <div className="mt-4"><ProgressionCard xp={profileProgress.xp} streak={profileProgress.current_streak} longestStreak={profileProgress.longest_streak} bestPrKg={bestVerifiedPrKg} /></div>
+      <div className="mt-4"><ProgressionCard xp={profileProgress.xp} streak={profileProgress.current_streak} longestStreak={profileProgress.longest_streak} bestPrs={bestVerifiedPrs} /></div>
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
