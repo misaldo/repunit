@@ -191,7 +191,7 @@ grant select on public.repunit_cosmetics,public.repunit_user_cosmetics to authen
 drop policy if exists "authenticated read cosmetics catalog" on public.repunit_cosmetics;
 create policy "authenticated read cosmetics catalog" on public.repunit_cosmetics for select to authenticated using(true);
 drop policy if exists "users read own cosmetics" on public.repunit_user_cosmetics;
-create policy "users read own cosmetics" on public.repunit_user_cosmetics for select to authenticated using(user_id=auth.uid());
+create policy "authenticated read public cosmetic unlocks" on public.repunit_user_cosmetics for select to authenticated using(true);
 
 insert into public.repunit_cosmetics(cosmetic_key,cosmetic_type,label,value,achievement_key) values
  ('frame_iron','frame','Iron Frame','border-primary/70 ring-2 ring-primary/40','bench_100'),
