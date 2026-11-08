@@ -49,7 +49,8 @@ The onboarding/avatar migration was assigned a duplicate `0019` in an earlier ve
 26. `drizzle/migrations/0037_automatic_lift_proof_and_flags.sql`
 27. `drizzle/migrations/0038_proof_transition_hardening.sql`
 28. `drizzle/migrations/0039_pr_celebrations_always_fire.sql`
-29. `drizzle/migrations/0040_weekly_winners_badge_trigger.sql`
+29. `drizzle/migrations/0040_weekly_winners_badge_trigger.sql
+- `0041_require_video_for_lifts.sql` — require uploaded video proof for every new lift.`
 
 The proof-transition hardening migration previously shared the `0038` number with the PR-celebration migration. The PR-celebration and Weekly Winners migrations are now numbered `0039` and `0040` so the sequence is unique. Their SQL behavior is unchanged.
 
