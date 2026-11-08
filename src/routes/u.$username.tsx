@@ -56,12 +56,16 @@ function Profile() {
     document.getElementById("training-split")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [isLoading, data]);
 
-  const { data: profileProgress = { xp: 0, current_streak: 0, longest_streak: 0 } } = useQuery({
+  const { data: profileProgress = { xp: 0, current_streak: 0, longest_streak: 0, achievements: [] as string[] } } = useQuery({
     queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
     queryFn: async () => {
-      const { data: stats, error } = await (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", data!.p.id).maybeSingle();
+      const [{ data: stats, error }, { data: achievementRows, error: achievementError }] = await Promise.all([
+        (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", data!.p.id).maybeSingle(),
+        (supabase as any).from("user_achievements").select("achievement_key").eq("user_id", data!.p.id),
+      ]);
       if (error) throw error;
-      return { xp: Number(stats?.xp ?? 0), current_streak: Number(stats?.current_streak ?? 0), longest_streak: Number(stats?.longest_streak ?? 0) };
+      if (achievementError) throw achievementError;
+      return { xp: Number(stats?.xp ?? 0), current_streak: Number(stats?.current_streak ?? 0), longest_streak: Number(stats?.longest_streak ?? 0), achievements: (achievementRows ?? []).map((row: { achievement_key: string }) => row.achievement_key) };
     },
   });
 
@@ -315,7 +319,7 @@ function Profile() {
 
       <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" />{profileProgress.current_streak} day streak</div>
 
-      <div className="mt-4"><ProgressionCard xp={profileProgress.xp} streak={profileProgress.current_streak} longestStreak={profileProgress.longest_streak} bestPrs={bestVerifiedPrs} /></div>
+      <div className="mt-4"><ProgressionCard xp={profileProgress.xp} streak={profileProgress.current_streak} longestStreak={profileProgress.longest_streak} bestPrs={bestVerifiedPrs} achievements={profileProgress.achievements} /></div>
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
