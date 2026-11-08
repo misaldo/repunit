@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(7);
 
 select ok(
   exists (
@@ -48,6 +48,17 @@ select ok(
 select ok(
   position('xp = public.user_progress.xp + 50' in pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure)) > 0,
   'PR trigger preserves the existing one-time 50 XP reward'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.lifts'::regclass
+      and tgname = 'lifts_award_verified_pr_xp'
+      and not tgisinternal
+  ),
+  'verified PR reward function is attached to lift inserts and verification updates'
 );
 
 select * from finish();
