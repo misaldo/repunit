@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { InstallPrompt } from "./install-prompt";
 import { FirstRunSetup } from "./first-run-setup";
-import { useI18n, LANGUAGES, LANGUAGE_LABELS } from "@/i18n/i18n-provider";
+import { useI18n } from "@/i18n/i18n-provider";
 
 const nav = [
   { to: "/leaderboards" as const, label: "TOP", icon: Trophy },
@@ -21,7 +21,7 @@ const nav = [
 
 export function SiteHeader() {
   const { user, ready } = useUser();
-  const { language, setLanguage, t } = useI18n();
+  const { t } = useI18n();
   const { data: profile } = useMyProfile(user?.id);
   const { data: progress, isError: progressError } = useQuery({
     queryKey: ["user-progression", user?.id], enabled: !!user?.id,
@@ -91,7 +91,6 @@ export function SiteHeader() {
           <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-2xl shadow-black/40">
             <div className="border-b border-border px-3 py-3"><p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p><div className="mt-3">{progressError && !progress ? <p className="text-xs text-muted-foreground">Streak unavailable.</p> : progress ? <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" /><span>{progress.streak} day streak</span></div> : <p className="text-xs text-muted-foreground">Loading streak…</p>}</div></div>
             {profile && <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><UserRound className="h-4 w-4" /> {t("myProfile")}</Link>}
-            <div className="px-3 py-2"><label htmlFor="repunit-language" className="mb-2 block text-xs font-semibold text-muted-foreground">{t("language")}</label><select id="repunit-language" value={language} onChange={(event) => setLanguage(event.target.value as (typeof LANGUAGES)[number])} className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground">{LANGUAGES.map((code) => <option key={code} value={code}>{t(LANGUAGE_LABELS[code])}</option>)}</select></div>
             <Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><Settings className="h-4 w-4" /> {t("settings")}</Link>
             <button onClick={signOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-muted-foreground transition hover:bg-elevated hover:text-foreground"><LogOut className="h-4 w-4" /> {t("logOut")}</button>
           </div>
