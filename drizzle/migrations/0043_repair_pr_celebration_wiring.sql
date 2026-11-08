@@ -12,7 +12,7 @@ alter table public.notifications
   add column if not exists new_rank integer;
 
 alter table public.notifications enable row level security;
-grant select on public.notifications to authenticated;
+grant select, update on public.notifications to authenticated;
 
 do $$
 begin
@@ -23,13 +23,19 @@ begin
       and tablename = 'notifications'
       and policyname = 'users read own notifications'
   ) then
-    create policy "users read own notifications"
-      on public.notifications
-      for select to authenticated
-      using (user_id = auth.uid());
+    execute 'create policy "users read own notifications" on public.notifications for select to authenticated using (user_id = auth.uid())';
+  end if;
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'notifications'
+      and policyname = 'users mark own notifications'
+  ) then
+    execute 'create policy "users mark own notifications" on public.notifications for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())';
   end if;
 end;
-$$;
+$;
 
 create or replace function public.award_verified_pr_xp()
 returns trigger
@@ -164,7 +170,7 @@ begin
       and schemaname = 'public'
       and tablename = 'notifications'
   ) then
-    alter publication supabase_realtime add table public.notifications;
+    execute 'alter publication supabase_realtime add table public.notifications';
   end if;
 end;
 $$;
