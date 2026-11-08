@@ -26,7 +26,7 @@ export function HomeEngagement({ userId }: Props) {
         supabase.from("friend_requests").select("requester_id,recipient_id").eq("status", "accepted").or(`requester_id.eq.${userId},recipient_id.eq.${userId}`),
         supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").eq("user_id", userId).eq("status", "VERIFIED").gte("created_at", since(365)).order("created_at", { ascending: false }).limit(1000),
         supabase.from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", userId).maybeSingle(),
-        supabase.from("lifts").select("weight_kg").eq("user_id", userId).eq("status", "VERIFIED").order("weight_kg", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("lifts").select("exercise,weight_kg").eq("user_id", userId).eq("status", "VERIFIED").in("exercise", ["bench", "squat", "deadlift"]),
       ]);
       if (membershipError) throw membershipError;
       if (friendError) throw friendError;
@@ -95,7 +95,11 @@ export function HomeEngagement({ userId }: Props) {
         if (badgeError) throw badgeError;
         badges = (badgeRows ?? []).map((b) => b.achievement_key);
       }
-      return { primaryCrew, rivalries: rivalries.slice(0, 3), crewTop, friendLifts, monthVolume, trainingWeeks, badges, progress, bestPrKg: Number(bestPr?.weight_kg ?? 0) };
+      const bestPrs = { bench: 0, squat: 0, deadlift: 0 };
+      for (const lift of bestPr ?? []) {
+        if (lift.exercise in bestPrs) bestPrs[lift.exercise] = Math.max(bestPrs[lift.exercise], Number(lift.weight_kg) || 0);
+      }
+      return { primaryCrew, rivalries: rivalries.slice(0, 3), crewTop, friendLifts, monthVolume, trainingWeeks, badges, progress, bestPrs };
     },
   });
 
@@ -118,7 +122,7 @@ export function HomeEngagement({ userId }: Props) {
       {data.friendLifts.length ? <div className="divide-y divide-border rounded-2xl border border-border bg-card px-4">{data.friendLifts.slice(0, 5).map((lift) => <Link key={lift.id} to="/records/$id" params={{ id: lift.id }} className="flex items-center gap-3 py-3 transition hover:text-primary"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary">{(lift.profile?.username ?? "R").slice(0, 1).toUpperCase()}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold">{lift.profile?.display_name || lift.profile?.username} logged {labels[lift.exercise] || lift.exercise}</span><span className="text-[10px] text-muted-foreground">{Number(lift.weight_kg).toLocaleString()} kg × {lift.reps} · {new Date(lift.created_at).toLocaleDateString()}</span></span>{lift.video_path && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[9px] font-black uppercase text-primary">Video</span>}<ArrowUpRight className="h-4 w-4 text-muted-foreground"/></Link>)}</div> : <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">Your friends' verified lifts will show up here. <Link to="/people" className="font-bold text-primary">Find lifters</Link>.</div>}
     </section>
     <section>
-      <ProgressionCard xp={Number(data.progress?.xp ?? 0)} streak={Number(data.progress?.current_streak ?? 0)} longestStreak={Number(data.progress?.longest_streak ?? 0)} bestPrKg={data.bestPrKg} compact />
+      <ProgressionCard xp={Number(data.progress?.xp ?? 0)} streak={Number(data.progress?.current_streak ?? 0)} longestStreak={Number(data.progress?.longest_streak ?? 0)} bestPrs={data.bestPrs} compact />
     </section>
     <section className="grid gap-3 sm:grid-cols-2">
       <div className="rounded-2xl border border-border bg-card p-4"><div className="flex items-center gap-2"><Flame className="h-5 w-5 text-primary"/><p className="text-[10px] font-black uppercase tracking-widest text-primary">Training-week streak</p></div><p className="mt-2 font-stat text-4xl">{data.trainingWeeks} <span className="text-base text-muted-foreground">weeks</span></p><p className="mt-1 text-xs text-muted-foreground">Consecutive weeks with at least one verified lift.</p></div>
