@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
 import { ProgressionCard } from "@/components/progression-card";
-import { CosmeticWardrobe } from "@/components/social-retention";
+import { CosmeticWardrobe, CosmeticAvatar } from "@/components/social-retention";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
 
@@ -275,7 +275,7 @@ function Profile() {
     <PageShell>
       <section className="profile-theme profile-theme-default rounded-2xl border border-border bg-card p-5 sm:p-7">
         <div className="flex flex-wrap items-center gap-4">
-          <AvatarChip name={p.username} url={p.avatar_url} className="h-20 w-20 text-xl" />
+          <CosmeticAvatar userId={p.id} name={p.username} url={p.avatar_url} className="h-20 w-20 text-xl" />
           <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold">{p.display_name ?? p.username}</h1>
             <p className="text-sm text-muted-foreground">@{p.username} · joined {new Date(p.created_at).toLocaleDateString()}</p>
