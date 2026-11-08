@@ -1,11 +1,11 @@
 export const LEVELS = [
-  { name: "Foam", min: 0, max: 100, icon: "🫧" },
-  { name: "Tin", min: 100, max: 300, icon: "🥫" },
-  { name: "Brass", min: 300, max: 700, icon: "🟡" },
-  { name: "Iron", min: 700, max: 1500, icon: "⚙️" },
-  { name: "Tungsten", min: 1500, max: 3000, icon: "🔩" },
-  { name: "Osmium", min: 3000, max: 6000, icon: "💎" },
-  { name: "Neutron Star", min: 6000, max: 6000, icon: "🌌" },
+  { name: "Foam", min: 0, max: 100, strengthTargetKg: 0, icon: "🫧" },
+  { name: "Tin", min: 100, max: 300, strengthTargetKg: 90, icon: "🥫" },
+  { name: "Brass", min: 300, max: 700, strengthTargetKg: 110, icon: "🟡" },
+  { name: "Iron", min: 700, max: 1500, strengthTargetKg: 130, icon: "⚙️" },
+  { name: "Tungsten", min: 1500, max: 3000, strengthTargetKg: 150, icon: "🔩" },
+  { name: "Osmium", min: 3000, max: 6000, strengthTargetKg: 190, icon: "💎" },
+  { name: "Neutron Star", min: 6000, max: 6000, strengthTargetKg: 230, icon: "🌌" },
 ] as const;
 
 export function getLevel(xp: number) {
