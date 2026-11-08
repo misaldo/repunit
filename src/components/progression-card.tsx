@@ -3,12 +3,16 @@ import { Flame, Sparkles, Lock, ChevronDown, ChevronUp } from "lucide-react";
 import { getLevel, ACHIEVEMENTS } from "@/lib/progression";
 import { AnimatedNumber } from "@/components/animated-number";
 
-type Props = { xp: number; streak: number; longestStreak?: number; achievements?: string[]; compact?: boolean; bestPrKg?: number };
+type Props = { xp: number; streak: number; longestStreak?: number; achievements?: string[]; compact?: boolean; bestPrs?: { bench: number; squat: number; deadlift: number } };
 
-export function ProgressionCard({ xp, streak, longestStreak = 0, achievements = [], compact = false, bestPrKg = 0 }: Props) {
+export function ProgressionCard({ xp, streak, longestStreak = 0, achievements = [], compact = false, bestPrs = { bench: 0, squat: 0, deadlift: 0 } }: Props) {
   const [showAllAchievements, setShowAllAchievements] = useState(false);
   const level = getLevel(xp);
-  const kgToNextLevel = level.next ? Math.max(0, level.next.strengthTargetKg - Math.max(0, bestPrKg)) : 0;
+  const strengthTargets = [
+    { key: "bench", label: "Bench press" },
+    { key: "squat", label: "Squat" },
+    { key: "deadlift", label: "Deadlift" },
+  ] as const;
   const entries = Object.entries(ACHIEVEMENTS);
   const earned = entries.filter(([key]) => achievements.includes(key));
   const ordered = [...earned, ...entries.filter(([key]) => !achievements.includes(key))];
@@ -26,7 +30,18 @@ export function ProgressionCard({ xp, streak, longestStreak = 0, achievements = 
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-background" role="progressbar" aria-valuenow={Math.round(level.progress)} aria-valuemin={0} aria-valuemax={100} aria-label="XP progress to next level"><div className="h-full rounded-full bg-primary transition-all" style={{ width: level.progress + "%" }} /></div>
       <p className="mt-1.5 text-xs text-muted-foreground">{level.next ? `${level.needed.toLocaleString()} XP to ${level.next.name}` : "Maximum XP level reached"} · longest streak {longestStreak} days</p>
-      <p className="mt-1 text-xs font-semibold text-primary">{level.next ? `${kgToNextLevel.toLocaleString()} kg to ${level.next.name}` : "Top level unlocked"} <span className="font-normal text-muted-foreground">· best verified PR {bestPrKg.toLocaleString()} kg</span></p>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {strengthTargets.map(({ key, label }) => {
+          const best = Math.max(0, Number(bestPrs[key]) || 0);
+          const target = level.next?.strengthTargets[key] ?? level.strengthTargets[key];
+          const remaining = Math.max(0, target - best);
+          return <div key={key} className="rounded-lg border border-border/70 bg-background/60 p-2">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+            <p className="mt-1 font-stat text-lg tabular-nums">{best.toLocaleString()} <span className="text-[10px] text-muted-foreground">kg</span></p>
+            <p className="mt-1 text-[10px] font-semibold text-primary">{level.next ? (remaining ? `${remaining.toLocaleString()} kg to ${level.next.name}` : "Target reached") : "Top level"}</p>
+          </div>;
+        })}
+      </div>
       {!compact && <div className="mt-5">
         <div className="mb-3 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-primary" /> Achievement Collection</h3><span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">{earned.length} / {entries.length} unlocked</span></div>
         <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-background"><div className="h-full rounded-full bg-primary transition-all" style={{width:`${earned.length / entries.length * 100}%`}} /></div>
