@@ -20,6 +20,7 @@ export function getLevel(xp: number) {
 export type Achievement = { title: string; description: string; icon: string; category: string };
 export const ACHIEVEMENTS: Record<string, Achievement> = {
   first_pr: { title: "First Verified Lift", description: "Get your first lift approved by REPUNIT.", icon: "🏆", category: "Milestones" },
+  pr_duo: { title: "PR Duo", description: "Set two genuine all-time personal records with verified lifts.", icon: "⚡", category: "Milestones" },
   bench_100: { title: "100 kg Bench Club", description: "Bench press at least 100 kg.", icon: "💯", category: "Strength" },
   streak_7: { title: "One Week Strong", description: "Reach a 7-day training streak.", icon: "🔥", category: "Consistency" },
   volume_1000: { title: "1,000 kg Volume", description: "Lift 1,000 kg in verified total volume.", icon: "📈", category: "Volume" },
