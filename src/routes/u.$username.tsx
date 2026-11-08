@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
 import { ProgressionCard } from "@/components/progression-card";
+import { CosmeticWardrobe } from "@/components/social-retention";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
 
@@ -33,7 +34,7 @@ function Profile() {
   const { data, isLoading, isError, error: profileError, refetch } = useQuery({
     queryKey: ["public-profile", username],
     queryFn: async () => {
-      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username.toLowerCase()).maybeSingle();
+      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at, equipped_frame, equipped_name_color, equipped_title").eq("username", username.toLowerCase()).maybeSingle();
       if (error) throw error;
       if (!p) return null;
       const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
@@ -320,6 +321,7 @@ function Profile() {
       <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" />{profileProgress.current_streak} day streak</div>
 
       <div className="mt-4"><ProgressionCard xp={profileProgress.xp} streak={profileProgress.current_streak} longestStreak={profileProgress.longest_streak} bestPrs={bestVerifiedPrs} achievements={profileProgress.achievements} /></div>
+      <div className="mt-4"><CosmeticWardrobe userId={data.p.id} /></div>
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
