@@ -44,12 +44,12 @@ begin
       from public.lifts l
       join public.profiles p on p.id = l.user_id
       where l.exercise = new.exercise
-        and l.status <> 'REJECTED'
+        and l.status = 'VERIFIED'
         and l.id <> new.id
       order by l.user_id, l.weight_kg desc, l.reps desc, l.lifted_on asc
     ), ranked as (
       select row_number() over (
-        order by weight_kg desc, reps desc, lifted_on asc
+        order by weight_kg desc, reps desc, lifted_on asc, username asc
       )::integer as position, user_id
       from best_per_user
     )
@@ -61,7 +61,7 @@ begin
       from public.lifts l
       join public.profiles p on p.id = l.user_id
       where l.exercise = new.exercise
-        and l.status <> 'REJECTED'
+        and l.status = 'VERIFIED'
       order by l.user_id, l.weight_kg desc, l.reps desc, l.lifted_on asc
     ), ranked as (
       select row_number() over (
