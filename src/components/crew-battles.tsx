@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X, Share2 } from "lucide-react";
+import { shareCardAsImage } from "@/components/share-card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -158,7 +159,16 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       : leftScore.total > rightScore.total ? left?.name : right?.name;
     const summary = `REPUNIT WEEKLY BATTLE · ${categoryName[battle.category]}\n${left?.name ?? "Crew"} ${leftScore.total.toLocaleString()} — ${rightScore.total.toLocaleString()} ${right?.name ?? "Crew"}\n${winner === "Draw" ? "It's a draw." : `${winner ?? "A Crew"} wins.`}`;
     const url = `${window.location.origin}/battles/${battle.id}`;
+    const clip = (name?: string | null) => (name && name.length > 16 ? `${name.slice(0, 15)}…` : name ?? "Crew");
     try {
+      // Prefer an image card for stories; fall back to text sharing, then to copying.
+      const sharedImage = await shareCardAsImage({
+        headline: `Weekly battle · ${categoryName[battle.category]}`,
+        value: winner === "Draw" ? "Draw" : `${clip(winner)} wins`,
+        detail: `${clip(left?.name)} ${leftScore.total.toLocaleString()} — ${rightScore.total.toLocaleString()} ${clip(right?.name)}`,
+        footer: "Weekly Crew Battle",
+      }, `repunit-battle-${battle.id}`, summary, url);
+      if (sharedImage) return;
       if (navigator.share) await navigator.share({ title: "REPUNIT Battle result", text: summary, url });
       else {
         await navigator.clipboard.writeText(`${summary}\n${url}`);

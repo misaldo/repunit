@@ -71,6 +71,20 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
+/**
+ * Opens the native share sheet with the card as an image (plus text and link).
+ * Returns false when the browser cannot share files, so callers can fall back.
+ * Throws a DOMException named AbortError if the person closes the share sheet.
+ */
+export async function shareCardAsImage(data: ShareCardData, fileName: string, text: string, url?: string): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.canShare || !navigator.share) return false;
+  const blob = await canvasToBlob(drawShareCard(data));
+  const file = new File([blob], `${fileName}.png`, { type: "image/png" });
+  if (!navigator.canShare({ files: [file] })) return false;
+  await navigator.share({ files: [file], title: "REPUNIT", text, ...(url ? { url } : {}) });
+  return true;
+}
+
 /** Shares the card as an image where the browser allows it, otherwise downloads the PNG. */
 export function ShareCardButton({ data, fileName = "repunit-card", label = "Share card", className }: { data: ShareCardData; fileName?: string; label?: string; className?: string }) {
   const [busy, setBusy] = useState(false);

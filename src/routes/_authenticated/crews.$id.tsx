@@ -111,9 +111,18 @@ function Crew() {
   async function copyInvite() {
     if (!data?.code) return;
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/invite/${data.code}`);
+      const link = `${window.location.origin}/invite/${data.code}`;
+      // On phones the native share sheet reaches WhatsApp, Messenger, etc. in one tap.
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: "Join my crew on REPUNIT", text: "Join my crew on REPUNIT and let's see who is the strongest.", url: link });
+        return;
+      }
+      await navigator.clipboard.writeText(link);
       toast.success("Invite link copied");
-    } catch { toast.error("Could not copy. Use the invite code instead."); }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Could not share. Use the invite code instead.");
+    }
   }
   async function leave() {
     if (leaving || !window.confirm("Leave this crew?")) return;
@@ -161,7 +170,7 @@ function Crew() {
         <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-border py-4">
           <div className="flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Crew code</span><b className="font-mono text-sm tracking-widest">{data.code}</b></div>
           <Button size="sm" variant="line" onClick={copyCode}><Copy />Copy code</Button>
-          <Button size="sm" variant="line" onClick={copyInvite}><Copy />Copy invite link</Button>{isAdmin && <Button size="sm" variant="ghost" disabled={saving} onClick={rotateInvite}><RefreshCw className="mr-1 h-4 w-4"/>Refresh code</Button>}
+          <Button size="sm" variant="line" onClick={copyInvite}><Copy />Share invite link</Button>{isAdmin && <Button size="sm" variant="ghost" disabled={saving} onClick={rotateInvite}><RefreshCw className="mr-1 h-4 w-4"/>Refresh code</Button>}
         </div>
       )}
       {isAdmin && <section className="mt-5 rounded-2xl border border-border bg-card p-4"><div className="flex items-center gap-2"><Crown className="h-4 w-4 text-primary"/><h2 className="font-bold">Admin settings</h2></div><p className="mt-1 text-xs text-muted-foreground">Change the maximum number of members. The limit cannot go below the current member count.</p><div className="mt-3 flex flex-wrap gap-2">{[5,10,20,30,40,50,75,100].filter(n=>n>=count).map(n=><Button key={n} size="sm" variant={cap===n?"hero":"line"} disabled={saving||cap===n} onClick={()=>changeCapacity(n)}>{n} members</Button>)}</div></section>}
