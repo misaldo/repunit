@@ -4,6 +4,7 @@ import { CalendarDays, Trophy, Swords, Sparkles, ShieldCheck } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-session";
+import { AvatarChip } from "@/components/avatar-chip";
 
 const EXERCISES = ["bench", "squat", "deadlift", "ohp", "pullup"] as const;
 const exerciseLabel: Record<string, string> = { bench: "Bench", squat: "Squat", deadlift: "Deadlift", ohp: "Overhead press", pullup: "Pull-up" };
@@ -137,7 +138,7 @@ export function CosmeticWardrobe({ userId }: { userId: string }) {
   if(isLoading) return <div className="h-20 animate-pulse rounded-xl bg-card"/>;
   if(!data) return null;
   return <section className="rounded-2xl border border-border bg-card p-4"><div className="mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary"/><h3 className="font-bold">Cosmetics</h3><span className="ml-auto text-[10px] text-muted-foreground">{data.items.length} unlocked</span></div>
-    {data.profile.equipped_title && <p className="mb-3 text-xs font-black uppercase tracking-wider text-primary">{data.profile.equipped_title}</p>}
+    {(data.profile.equipped_title || data.profile.equipped_frame || data.profile.equipped_name_color) && <p className="mb-3 text-[10px] font-black uppercase tracking-wider text-primary">{[data.profile.equipped_title, data.profile.equipped_frame && "Profile frame", data.profile.equipped_name_color && "Name color"].filter(Boolean).join(" · ")}</p>}
     {data.items.length ? <div className="grid gap-2 sm:grid-cols-2">{data.items.map((item:any)=><div key={item.cosmetic_key} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background/60 p-3"><div className="min-w-0"><p className="text-xs font-bold">{item.label}</p><p className="text-[10px] text-muted-foreground">{item.cosmetic_type.replace("_"," ")}</p></div><button type="button" onClick={()=>void equip(item.cosmetic_key)} className="rounded-lg border border-primary/30 px-3 py-1.5 text-[10px] font-black uppercase text-primary">Equip</button></div>)}</div> : <p className="text-xs text-muted-foreground">Unlock achievement rewards to collect profile frames, name colors and titles.</p>}
   </section>;
 }
@@ -156,4 +157,21 @@ export function CosmeticName({ userId, username, displayName }: { userId: string
   });
   const color = data?.equipped_name_color === "#ef4444" ? "#ef4444" : data?.equipped_name_color === "#fbbf24" ? "#fbbf24" : undefined;
   return <span className="min-w-0"><span className="block truncate" style={color ? { color } : undefined}>{displayName || username}</span>{data?.equipped_title && <span className="block text-[9px] font-black uppercase tracking-wider text-primary">{data.equipped_title}</span>}</span>;
+}
+
+
+export function CosmeticAvatar({ userId, name, url, className }: { userId: string; name: string; url?: string | null; className?: string }) {
+  const { data } = useQuery({
+    queryKey: ["repunit-cosmetic-frame", userId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("profiles").select("equipped_frame").eq("id", userId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60000,
+  });
+  const frame = data?.equipped_frame;
+  return <span className="inline-flex rounded-full p-[2px]" style={frame ? { boxShadow: `0 0 0 2px ${frame}, 0 0 12px ${frame}66` } : undefined}>
+    <AvatarChip name={name} url={url} className={className || "h-9 w-9"} />
+  </span>;
 }
