@@ -322,3 +322,14 @@
   animation-fill-mode: both;
 }
 @media (prefers-reduced-motion: reduce) { .pr-confetti-piece { animation: none !important; display: none; } }
+
+/* PR celebration is deliberately brief and can always be dismissed. */
+@keyframes repunit-pr-celebration-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pr-celebration-panel { animation: repunit-pr-celebration-enter .22s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .pr-celebration-panel { animation: none !important; }
+  .pr-confetti-piece { display: none !important; }
+}
