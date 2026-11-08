@@ -1,11 +1,11 @@
 export const LEVELS = [
-  { name: "Foam", min: 0, max: 100, strengthTargetKg: 0, icon: "🫧" },
-  { name: "Tin", min: 100, max: 300, strengthTargetKg: 90, icon: "🥫" },
-  { name: "Brass", min: 300, max: 700, strengthTargetKg: 110, icon: "🟡" },
-  { name: "Iron", min: 700, max: 1500, strengthTargetKg: 130, icon: "⚙️" },
-  { name: "Tungsten", min: 1500, max: 3000, strengthTargetKg: 150, icon: "🔩" },
-  { name: "Osmium", min: 3000, max: 6000, strengthTargetKg: 190, icon: "💎" },
-  { name: "Neutron Star", min: 6000, max: 6000, strengthTargetKg: 230, icon: "🌌" },
+  { name: "Foam", min: 0, max: 100, strengthTargets: { bench: 0, squat: 0, deadlift: 0 }, icon: "🫧" },
+  { name: "Tin", min: 100, max: 300, strengthTargets: { bench: 60, squat: 80, deadlift: 100 }, icon: "🥫" },
+  { name: "Brass", min: 300, max: 700, strengthTargets: { bench: 80, squat: 110, deadlift: 130 }, icon: "🟡" },
+  { name: "Iron", min: 700, max: 1500, strengthTargets: { bench: 100, squat: 140, deadlift: 160 }, icon: "⚙️" },
+  { name: "Tungsten", min: 1500, max: 3000, strengthTargets: { bench: 120, squat: 170, deadlift: 190 }, icon: "🔩" },
+  { name: "Osmium", min: 3000, max: 6000, strengthTargets: { bench: 140, squat: 200, deadlift: 220 }, icon: "💎" },
+  { name: "Neutron Star", min: 6000, max: 6000, strengthTargets: { bench: 160, squat: 230, deadlift: 250 }, icon: "🌌" },
 ] as const;
 
 export function getLevel(xp: number) {
