@@ -125,7 +125,17 @@ begin
     from public.user_pr_events
     where user_id = new.user_id;
 
-    if total_prs >= 2 then
+    -- New accounts created after rollout get a baseline immediately before
+    -- their first PR event. Existing accounts were baselined above.
+    insert into public.user_pr_goals(user_id, baseline_pr_count)
+    values (new.user_id, greatest(total_prs - 1, 0))
+    on conflict (user_id) do nothing;
+
+    select baseline_pr_count into goal_baseline
+    from public.user_pr_goals
+    where user_id = new.user_id;
+
+    if total_prs - coalesce(goal_baseline, total_prs) >= 2 then
       insert into public.user_achievements(user_id, achievement_key)
       values (new.user_id, 'pr_duo')
       on conflict (user_id, achievement_key) do nothing;
@@ -154,14 +164,29 @@ begin
 end;
 $$;
 
--- Unlock the badge for users whose historical verified lifts already
--- contain at least two real PR breakthroughs.
-insert into public.user_achievements(user_id, achievement_key)
-select user_id, 'pr_duo'
-from public.user_pr_events
-group by user_id
-having count(*) >= 2
-on conflict (user_id, achievement_key) do nothing;
+-- Start the two-PR challenge from each user's current all-time PR count.
+-- This makes the goal genuinely ask for two NEW breakthroughs after rollout.
+create table if not exists public.user_pr_goals (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  baseline_pr_count integer not null default 0 check (baseline_pr_count >= 0),
+  target_pr_count integer not null default 2 check (target_pr_count > 0),
+  created_at timestamptz not null default now()
+);
+
+alter table public.user_pr_goals enable row level security;
+revoke all on public.user_pr_goals from anon, authenticated;
+grant select on public.user_pr_goals to authenticated;
+drop policy if exists "users read own PR goal" on public.user_pr_goals;
+create policy "users read own PR goal"
+  on public.user_pr_goals for select to authenticated
+  using (user_id = auth.uid());
+
+insert into public.user_pr_goals(user_id, baseline_pr_count)
+select p.id, count(e.lift_id)::integer
+from public.profiles p
+left join public.user_pr_events e on e.user_id = p.id
+group by p.id
+on conflict (user_id) do nothing;
 
 commit;
 notify pgrst, 'reload schema';
