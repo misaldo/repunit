@@ -8,6 +8,7 @@ import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { AvatarChip } from "@/components/avatar-chip";
 import { StatusBadge } from "@/components/status-badge";
+import { ProgressionCard } from "@/components/progression-card";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
 
@@ -55,12 +56,12 @@ function Profile() {
     document.getElementById("training-split")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [isLoading, data]);
 
-  const { data: streak = 0 } = useQuery({
-    queryKey: ["profile-streak", data?.p.id], enabled: !!data?.p.id,
+  const { data: profileProgress = { xp: 0, current_streak: 0, longest_streak: 0 } } = useQuery({
+    queryKey: ["profile-progression", data?.p.id], enabled: !!data?.p.id,
     queryFn: async () => {
-      const { data: stats, error } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", data!.p.id).maybeSingle();
+      const { data: stats, error } = await (supabase as any).from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", data!.p.id).maybeSingle();
       if (error) throw error;
-      return Number(stats?.current_streak ?? 0);
+      return { xp: Number(stats?.xp ?? 0), current_streak: Number(stats?.current_streak ?? 0), longest_streak: Number(stats?.longest_streak ?? 0) };
     },
   });
 
@@ -259,6 +260,7 @@ function Profile() {
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts, posts, liftsError } = data;
   const isOwnProfile = user?.id === p.id;
+  const bestVerifiedPrKg = lifts.filter((lift) => lift.status === "VERIFIED").reduce((best, lift) => Math.max(best, Number(lift.weight_kg) || 0), 0);
 
   return (
     <PageShell>
@@ -307,7 +309,9 @@ function Profile() {
         </div>
       </section>
 
-      <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" />{streak} day streak</div>
+      <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" />{profileProgress.current_streak} day streak</div>
+
+      <div className="mt-4"><ProgressionCard xp={profileProgress.xp} streak={profileProgress.current_streak} longestStreak={profileProgress.longest_streak} bestPrKg={bestVerifiedPrKg} /></div>
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
