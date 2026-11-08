@@ -31,13 +31,17 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
         (supabase as any).from("lift_comments").select("id,user_id,content,created_at").eq("lift_id", liftId).order("created_at", { ascending: true }),
       ]);
       if (profileError) throw profileError;
-      if (likesError) throw likesError;
-      if (commentsError) throw commentsError;
-      const commentUserIds = [...new Set((comments ?? []).map((comment: any) => comment.user_id))];
+      // Likes and comments are optional social features. Their tables may not
+      // exist in every deployed database yet, so they must never block video playback.
+      const likesAvailable = !likesError;
+      const commentsAvailable = !commentsError;
+      const safeLikes = likesAvailable ? (likes ?? []) : [];
+      const safeComments = commentsAvailable ? (comments ?? []) : [];
+      const commentUserIds = [...new Set(safeComments.map((comment: any) => comment.user_id))];
       const { data: commentProfiles, error: commentProfilesError } = commentUserIds.length
         ? await (supabase as any).from("profiles").select("id,username,display_name,avatar_url").in("id", commentUserIds)
         : { data: [], error: null };
-      if (commentProfilesError) throw commentProfilesError;
+      if (commentProfilesError && commentsAvailable) throw commentProfilesError;
       const profileMap = new Map<string, any>();
       for (const row of commentProfiles ?? []) profileMap.set(row.id, row);
       let videoUrl: string | null = null;
@@ -47,8 +51,10 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
       }
       return {
         lift, profile, videoUrl,
-        likes: (likes ?? []).map((like: any) => like.user_id),
-        comments: (comments ?? []).map((comment: any) => ({ ...comment, author: profileMap.get(comment.user_id) ?? { username: "lifter", display_name: null, avatar_url: null } })),
+        likes: safeLikes.map((like: any) => like.user_id),
+        likesAvailable,
+        commentsAvailable,
+        comments: safeComments.map((comment: any) => ({ ...comment, author: profileMap.get(comment.user_id) ?? { username: "lifter", display_name: null, avatar_url: null } })),
       };
     },
   });
@@ -91,16 +97,16 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10"><AvatarImage src={data.profile.avatar_url ?? undefined}/><AvatarFallback>{data.profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>
             <div className="min-w-0 flex-1"><Link to="/u/$username" params={{username:data.profile.username}} className="text-sm font-bold hover:text-primary">{data.profile.display_name || data.profile.username}</Link><p className="text-xs text-muted-foreground">@{data.profile.username}</p></div>
-            <Button size="sm" variant={liked ? "outline" : "ghost"} onClick={() => void toggleLike()}><Heart className={`mr-1.5 h-4 w-4 ${liked ? "fill-current text-primary" : ""}`}/>{data.likes.length}</Button>
+            {data.likesAvailable && <Button size="sm" variant={liked ? "outline" : "ghost"} onClick={() => void toggleLike()}><Heart className={`mr-1.5 h-4 w-4 ${liked ? "fill-current text-primary" : ""}`}/>{data.likes.length}</Button>}
           </div>
           {data.lift.description && <p className="text-sm text-muted-foreground">{data.lift.description}</p>}
-          <section className="border-t border-border pt-4">
+          {data.commentsAvailable && <section className="border-t border-border pt-4">
             <h3 className="flex items-center gap-2 text-sm font-bold"><MessageCircle className="h-4 w-4 text-primary"/> Comments <span className="text-muted-foreground">({data.comments.length})</span></h3>
             <div className="mt-3 max-h-40 space-y-3 overflow-y-auto">
-              {data.comments.length ? data.comments.map((comment: any) => <div key={comment.id} className="flex items-start gap-2 text-xs"><Avatar className="h-7 w-7"><AvatarImage src={comment.author.avatar_url ?? undefined}/><AvatarFallback>{comment.author.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar><div className="min-w-0 flex-1 rounded-xl bg-background px-3 py-2"><p className="font-bold">{comment.author.display_name || comment.author.username}</p><p className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">{comment.content}</p></div></div>) : <p className="text-xs text-muted-foreground">No comments yet. Start the conversation.</p>}
+              {data.comments.length ? data.comments.map((comment: any) => <div key={comment.id} className="flex items-start gap-2 text-xs"><Avatar className="h-7 w-7"><AvatarImage src={comment.author.avatar_url ?? undefined}/><AvatarFallback>{comment.author.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar><div className="min-w-0 flex-1 rounded-xl bg-background px-3 py-2"><p className="font-bold">{comment.author.display_name || comment.author.username}</p><p className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">{comment.content}</p></div>) : <p className="text-xs text-muted-foreground">No comments yet. Start the conversation.</p>}
             </div>
             <form onSubmit={addComment} className="mt-3 flex items-end gap-2"><Textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={2000} rows={1} placeholder={user ? "Add a comment…" : "Sign in to comment"} disabled={!user} className="min-h-10 flex-1"/><Button type="submit" size="icon" variant="hero" aria-label="Send comment" disabled={!user || !draft.trim()}><Send className="h-4 w-4"/></Button></form>
-          </section>
+          </section>}
         </>}
       </DialogContent>
     </Dialog>
