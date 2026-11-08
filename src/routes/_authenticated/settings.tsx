@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PushLimitsCard } from "@/components/push-limits-card";
 import { useMyProfile } from "@/hooks/use-session";
 import { USERNAME_RE } from "@/lib/lifts";
 
@@ -149,6 +150,7 @@ function Settings() {
         <div className="min-w-0 flex-1"><h2 className="font-bold">Push notifications</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">{!pushSupported ? "This browser does not support web push. On iPhone, install REPUNIT to your Home Screen first." : !pushConfigured ? "Push is not configured on this deployment yet." : pushQuery.isError ? "Push status could not be loaded." : pushEnabled ? "You'll receive REPUNIT updates even when the app is closed." : "Get notified about friend PRs, challenges and Crew Battles."}</p></div>
         <Button type="button" size="sm" variant={pushEnabled ? "line" : "hero"} disabled={pushBusy || pushQuery.isLoading || !pushSupported || !pushConfigured || pushQuery.isError} onClick={() => void (pushEnabled ? disablePush() : enablePush())}>{pushBusy ? "Saving…" : pushEnabled ? "Disable" : "Enable"}</Button>
       </section>
+      <PushLimitsCard userId={user.id} />
     </PageShell>
   );
 }

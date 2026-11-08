@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { AvatarChip } from "@/components/avatar-chip";
+import { cosmeticForXp } from "@/lib/cosmetics";
 import { StatusBadge } from "@/components/status-badge";
 import { useUser } from "@/hooks/use-session";
 import { EXERCISES, exerciseLabel } from "@/lib/lifts";
@@ -58,6 +59,16 @@ function Profile() {
       return Number(stats?.current_streak ?? 0);
     },
   });
+
+  const { data: profileXp = 0 } = useQuery({
+    queryKey: ["profile-xp", data?.p.id], enabled: !!data?.p.id,
+    queryFn: async () => {
+      const { data: stats, error } = await (supabase as any).from("user_progress").select("xp").eq("user_id", data!.p.id).maybeSingle();
+      if (error) throw error;
+      return Number(stats?.xp ?? 0);
+    },
+  });
+  const cosmetic = cosmeticForXp(profileXp);
 
   const { data: workoutPlans = [], isLoading: workoutPlansLoading, isError: workoutPlansError, refetch: refetchWorkoutPlans } = useQuery({
     queryKey: ["profile-workouts", data?.p.id, user?.id === data?.p.id],
@@ -240,9 +251,10 @@ function Profile() {
     <PageShell>
       <section className="profile-theme profile-theme-default rounded-2xl border border-border bg-card p-5 sm:p-7">
         <div className="flex flex-wrap items-center gap-4">
-          <AvatarChip name={p.username} url={p.avatar_url} className="h-20 w-20 text-xl" />
+          <AvatarChip name={p.username} url={p.avatar_url} className={`h-20 w-20 text-xl ${cosmetic.frameClass}`} />
           <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold">{p.display_name ?? p.username}</h1>
+            <p className={`text-xs font-black uppercase tracking-widest ${cosmetic.titleClass}`}>{cosmetic.title}</p>
             <p className="text-sm text-muted-foreground">@{p.username} · joined {new Date(p.created_at).toLocaleDateString()}</p>
           </div>
           <div className="flex flex-wrap gap-2">

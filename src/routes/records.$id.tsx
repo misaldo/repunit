@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
+import { ShareCardButton } from "@/components/share-card";
 import { exerciseLabel, estimated1RM, validateVideo } from "@/lib/lifts";
 import { useUser } from "@/hooks/use-session";
 import { toast } from "sonner";
@@ -97,6 +98,20 @@ function Record() {
         videoUnavailable ? <p className="mt-6 text-sm text-muted-foreground">Video evidence is temporarily unavailable.</p> : <p className="mt-6 text-sm text-muted-foreground">No video evidence attached.</p>}
       {(l.status === "NEEDS_PROOF" || l.status === "UNDER_REVIEW") && <div className="mt-5 max-w-xl rounded-xl border border-warning/30 bg-warning/5 p-4"><p className="text-sm font-semibold">{l.status === "UNDER_REVIEW" ? "Your Crew flagged this lift." : l.video_path ? "This lift is waiting for verification." : "This lift needs video proof."}</p><p className="mt-1 text-xs text-muted-foreground">{l.verification_reason ?? "This result is not counted in rankings until you add a video."}</p></div>}
       {user?.id === l.user_id && l.status !== "VERIFIED" && <div className="mt-5 max-w-xl"><label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-wide text-primary-foreground">{busy ? "Uploading…" : l.video_path ? "Replace video proof" : "Add video proof"}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addVideoProof(file); event.currentTarget.value = ""; }} /></label></div>}
+      {l.status === "VERIFIED" && (
+        <div className="mt-5 max-w-xl">
+          <ShareCardButton
+            fileName={`repunit-${l.id}`}
+            label="Share this lift"
+            data={{
+              headline: exerciseLabel(l.exercise),
+              value: `${Number(l.weight_kg)} kg`,
+              detail: `× ${l.reps} · est. 1RM ${estimated1RM(Number(l.weight_kg), l.reps)} kg`,
+              footer: `${l.profiles?.username ? `@${l.profiles.username} · ` : ""}${l.lifted_on}`,
+            }}
+          />
+        </div>
+      )}
       {user && user.id !== l.user_id && <Button variant="line" className="mt-5" disabled={busy} onClick={() => void flagLift()}>Flag lift</Button>}
       <p className="mt-6 text-xs text-muted-foreground">Automatic checks are applied by the database. A lift that needs proof stays out of rankings until its owner attaches a video.</p>
     </PageShell>

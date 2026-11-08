@@ -52,6 +52,8 @@ The single canonical backend is `https://sfumcokjwvhxwuanlofw.supabase.co` (proj
 - `0021_volume_crew_battles.sql`
 - `0022_streak_xp_bonus.sql`
 - `0023_crew_achievement_awards.sql`
+- `0024` to `0040` (see the files in `drizzle/migrations/`; apply any that are still pending, in numeric order)
+- `0041_streak_freeze_and_push_limits.sql` (monthly streak freeze, quiet hours, daily push cap). After applying it, redeploy the `send-push` Edge Function: `supabase functions deploy send-push`
 - `0024_first_run_onboarding_and_avatars.sql` (run after 0012–0023)
 
 Continue with migrations `0025`–`0039` in the exact order listed in [MIGRATIONS.md](./MIGRATIONS.md). Apply `0037_automatic_lift_proof_and_flags.sql` only after `0036_crew_total_include_overhead_press.sql`, then apply `0038_pr_celebrations_always_fire.sql` and `0039_weekly_winners_badge_trigger.sql`. Run `supabase/tests/automatic_lift_proof_and_flags.sql` and `supabase/tests/home_retention_features.sql` with `supabase test db` on a local test database.
