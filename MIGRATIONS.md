@@ -4,9 +4,9 @@
 
 All app environments and database operations must use this single Supabase project:
 
-- Project ref: `sfumcokjwvhxwuanlofw`
-- Project URL: `https://sfumcokjwvhxwuanlofw.supabase.co`
-- Supabase CLI link: `supabase link --project-ref sfumcokjwvhxwuanlofw`
+- Project ref: `kqezgcwfqfntazucbbzt`
+- Project URL: `https://kqezgcwfqfntazucbbzt.supabase.co`
+- Supabase CLI link: `supabase link --project-ref kqezgcwfqfntazucbbzt`
 
 Do not use the Lovable Cloud gateway as `SUPABASE_URL` or `VITE_SUPABASE_URL`. The committed `.env.example` points both variables to the canonical project. Real `.env` files are local-only and must never be committed.
 
@@ -60,7 +60,7 @@ The proof-transition hardening migration previously shared the `0038` number wit
 The SQL files live under `drizzle/migrations/`; do not assume Supabase CLI migration commands discover them automatically.
 
 1. Back up the target database.
-2. Link the intended project: `supabase link --project-ref sfumcokjwvhxwuanlofw`.
+2. Link the intended project: `supabase link --project-ref kqezgcwfqfntazucbbzt`.
 3. Inspect `supabase_migrations.schema_migrations` and the actual schema before deciding what is pending. A manually pasted SQL Editor migration may not be registered in that table.
 4. Apply each missing SQL file in the exact order above using the Supabase SQL Editor, one file at a time.
 5. Wait for success before moving to the next file. If any statement fails, stop and resolve it before continuing.
