@@ -111,7 +111,6 @@ export function DesktopSidebar() {
     <nav className="space-y-1">
       {nav.map(({to,label,icon:Icon})=><Link key={to} to={to} className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-elevated hover:text-foreground" activeProps={{className:"!bg-primary/10 !text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"}}><Icon className="h-[18px] w-[18px] transition group-hover:scale-110"/>{label==="TOP"?t("top"):label==="BATTLES"?t("battles"):t("split")}</Link>)}
       <Link to="/crews" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>{t("crews")}</Link>
-      <Link to="/challenges" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Swords className="h-[18px] w-[18px]"/>Challenges</Link>
       <Link to="/people" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>{t("findLifters")}</Link>
     </nav>
     <div className="mt-auto space-y-2">
