@@ -22,13 +22,13 @@ export function HomeEngagement({ userId }: Props) {
     staleTime: 30000,
     refetchInterval: 60000,
     queryFn: async () => {
-      const [{ data: memberships, error: membershipError }, { data: friendships, error: friendError }, { data: mine, error: mineError }, { data: progress, error: progressError }, { data: bestPr, error: bestPrError }, { data: prEvents, error: prEventsError }, { data: userAchievements, error: userAchievementsError }, { data: prGoalRow, error: prGoalError }] = await Promise.all([
+      const [{ data: memberships, error: membershipError }, { data: friendships, error: friendError }, { data: mine, error: mineError }, { data: progress, error: progressError }, { data: bestPr, error: bestPrError }, { count: prEventsCount, error: prEventsError }, { data: userAchievements, error: userAchievementsError }, { data: prGoalRow, error: prGoalError }] = await Promise.all([
         supabase.from("crew_members").select("crew_id").eq("user_id", userId),
         supabase.from("friend_requests").select("requester_id,recipient_id").eq("status", "accepted").or(`requester_id.eq.${userId},recipient_id.eq.${userId}`),
         supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").eq("user_id", userId).eq("status", "VERIFIED").gte("created_at", since(365)).order("created_at", { ascending: false }).limit(1000),
         supabase.from("user_progress").select("xp,current_streak,longest_streak").eq("user_id", userId).maybeSingle(),
         supabase.from("lifts").select("exercise,weight_kg").eq("user_id", userId).eq("status", "VERIFIED").in("exercise", ["bench", "squat", "deadlift"]),
-        supabase.from("user_pr_events").select("lift_id").eq("user_id", userId),
+        supabase.from("user_pr_events").select("lift_id", { count: "exact", head: true }).eq("user_id", userId),
         supabase.from("user_achievements").select("achievement_key").eq("user_id", userId),
         supabase.from("user_pr_goals").select("baseline_pr_count").eq("user_id", userId).maybeSingle(),
       ]);
@@ -106,7 +106,7 @@ export function HomeEngagement({ userId }: Props) {
       for (const lift of bestPr ?? []) {
         if (lift.exercise in bestPrs) bestPrs[lift.exercise] = Math.max(bestPrs[lift.exercise], Number(lift.weight_kg) || 0);
       }
-      return { primaryCrew, rivalries: rivalries.slice(0, 3), crewTop, friendLifts, monthVolume, trainingWeeks, badges, progress, bestPrs, prCount: (prEvents ?? []).length, prBaseline: Number(prGoalRow?.baseline_pr_count ?? (prEvents ?? []).length), achievements: (userAchievements ?? []).map((row) => row.achievement_key) };
+      return { primaryCrew, rivalries: rivalries.slice(0, 3), crewTop, friendLifts, monthVolume, trainingWeeks, badges, progress, bestPrs, prCount: Number(prEventsCount ?? 0), prBaseline: Number(prGoalRow?.baseline_pr_count ?? prEventsCount ?? 0), achievements: (userAchievements ?? []).map((row) => row.achievement_key) };
     },
   });
 
@@ -122,7 +122,7 @@ export function HomeEngagement({ userId }: Props) {
     <ThroneBanner />
     <section className="overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/[.12] via-card to-card p-4 sm:p-5">
       <div className="flex items-start gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary"><Trophy className="h-5 w-5"/></div><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase tracking-[.18em] text-primary">PERSONAL RECORD MILESTONE</p><h2 className="mt-1 font-stat text-xl uppercase">{prGoal.complete ? "PR Duo unlocked" : "Two PRs. One badge."}</h2><p className="mt-1 text-xs text-muted-foreground">{prGoal.complete ? "You have broken your verified personal record at least twice. Keep pushing." : "Set two new verified personal records to unlock the PR Duo achievement."}</p></div><p className="font-stat text-2xl tabular-nums">{prGoal.count}<span className="text-sm text-muted-foreground">/2</span></p></div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-background/80" role="progressbar" aria-valuenow={prGoal.count} aria-valuemin={0} aria-valuemax={2} aria-label="Verified personal record goal progress"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${prGoal.count / 2 * 100}%` }}/></div>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-background/80" role="progressbar" aria-valuenow={prGoal.count} aria-valuemin={0} aria-valuemax={prGoal.target} aria-label="Verified personal record goal progress"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${prGoal.count / prGoal.target * 100}%` }}/></div>
       <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{prGoal.complete ? "Achievement added to your collection" : `${prGoal.remaining} more verified ${prGoal.remaining === 1 ? "PR" : "PRs"} to go`}</p>
     </section>
     <section>
