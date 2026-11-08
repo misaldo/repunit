@@ -125,15 +125,19 @@ function NewRecord() {
       }
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
+      console.error("[REPUNIT] Lift submission failed", err);
       let cleanupFailed = false;
       if (video_path) {
         const { error: cleanupError } = await supabase.storage.from("lift-videos").remove([video_path]);
         cleanupFailed = Boolean(cleanupError);
+        if (cleanupError) console.error("[REPUNIT] Uploaded lift video cleanup failed", cleanupError);
       }
       if (cleanupFailed) {
         toast.error("Your lift could not be saved and its uploaded video could not be removed. Please contact support.");
       } else {
-        const message = err instanceof Error ? err.message : "";
+        const errorObject = err && typeof err === "object" ? err as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown } : null;
+        const message = err instanceof Error ? err.message : typeof errorObject?.message === "string" ? errorObject.message : "";
+        const code = typeof errorObject?.code === "string" ? errorObject.code : "";
         const safeMessages = [
           "Use an MP4, MOV or WebM video.",
           "Video must be 100 MB or smaller.",
@@ -142,7 +146,13 @@ function NewRecord() {
           "Network error while uploading the video.",
           "Video upload was cancelled.",
         ];
-        toast.error(safeMessages.includes(message) ? message : "Could not submit your lift. Check your connection and try again.");
+        const detail = safeMessages.includes(message)
+          ? message
+          : message || "The server returned an unknown error.";
+        toast.error("Could not submit your lift.", {
+          description: code ? `${detail} (Code: ${code})` : detail,
+          duration: 9000,
+        });
       }
     } finally { setBusy(false); setUploadProgress(null); }
   }
