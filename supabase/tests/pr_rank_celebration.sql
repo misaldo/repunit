@@ -39,9 +39,9 @@ select ok(
 select ok(
   (
     length(pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure))
-    - length(replace(pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure), $l.status = 'VERIFIED'$, ''))
-  ) / length($l.status = 'VERIFIED'$) = 2
-  and position($l.status <> 'REJECTED'$ in pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure)) = 0,
+    - length(replace(pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure), $$l.status = 'VERIFIED'$$, ''))
+  ) / length($$l.status = 'VERIFIED'$$) = 2
+  and position($$l.status <> 'REJECTED'$$ in pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure)) = 0,
   'both rank snapshots include verified lifts only, matching the public leaderboard'
 );
 
