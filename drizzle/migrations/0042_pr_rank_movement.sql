@@ -65,7 +65,7 @@ begin
       order by l.user_id, l.weight_kg desc, l.reps desc, l.lifted_on asc
     ), ranked as (
       select row_number() over (
-        order by weight_kg desc, reps desc, lifted_on asc
+        order by weight_kg desc, reps desc, lifted_on asc, username asc
       )::integer as position, user_id
       from best_per_user
     )
