@@ -22,7 +22,7 @@ export function HomeEngagement({ userId }: Props) {
     staleTime: 30000,
     refetchInterval: 60000,
     queryFn: async () => {
-      const [{ data: memberships, error: membershipError }, { data: friendships, error: friendError }, { data: mine, error: mineError }, { data: progress, error: progressError }, { data: bestPr, error: bestPrError }, { data: prEvents, error: prEventsError }, { data: userAchievements, error: userAchievementsError }] = await Promise.all([
+      const [{ data: memberships, error: membershipError }, { data: friendships, error: friendError }, { data: mine, error: mineError }, { data: progress, error: progressError }, { data: bestPr, error: bestPrError }, { data: prEvents, error: prEventsError }, { data: userAchievements, error: userAchievementsError }, { data: prGoalRow, error: prGoalError }] = await Promise.all([
         supabase.from("crew_members").select("crew_id").eq("user_id", userId),
         supabase.from("friend_requests").select("requester_id,recipient_id").eq("status", "accepted").or(`requester_id.eq.${userId},recipient_id.eq.${userId}`),
         supabase.from("lifts").select("id,user_id,exercise,weight_kg,reps,lifted_on,created_at,video_path").eq("user_id", userId).eq("status", "VERIFIED").gte("created_at", since(365)).order("created_at", { ascending: false }).limit(1000),
@@ -30,6 +30,7 @@ export function HomeEngagement({ userId }: Props) {
         supabase.from("lifts").select("exercise,weight_kg").eq("user_id", userId).eq("status", "VERIFIED").in("exercise", ["bench", "squat", "deadlift"]),
         supabase.from("user_pr_events").select("lift_id").eq("user_id", userId),
         supabase.from("user_achievements").select("achievement_key").eq("user_id", userId),
+        supabase.from("user_pr_goals").select("baseline_pr_count").eq("user_id", userId).maybeSingle(),
       ]);
       if (membershipError) throw membershipError;
       if (friendError) throw friendError;
@@ -38,6 +39,7 @@ export function HomeEngagement({ userId }: Props) {
       if (bestPrError) throw bestPrError;
       if (prEventsError) throw prEventsError;
       if (userAchievementsError) throw userAchievementsError;
+      if (prGoalError) throw prGoalError;
       const crewIds = [...new Set((memberships ?? []).map((m) => m.crew_id))];
       const friendIds = [...new Set((friendships ?? []).map((f) => f.requester_id === userId ? f.recipient_id : f.requester_id))];
       const [crewMembersResult, friendLiftsResult] = await Promise.all([
@@ -104,14 +106,14 @@ export function HomeEngagement({ userId }: Props) {
       for (const lift of bestPr ?? []) {
         if (lift.exercise in bestPrs) bestPrs[lift.exercise] = Math.max(bestPrs[lift.exercise], Number(lift.weight_kg) || 0);
       }
-      return { primaryCrew, rivalries: rivalries.slice(0, 3), crewTop, friendLifts, monthVolume, trainingWeeks, badges, progress, bestPrs, prCount: (prEvents ?? []).length, achievements: (userAchievements ?? []).map((row) => row.achievement_key) };
+      return { primaryCrew, rivalries: rivalries.slice(0, 3), crewTop, friendLifts, monthVolume, trainingWeeks, badges, progress, bestPrs, prCount: (prEvents ?? []).length, prBaseline: Number(prGoalRow?.baseline_pr_count ?? (prEvents ?? []).length), achievements: (userAchievements ?? []).map((row) => row.achievement_key) };
     },
   });
 
   if (isLoading) return <><div className="mt-6 h-40 animate-pulse rounded-2xl bg-card" /><ThroneBanner /></>;
   if (isError || !data) return <ThroneBanner />;
   const badgeLabels: Record<string, string> = { weekly_winners: "🏆 Weekly Winners", "100_ton_club": "💯 100 Ton Club", iron_squad: "🛡️ Iron Squad" };
-  const prGoal = getPrGoalProgress(data.prCount);
+  const prGoal = getPrGoalProgress(data.prCount, data.prBaseline);
   return <div className="mt-6 space-y-6">
     <section>
       <div className="mb-3 flex items-center justify-between"><div><p className="eyebrow">YOUR NEXT TARGET</p><h2 className="font-stat mt-1 text-2xl uppercase">Rivalry</h2></div><Zap className="h-5 w-5 text-primary"/></div>
