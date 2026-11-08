@@ -35,7 +35,7 @@ begin
     execute 'create policy "users mark own notifications" on public.notifications for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())';
   end if;
 end;
-$;
+$$;
 
 create or replace function public.award_verified_pr_xp()
 returns trigger
