@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(6);
 
 select ok(
   exists (
@@ -34,6 +34,15 @@ select ok(
   position('previous_rank' in pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure)) > 0
   and position('new_rank' in pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure)) > 0,
   'verified PR trigger records the rank before and after the PR'
+);
+
+select ok(
+  (
+    length(pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure))
+    - length(replace(pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure), $l.status = 'VERIFIED'$, ''))
+  ) / length($l.status = 'VERIFIED'$) = 2
+  and position($l.status <> 'REJECTED'$ in pg_get_functiondef('public.award_verified_pr_xp()'::regprocedure)) = 0,
+  'both rank snapshots include verified lifts only, matching the public leaderboard'
 );
 
 select ok(
