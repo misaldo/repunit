@@ -60,6 +60,7 @@ declare
   previous_rank integer;
   new_rank integer;
   total_prs integer;
+  goal_baseline integer;
 begin
   if new.status <> 'VERIFIED' then
     return new;
