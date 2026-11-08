@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords, Flame } from "lucide-react";
+import { Users, UserPlus, UserCheck, Rss, Dumbbell, CalendarDays, Swords, Flame, Lock, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ function Profile() {
   const [busy, setBusy] = useState(false);
   const [friendBusy, setFriendBusy] = useState(false);
   const [copyBusyId, setCopyBusyId] = useState<string | null>(null);
+  const [updatingVisibility, setUpdatingVisibility] = useState<string | null>(null);
   const [challengeOpen, setChallengeOpen] = useState(false);
   const [challengeBusy, setChallengeBusy] = useState(false);
   const [challengeExercise, setChallengeExercise] = useState("bench");
@@ -134,6 +135,25 @@ function Profile() {
       toast.error("Could not copy this SPLIT. Please try again.");
     } finally {
       setCopyBusyId(null);
+    }
+  }
+
+  async function updatePlanVisibility(plan: { id: string; visibility: string }, nextVisibility: "private" | "public" | "followers") {
+    if (!user || user.id !== data?.p.id || plan.visibility === nextVisibility || updatingVisibility) return;
+    setUpdatingVisibility(plan.id);
+    try {
+      const { error } = await (supabase as any).from("workout_plans")
+        .update({ visibility: nextVisibility })
+        .eq("id", plan.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      await refetchWorkoutPlans();
+      await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
+      toast.success(nextVisibility === "public" ? "SPLIT is now public." : nextVisibility === "private" ? "SPLIT is now private." : "SPLIT is now visible to friends.");
+    } catch {
+      toast.error("Could not update SPLIT privacy. Please try again.");
+    } finally {
+      setUpdatingVisibility(null);
     }
   }
 
@@ -291,7 +311,7 @@ function Profile() {
 
       <section id="training-split" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2"><Dumbbell className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">SPLIT</h2></div>
-        {workoutPlansLoading ? <p className="text-sm text-muted-foreground">Loading SPLIT…</p> : workoutPlansError && !workoutPlans.length ? <div className="rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">SPLIT could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchWorkoutPlans()}>Try again</Button></div> : workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No public SPLIT shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : workoutExercises.isError && !workoutExercises.data ? <div className="mt-3"><p className="text-xs text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void workoutExercises.refetch()}>Try again</Button></div> : items.length === 0 ? <p className="mt-3 text-xs text-muted-foreground">No exercises in this workout.</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}{user && user.id !== p.id && <Button className="mt-4 w-full" variant="line" disabled={copyBusyId !== null || workoutExercises.isLoading || workoutExercises.isError} onClick={() => void copyPlan(plan)}>{copyBusyId === plan.id ? "Copying…" : "Copy to my SPLIT"}</Button>}</article>; })}</div>}
+        {workoutPlansLoading ? <p className="text-sm text-muted-foreground">Loading SPLIT…</p> : workoutPlansError && !workoutPlans.length ? <div className="rounded-xl border border-border p-4"><p className="text-sm text-muted-foreground">SPLIT could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void refetchWorkoutPlans()}>Try again</Button></div> : workoutPlans.length === 0 ? <p className="text-sm text-muted-foreground">No public SPLIT shared yet.</p> : <div className="grid gap-3 sm:grid-cols-2">{workoutPlans.map((plan: {id:string;title:string;workout_day:string;visibility:string}) => { const items = (workoutExercises.data ?? []).filter((exercise: {plan_id:string}) => exercise.plan_id === plan.id); return <article key={plan.id} className="rounded-xl border border-border bg-background p-4"><div className="flex items-start justify-between gap-2"><h3 className="font-bold">{plan.title}</h3><span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "—"}</span></div>{isOwnProfile && <div className="mt-3"><label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Who can see this SPLIT?</label><div className="flex items-center gap-2">{plan.visibility === "private" ? <Lock className="h-4 w-4 shrink-0 text-muted-foreground" /> : plan.visibility === "public" ? <Globe className="h-4 w-4 shrink-0 text-primary" /> : <Users className="h-4 w-4 shrink-0 text-muted-foreground" />}<select aria-label={`Privacy for ${plan.title}`} value={plan.visibility} disabled={updatingVisibility === plan.id || updatingVisibility !== null} onChange={(event) => void updatePlanVisibility(plan, event.target.value as "private" | "public" | "followers")} className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-xs font-semibold uppercase"><option value="private">Private — only me</option><option value="public">Public — everyone</option><option value="followers">Friends</option></select>{updatingVisibility === plan.id && <span className="text-[10px] text-muted-foreground">Saving…</span>}</div></div>}{workoutExercises.isLoading ? <p className="mt-3 text-xs text-muted-foreground">Loading exercises…</p> : workoutExercises.isError && !workoutExercises.data ? <div className="mt-3"><p className="text-xs text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void workoutExercises.refetch()}>Try again</Button></div> : items.length === 0 ? <p className="mt-3 text-xs text-muted-foreground">No exercises in this workout.</p> : <ol className="mt-3 space-y-2">{items.map((exercise: {id:string;exercise_name:string;sets:number;reps:string;rest_seconds:number}, index:number) => <li key={exercise.id} className="flex items-center justify-between gap-2 border-t border-border pt-2 text-sm"><span><span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>{exercise.exercise_name}</span><span className="shrink-0 text-xs text-muted-foreground">{exercise.sets} × {exercise.reps}</span></li>)}</ol>}{user && user.id !== p.id && <Button className="mt-4 w-full" variant="line" disabled={copyBusyId !== null || workoutExercises.isLoading || workoutExercises.isError} onClick={() => void copyPlan(plan)}>{copyBusyId === plan.id ? "Copying…" : "Copy to my SPLIT"}</Button>}</article>; })}</div>}
       </section>
 
       <div className="mt-8">
