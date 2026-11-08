@@ -194,10 +194,10 @@ drop policy if exists "users read own cosmetics" on public.repunit_user_cosmetic
 create policy "authenticated read public cosmetic unlocks" on public.repunit_user_cosmetics for select to authenticated using(true);
 
 insert into public.repunit_cosmetics(cosmetic_key,cosmetic_type,label,value,achievement_key) values
- ('frame_iron','frame','Iron Frame','border-primary/70 ring-2 ring-primary/40','bench_100'),
- ('frame_streak','frame','Flame Frame','border-orange-500/70 ring-2 ring-orange-500/30','streak_7'),
- ('name_crimson','name_color','Crimson Name','text-red-500','pr_duo'),
- ('name_gold','name_color','Gold Name','text-amber-400','volume_1000'),
+ ('frame_iron','frame','Iron Frame','#ef4444','bench_100'),
+ ('frame_streak','frame','Flame Frame','#f97316','streak_7'),
+ ('name_crimson','name_color','Crimson Name','#ef4444','pr_duo'),
+ ('name_gold','name_color','Gold Name','#fbbf24','volume_1000'),
  ('title_record_breaker','title','Record Breaker','Record Breaker','pr_duo'),
  ('title_iron_lifter','title','Iron Lifter','Iron Lifter','bench_100'),
  ('title_consistent','title','Unbreakable','Unbreakable','streak_7')
