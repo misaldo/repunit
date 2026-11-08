@@ -141,3 +141,19 @@ export function CosmeticWardrobe({ userId }: { userId: string }) {
     {data.items.length ? <div className="grid gap-2 sm:grid-cols-2">{data.items.map((item:any)=><div key={item.cosmetic_key} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background/60 p-3"><div className="min-w-0"><p className="text-xs font-bold">{item.label}</p><p className="text-[10px] text-muted-foreground">{item.cosmetic_type.replace("_"," ")}</p></div><button type="button" onClick={()=>void equip(item.cosmetic_key)} className="rounded-lg border border-primary/30 px-3 py-1.5 text-[10px] font-black uppercase text-primary">Equip</button></div>)}</div> : <p className="text-xs text-muted-foreground">Unlock achievement rewards to collect profile frames, name colors and titles.</p>}
   </section>;
 }
+
+
+export function CosmeticName({ userId, username, displayName }: { userId: string; username: string; displayName?: string | null }) {
+  const { data } = useQuery({
+    queryKey: ["repunit-cosmetic-name", userId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("profiles")
+        .select("equipped_name_color,equipped_title").eq("id", userId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60000,
+  });
+  const color = data?.equipped_name_color === "#ef4444" ? "#ef4444" : data?.equipped_name_color === "#fbbf24" ? "#fbbf24" : undefined;
+  return <span className="min-w-0"><span className="block truncate" style={color ? { color } : undefined}>{displayName || username}</span>{data?.equipped_title && <span className="block text-[9px] font-black uppercase tracking-wider text-primary">{data.equipped_title}</span>}</span>;
+}
