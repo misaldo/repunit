@@ -103,5 +103,6 @@ The repository includes:
 - `supabase/tests/privacy_hardening.sql`
 - `supabase/tests/automatic_lift_proof_and_flags.sql`
 - `supabase/tests/home_retention_features.sql`
+- `supabase/tests/pr_rank_celebration.sql`
 
 The local test database must first have the complete migration sequence applied. A passing local pgTAP run does not by itself prove the remote production database has been migrated.
