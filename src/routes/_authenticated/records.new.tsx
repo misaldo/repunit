@@ -52,10 +52,11 @@ function NewRecord() {
     const weight = Number(f.get("weight")); const reps = Number(f.get("reps"));
     if (!Number.isFinite(weight) || !Number.isInteger(reps) || weight < 0 || reps < 1) { toast.error("Enter a valid weight and whole number of reps."); return; }
     const file = f.get("video") as File | null;
+    if (!file || file.size === 0) { toast.error("Video proof is required to submit a lift."); return; }
     let video_path: string | null = null;
     setBusy(true);
     try {
-      if (file && file.size > 0) {
+      {
         const err = validateVideo(file); if (err) throw new Error(err);
         video_path = `${user.id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -167,7 +168,7 @@ function NewRecord() {
           <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" value={weight} onChange={(event) => setWeight(event.target.value)} type="number" step="0.01" min="0" max="9999.99" inputMode="decimal" placeholder="100" className="h-12 text-lg font-bold" required /></div>
           <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" value={reps} onChange={(event) => setReps(event.target.value)} type="number" min="1" max="1000" inputMode="numeric" className="h-12 text-lg font-bold" required /></div>
         </div>
-        <div className="space-y-1.5"><Label htmlFor="video">Video proof <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /></div>
+        <div className="space-y-1.5"><Label htmlFor="video">Video proof <span className="text-primary">(required)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" required className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /></div>
         {uploadProgress !== null && (
           <div className="space-y-2" aria-live="polite">
             <div className="flex justify-between text-xs text-muted-foreground"><span>Uploading video</span><span>{uploadProgress}%</span></div>
@@ -177,7 +178,7 @@ function NewRecord() {
           </div>
         )}
         <Button variant="hero" className="h-13 w-full text-base font-black uppercase tracking-wide" disabled={busy}>{busy ? (uploadProgress === null ? "Saving PR…" : `Uploading ${uploadProgress}%`) : "Log PR"}</Button>
-        <p className="text-center text-[11px] text-muted-foreground">Video is optional. Unusual jumps, duplicates or suspicious entries are saved as Needs proof and stay out of rankings until you attach a video.</p>
+        <p className="text-center text-[11px] text-muted-foreground">Every lift requires an MP4, MOV or WebM video (max 100 MB). Lifts without video cannot be submitted.</p>
       </form>
     </PageShell>
   );
