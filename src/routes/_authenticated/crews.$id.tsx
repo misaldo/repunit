@@ -14,6 +14,7 @@ import { getLevel } from "@/lib/progression";
 import { Zap, Medal, Swords } from "lucide-react";
 import { CrewBattles } from "@/components/crew-battles";
 import { FunStatsCard } from "@/components/fun-stats";
+import { CosmeticName } from "@/components/social-retention";
 
 export const Route = createFileRoute("/_authenticated/crews/$id")({
   head: () => ({ meta: [{ property: "og:title", content: "Crew — REPUNIT" }, { property: "og:description", content: "Crew leaderboard." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Crew — REPUNIT" }, { name: "description", content: "Crew leaderboard." }] }),
@@ -45,7 +46,7 @@ function Crew() {
       let profiles: any[] = [];
       if (memberIds.length) {
         const { data: profileRows, error: profileRowsError } = await (supabase as any)
-          .from("profiles").select("id, username, display_name, avatar_url").in("id", memberIds);
+          .from("profiles").select("id, username, display_name, avatar_url, equipped_frame, equipped_name_color, equipped_title").in("id", memberIds);
         if (profileRowsError) throw profileRowsError;
         profiles = profileRows ?? [];
       }
@@ -176,7 +177,7 @@ function Crew() {
       <div className="mt-10 flex items-end justify-between"><div><p className="eyebrow">THE LINEUP</p><h2 className="font-stat mt-1 text-3xl uppercase">Members ({count})</h2></div><Users className="h-6 w-6 text-primary"/></div>
       <ul className="mt-3 divide-y divide-border">
         {data.members.map((member) => <li key={member.user_id} className="flex items-center justify-between py-3">
-          <div className="flex min-w-0 items-center gap-3">{member.profiles && <><Link to="/u/$username" params={{username:member.profiles.username}} className="shrink-0 rounded-full transition hover:scale-105 hover:ring-2 hover:ring-primary"><AvatarChip name={member.profiles.username} url={member.profiles.avatar_url} className="h-10 w-10 shrink-0"/></Link><div className="min-w-0"><Link to="/u/$username" params={{ username: member.profiles.username }} className="font-semibold transition hover:text-primary">{member.profiles.display_name || member.profiles.username}</Link><p className="text-xs text-muted-foreground">@{member.profiles.username}</p></div></>}</div>
+          <div className="flex min-w-0 items-center gap-3">{member.profiles && <><Link to="/u/$username" params={{username:member.profiles.username}} className="shrink-0 rounded-full transition hover:scale-105 hover:ring-2 hover:ring-primary"><AvatarChip name={member.profiles.username} url={member.profiles.avatar_url} className="h-10 w-10 shrink-0"/></Link><div className="min-w-0"><Link to="/u/$username" params={{ username: member.profiles.username }} className="font-semibold transition hover:text-primary"><CosmeticName userId={member.user_id} username={member.profiles.username} displayName={member.profiles.display_name} /></Link><p className="text-xs text-muted-foreground">@{member.profiles.username}</p></div></>}</div>
           <div className="flex items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest ${member.role === "admin" ? "bg-primary/10 text-primary" : "bg-elevated text-muted-foreground"}`}>{member.role === "admin" ? "Admin" : "Member"}</span>{isAdmin && member.role !== "admin" && <Button size="icon" variant="ghost" disabled={saving} onClick={() => removeMember(member.user_id, member.profiles?.username ?? "member")}><UserMinus className="h-4 w-4"/></Button>}</div>
         </li>)}
       </ul>
