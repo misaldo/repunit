@@ -17,12 +17,12 @@ describe("REPUNIT personal progression", () => {
   it("uses the agreed verified-PR targets for each level", () => {
     expect(LEVELS.map((level) => level.strengthTargets)).toEqual([
       { bench: 0, squat: 0, deadlift: 0 },
-      { bench: 60, squat: 80, deadlift: 100 },
-      { bench: 80, squat: 110, deadlift: 130 },
-      { bench: 100, squat: 140, deadlift: 160 },
-      { bench: 120, squat: 170, deadlift: 190 },
-      { bench: 140, squat: 200, deadlift: 220 },
-      { bench: 160, squat: 230, deadlift: 250 },
+      { bench: 40, squat: 60, deadlift: 80 },
+      { bench: 80, squat: 100, deadlift: 120 },
+      { bench: 120, squat: 150, deadlift: 170 },
+      { bench: 160, squat: 200, deadlift: 220 },
+      { bench: 200, squat: 250, deadlift: 270 },
+      { bench: 240, squat: 300, deadlift: 320 },
     ]);
   });
 
