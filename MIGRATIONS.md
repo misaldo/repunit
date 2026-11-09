@@ -90,6 +90,16 @@ This is rule-based validation, not computer vision and not an AI assessment of l
 
 The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review.
 
+### Retention, events and social progression: 0044–0046
+
+32. `drizzle/migrations/0044_two_verified_pr_goal.sql` — persist the user's PR baseline and award the two-new-verified-PR milestone.
+33. `drizzle/migrations/0045_events_rivalry_cosmetics.sql` — create admin-managed weekend events and verified-lift event leaderboards, Crew rivalry notifications/challenge-back RPCs, and achievement cosmetic unlocks/equipping.
+34. `supabase/migrations/0046_gentle_streaks_share_cards_notification_controls.sql` — add weekly training streaks with one monthly freeze, notification preferences/quiet hours, and a server-enforced maximum of three push deliveries per user per local day.
+
+Apply 0044, then 0045, then 0046 only after confirming that all earlier migrations and their prerequisites are present. Migration 0046 is stored under `supabase/migrations/` (not `drizzle/migrations/`); run that exact file in the canonical project's SQL Editor. Do not paste it twice or assume it has run merely because the frontend code is present.
+
+The dashboard includes the weekly streak card, event leaderboards and rivalry inbox. The settings page includes notification controls. Story-card sharing is wired to verified lift highlights, completed Crew battles and completed weekend-event results. Crew battle cards and the profile/dashboard progression UI also rely on the earlier XP, achievement and progression migrations.
+
 ## Database tests
 
 Run these against a local Supabase test database, not production:
