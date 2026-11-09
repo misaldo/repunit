@@ -555,3 +555,62 @@ input, select, textarea {
   }
 }
 
+/* REPUNIT global polish: page, navigation, menus, fields and interactive surfaces. */
+@keyframes repunit-page-enter {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+main > div {
+  animation: repunit-page-enter 360ms cubic-bezier(.2,.8,.2,1) both;
+}
+html { scroll-behavior: smooth; }
+
+:where(a, summary, [role="menuitem"], [role="option"], [role="tab"]) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    opacity 180ms ease;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 200ms ease,
+    outline-color 180ms ease;
+}
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  border-color: color-mix(in oklab, var(--primary) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent);
+}
+
+details[open] > :where(div, nav, ul) {
+  animation: repunit-menu-enter 180ms cubic-bezier(.2,.8,.2,1) both;
+  transform-origin: top right;
+}
+@keyframes repunit-menu-enter {
+  from { opacity: 0; translate: 0 -5px; scale: .985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  main a[class*="rounded-2xl"]:not([class*="bg-primary"]):hover {
+    border-color: color-mix(in oklab, var(--primary) 34%, var(--border));
+  }
+  nav a:not([aria-current="page"]):hover {
+    color: var(--foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  main > div,
+  details[open] > :where(div, nav, ul) {
+    animation: none !important;
+  }
+}
+
