@@ -333,3 +333,70 @@
   .pr-celebration-panel { animation: none !important; }
   .pr-confetti-piece { display: none !important; }
 }
+
+
+/* REPUNIT tactile button system — consistent feedback across the whole app */
+@layer base {
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled) {
+    transition:
+      transform 180ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 220ms ease,
+      filter 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    button:not(:disabled):hover,
+    [role="button"]:not([aria-disabled="true"]):hover,
+    input[type="button"]:not(:disabled):hover,
+    input[type="submit"]:not(:disabled):hover,
+    input[type="reset"]:not(:disabled):hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  input[type="button"]:not(:disabled):active,
+  input[type="submit"]:not(:disabled):active,
+  input[type="reset"]:not(:disabled):active {
+    transform: translateY(0) scale(.97);
+    filter: brightness(.96);
+    transition-duration: 80ms;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input[type="button"]:disabled,
+  input[type="submit"]:disabled,
+  input[type="reset"]:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Keep motion comfortable for visitors who request reduced animation. */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    transition: none !important;
+  }
+}
