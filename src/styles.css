@@ -400,3 +400,84 @@
     transition: none !important;
   }
 }
+
+
+/* REPUNIT mobile-first comfort and layout safeguards */
+html {
+  min-width: 320px;
+  scroll-padding-top: 5rem;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-width: 320px;
+  overflow-x: clip;
+}
+img, video, canvas, svg {
+  max-width: 100%;
+}
+button, a, [role="button"], summary, input, select, textarea {
+  touch-action: manipulation;
+}
+input, select, textarea {
+  max-width: 100%;
+}
+:where(table) {
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  /* Prevent accidental sideways scrolling from wide stats, tables and cards. */
+  #root, main, main > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  main {
+    overflow-wrap: anywhere;
+  }
+  main :where(img, video, canvas) {
+    height: auto;
+  }
+  main :where(table) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  main :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 44px;
+    font-size: 16px; /* Avoid iOS focus zoom. */
+  }
+  main :where(textarea) {
+    min-height: 104px;
+  }
+  /* Keep page actions comfortably tappable without enlarging compact icon controls. */
+  main :where(button:not([class*="h-"]), a[role="button"]) {
+    min-height: 44px;
+  }
+  main :where(button, a, summary) {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Long usernames, URLs and leaderboard values must wrap instead of widening the page. */
+  main :where(p, span, h1, h2, h3, h4, a, label) {
+    overflow-wrap: anywhere;
+  }
+  /* Use the full available width on phones and keep safe-area spacing at the bottom. */
+  main {
+    padding-top: 1.25rem;
+    padding-bottom: 1.5rem;
+  }
+}
+@media (max-width: 380px) {
+  main {
+    padding-left: .75rem !important;
+    padding-right: .75rem !important;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a:active,
+  summary:active {
+    filter: brightness(.94);
+  }
+}
