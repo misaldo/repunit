@@ -159,7 +159,7 @@ export function WeeklyStreakCard({ userId }: { userId: string }) {
   currentMonday.setDate(currentMonday.getDate() - (currentMonday.getDay() + 6) % 7);
   const currentWeek = `${currentMonday.getFullYear()}-${String(currentMonday.getMonth() + 1).padStart(2, "0")}-${String(currentMonday.getDate()).padStart(2, "0")}`;
   const expectedFreezeWeek = data?.last_training_week ? new Date(`${data.last_training_week}T00:00:00Z`) : null;
-  expectedFreezeWeek?.setUTCDate(expectedFreezeWeek.getUTCDate() + 14);
+  if (expectedFreezeWeek) expectedFreezeWeek.setUTCDate(expectedFreezeWeek.getUTCDate() + 14);
   const freezeEligible = expectedFreezeWeek?.toISOString().slice(0, 10) === currentWeek;
   const freezeUsed = data?.freeze_month === monthStart;
   return <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
