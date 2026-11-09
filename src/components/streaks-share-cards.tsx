@@ -155,6 +155,12 @@ export function WeeklyStreakCard({ userId }: { userId: string }) {
   const longest = Number(data?.longest_weeks ?? current);
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const currentMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  currentMonday.setDate(currentMonday.getDate() - (currentMonday.getDay() + 6) % 7);
+  const currentWeek = `${currentMonday.getFullYear()}-${String(currentMonday.getMonth() + 1).padStart(2, "0")}-${String(currentMonday.getDate()).padStart(2, "0")}`;
+  const expectedFreezeWeek = data?.last_training_week ? new Date(`${data.last_training_week}T00:00:00Z`) : null;
+  expectedFreezeWeek?.setUTCDate(expectedFreezeWeek.getUTCDate() + 14);
+  const freezeEligible = expectedFreezeWeek?.toISOString().slice(0, 10) === currentWeek;
   const freezeUsed = data?.freeze_month === monthStart;
   return <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
     <div className="flex items-center gap-3">
@@ -164,8 +170,8 @@ export function WeeklyStreakCard({ userId }: { userId: string }) {
     </div>
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
       <p className="text-xs text-muted-foreground">{isError ? "Streak details are temporarily unavailable." : `Longest streak: ${longest} ${longest === 1 ? "week" : "weeks"}`}</p>
-      <button type="button" onClick={() => void useFreeze()} disabled={freezing || freezeUsed || !data?.last_training_week} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50">
-        <Snowflake className="h-4 w-4 text-primary" />{freezing ? "Applying…" : freezeUsed ? "Monthly freeze used" : "Use monthly freeze"}
+      <button type="button" onClick={() => void useFreeze()} disabled={freezing || freezeUsed || !freezeEligible} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50">
+        <Snowflake className="h-4 w-4 text-primary" />{freezing ? "Applying…" : freezeUsed ? "Monthly freeze used" : freezeEligible ? "Use monthly freeze" : "Freeze available after a missed week"}
       </button>
     </div>
     <p className="mt-2 text-[10px] text-muted-foreground">Train at least once each week. One missed week can be protected each month. Rest is part of progress.</p>
