@@ -37,6 +37,17 @@ Deno.serve(async (request: Request) => {
       return json({ ignored: true });
     }
 
+    const quota = await adminRest("rpc/repunit_claim_push_slot", {
+      method: "POST",
+      body: JSON.stringify({
+        _user_id: notification.user_id,
+        _kind: typeof notification.kind === "string" ? notification.kind : "general",
+      }),
+    });
+    if (!quota.ok) return json({ error: "Push delivery is temporarily unavailable." }, 503);
+    const maySend = await quota.json();
+    if (maySend !== true) return json({ sent: 0, skipped: true });
+
     const result = await adminRest(
       `push_subscriptions?user_id=eq.${encodeURIComponent(notification.user_id)}&select=id,endpoint,p256dh,auth`,
     );
