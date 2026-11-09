@@ -13,7 +13,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
-import { AchievementUnlockBanner } from "@/components/achievement-unlock-banner";
 import { PrCelebration } from "@/components/pr-celebration";
 import { supabase } from "@/integrations/supabase/client";
 import { I18nProvider } from "@/i18n/i18n-provider";
@@ -129,7 +128,6 @@ function RootComponent() {
     <I18nProvider>
       <QueryClientProvider client={queryClient}>
         <Outlet />
-        {false && <AchievementUnlockBanner />}
         <PrCelebration />
         <Toaster theme="dark" position="top-center" />
       </QueryClientProvider>
