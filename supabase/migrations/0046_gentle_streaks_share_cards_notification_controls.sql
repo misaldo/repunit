@@ -19,6 +19,7 @@ returns trigger language plpgsql security definer set search_path = public
 as $$
 declare
   training_week date;
+  month_start date := date_trunc('month', now())::date;
 begin
   if new.status <> 'VERIFIED' then return new; end if;
   if tg_op = 'UPDATE' and old.status = 'VERIFIED' and old.lifted_on = new.lifted_on then return new; end if;
@@ -30,8 +31,9 @@ begin
     current_weeks = case
       when excluded.last_training_week = weekly_training_streaks.last_training_week then weekly_training_streaks.current_weeks
       when excluded.last_training_week = weekly_training_streaks.last_training_week + 7 then weekly_training_streaks.current_weeks + 1
-      when weekly_training_streaks.freeze_week = weekly_training_streaks.last_training_week + 7
-        and excluded.last_training_week = weekly_training_streaks.last_training_week + 14
+      when excluded.last_training_week = weekly_training_streaks.last_training_week + 14
+        and (weekly_training_streaks.freeze_week = weekly_training_streaks.last_training_week + 7
+          or weekly_training_streaks.freeze_month is distinct from month_start)
         then weekly_training_streaks.current_weeks + 1
       else 1
     end,
@@ -40,13 +42,28 @@ begin
       case
         when excluded.last_training_week = weekly_training_streaks.last_training_week then weekly_training_streaks.current_weeks
         when excluded.last_training_week = weekly_training_streaks.last_training_week + 7 then weekly_training_streaks.current_weeks + 1
-        when weekly_training_streaks.freeze_week = weekly_training_streaks.last_training_week + 7
-          and excluded.last_training_week = weekly_training_streaks.last_training_week + 14
+        when excluded.last_training_week = weekly_training_streaks.last_training_week + 14
+          and (weekly_training_streaks.freeze_week = weekly_training_streaks.last_training_week + 7
+            or weekly_training_streaks.freeze_month is distinct from month_start)
           then weekly_training_streaks.current_weeks + 1
         else 1
       end
     ),
     last_training_week = greatest(weekly_training_streaks.last_training_week, excluded.last_training_week),
+    freeze_week = case
+      when excluded.last_training_week = weekly_training_streaks.last_training_week + 14
+        and weekly_training_streaks.freeze_week is distinct from weekly_training_streaks.last_training_week + 7
+        and weekly_training_streaks.freeze_month is distinct from month_start
+        then weekly_training_streaks.last_training_week + 7
+      else weekly_training_streaks.freeze_week
+    end,
+    freeze_month = case
+      when excluded.last_training_week = weekly_training_streaks.last_training_week + 14
+        and weekly_training_streaks.freeze_week is distinct from weekly_training_streaks.last_training_week + 7
+        and weekly_training_streaks.freeze_month is distinct from month_start
+        then month_start
+      else weekly_training_streaks.freeze_month
+    end,
     updated_at = now();
   return new;
 end;
