@@ -6,6 +6,7 @@ import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X, Share2 } from "luci
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { ShareStoryButton } from "@/components/streaks-share-cards";
 
 type Category = "bench" | "squat" | "deadlift" | "volume";
 type Battle = {
@@ -215,7 +216,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         {isEnded&&(leftWon||rightWon)&&<span className="inline-flex items-center gap-1 text-primary"><ShieldCheck className="h-3.5 w-3.5"/>Crew badge earned</span>}
       </div>
       {isEnded&&(leftWon||rightWon)&&<div className="battle-winner mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-xs font-black uppercase tracking-widest text-primary"><Trophy className="h-4 w-4"/> {leftWon?left?.name:right?.name} wins the battle!</div>}
-      {isEnded && <button type="button" onClick={(event) => { event.stopPropagation(); void shareResult(item); }} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-black uppercase tracking-wider text-muted-foreground transition hover:border-primary/50 hover:text-primary"><Share2 className="h-4 w-4"/>Share result</button>}
+      {isEnded && <div onClick={event => event.stopPropagation()} className="mt-3"><ShareStoryButton eyebrow="Crew battle result" title={categoryName[battle.category]} metric={leftWon || rightWon ? "VICTORY" : "DRAW"} unit={leftWon || rightWon ? "CREW WINS" : "FINAL RESULT"} detail={`${left?.name ?? "Crew"} ${leftTotal.toLocaleString()} — ${right?.name ?? "Crew"} ${rightTotal.toLocaleString()} kg`} filename="repunit-battle" /></div>}
     </article>;
   };
 
