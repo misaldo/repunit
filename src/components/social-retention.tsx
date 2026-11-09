@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-session";
 import { AvatarChip } from "@/components/avatar-chip";
+import { ShareStoryButton } from "@/components/streaks-share-cards";
 
 const EXERCISES = ["bench", "squat", "deadlift", "ohp", "pullup"] as const;
 const exerciseLabel: Record<string, string> = { bench: "Bench", squat: "Squat", deadlift: "Deadlift", ohp: "Overhead press", pullup: "Pull-up" };
@@ -82,6 +83,7 @@ export function WeekendEvents() {
           <p className="mt-3 text-[10px] font-semibold text-muted-foreground">{new Date(event.starts_at).toLocaleString()} — {new Date(event.ends_at).toLocaleString()}</p>
           <div className="mt-3 border-t border-border pt-2">{rows.slice(0,3).map((row: any,index: number)=><div key={row.user_id} className="flex items-center gap-2 py-1.5 text-xs"><span className="w-5 font-stat text-primary">#{index+1}</span><span className="min-w-0 flex-1 truncate font-semibold">@{row.username}</span><span className="font-stat">{Number(event.exercise ? row.best_kg : row.volume_kg).toLocaleString()} kg</span></div>)}{!rows.length && <p className="text-xs text-muted-foreground">Be the first to enter the leaderboard with a verified lift.</p>}</div>
           <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-primary">{joined ? "Participation badge earned" : "Verified lifts count automatically"}</p>
+          {new Date(event.ends_at) < new Date() && rows[0] && <div className="mt-3"><ShareStoryButton eyebrow="Competition result" title={event.title} metric="WINNER" unit="REPUNIT" detail={`@${rows[0].username} · ${Number(event.exercise ? rows[0].best_kg : rows[0].volume_kg).toLocaleString()} kg`} filename="repunit-season-result" /></div>}
         </article>;
       })}</div>}
   </section>;
