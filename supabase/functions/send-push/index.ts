@@ -49,6 +49,7 @@ Deno.serve(async (request: Request) => {
       body: JSON.stringify({
         _user_id: notification.user_id,
         _kind: typeof notification.kind === "string" ? notification.kind : "general",
+        _notification_id: notification.id,
       }),
     });
     if (!quota.ok) return json({ error: "Push delivery is temporarily unavailable." }, 503);
