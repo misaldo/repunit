@@ -146,7 +146,16 @@ create table if not exists public.push_notification_daily_usage (
 );
 alter table public.push_notification_daily_usage enable row level security;
 
-create or replace function public.repunit_claim_push_slot(_user_id uuid, _kind text default 'general')
+create table if not exists public.push_notification_deliveries (
+  notification_id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  local_date date not null,
+  delivered_at timestamptz not null default now()
+);
+alter table public.push_notification_deliveries enable row level security;
+
+drop function if exists public.repunit_claim_push_slot(uuid, text);
+create or replace function public.repunit_claim_push_slot(_user_id uuid, _kind text, _notification_id uuid)
 returns boolean language plpgsql security definer set search_path = public
 as $$
 declare
@@ -156,6 +165,8 @@ declare
   local_day date;
   local_clock time;
   allowed boolean := true;
+  claimed_count integer;
+  claimed_notification uuid;
 begin
   select * into prefs from public.notification_preferences where user_id = _user_id;
   if found then
@@ -187,13 +198,33 @@ begin
     end if;
   end if;
 
+  if exists (select 1 from public.push_notification_deliveries where notification_id = _notification_id) then
+    return false;
+  end if;
+
   insert into public.push_notification_daily_usage (user_id, local_date, sent_count)
   values (_user_id, local_day, 1)
   on conflict (user_id, local_date) do update
     set sent_count = public.push_notification_daily_usage.sent_count + 1
-    where public.push_notification_daily_usage.sent_count < 3;
-  return found;
+    where public.push_notification_daily_usage.sent_count < 3
+  returning sent_count into claimed_count;
+
+  if claimed_count is null then return false; end if;
+
+  insert into public.push_notification_deliveries (notification_id, user_id, local_date)
+  values (_notification_id, _user_id, local_day)
+  on conflict (notification_id) do nothing
+  returning notification_id into claimed_notification;
+
+  if claimed_notification is null then
+    update public.push_notification_daily_usage
+      set sent_count = greatest(0, sent_count - 1)
+      where user_id = _user_id and local_date = local_day;
+    return false;
+  end if;
+
+  return true;
 end;
 $$;
-revoke all on function public.repunit_claim_push_slot(uuid, text) from public, anon, authenticated;
-grant execute on function public.repunit_claim_push_slot(uuid, text) to service_role;
+revoke all on function public.repunit_claim_push_slot(uuid, text, uuid) from public, anon, authenticated;
+grant execute on function public.repunit_claim_push_slot(uuid, text, uuid) to service_role;
