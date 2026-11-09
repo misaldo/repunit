@@ -19,12 +19,15 @@ returns trigger language plpgsql security definer set search_path = public
 as $$
 declare
   training_week date;
-  month_start date := date_trunc('month', now())::date;
+  month_start date;
+  user_zone text;
 begin
   if new.status <> 'VERIFIED' then return new; end if;
   if tg_op = 'UPDATE' and old.status = 'VERIFIED' and old.lifted_on = new.lifted_on then return new; end if;
 
   training_week := date_trunc('week', new.lifted_on::timestamp)::date;
+  select timezone into user_zone from public.notification_preferences where user_id = new.user_id;
+  month_start := date_trunc('month', now() at time zone coalesce(nullif(user_zone, ''), 'UTC'))::date;
   if exists (
     select 1 from public.weekly_training_streaks
     where user_id = new.user_id and last_training_week > training_week
@@ -86,11 +89,15 @@ returns jsonb language plpgsql security definer set search_path = public
 as $$
 declare
   uid uuid := auth.uid();
-  current_week date := date_trunc('week', now())::date;
-  month_start date := date_trunc('month', now())::date;
+  current_week date;
+  month_start date;
+  user_zone text;
   streak public.weekly_training_streaks%rowtype;
 begin
   if uid is null then raise exception 'Sign in required'; end if;
+  select timezone into user_zone from public.notification_preferences where user_id = uid;
+  current_week := date_trunc('week', now() at time zone coalesce(nullif(user_zone, ''), 'UTC'))::date;
+  month_start := date_trunc('month', now() at time zone coalesce(nullif(user_zone, ''), 'UTC'))::date;
   select * into streak from public.weekly_training_streaks where user_id = uid for update;
   if not found or streak.last_training_week is null then
     return jsonb_build_object('applied', false, 'reason', 'no_streak');
