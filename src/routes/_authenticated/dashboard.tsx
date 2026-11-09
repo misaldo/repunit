@@ -6,6 +6,7 @@ import { Dumbbell, ArrowRight, Trophy, Users, Settings, Swords } from "lucide-re
 import { LiveBattleCard } from "@/components/live-battle-card";
 import { HomeEngagement } from "@/components/home-engagement";
 import { WeekendEvents, RivalryInbox } from "@/components/social-retention";
+import { WeeklyStreakCard } from "@/components/streaks-share-cards";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ property: "og:title", content: "Home — REPUNIT" }, { property: "og:description", content: "Your REPUNIT home." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "Home — REPUNIT" }, { name: "description", content: "Your REPUNIT home." }] }),
@@ -20,6 +21,7 @@ function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">YOUR REPUNIT</p><h1 className="font-stat mt-2 text-6xl uppercase">{p ? `@${p.username}` : profileLoading ? "Loading profile…" : "Home"}</h1>{profileError && <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span>Profile could not be loaded.</span><button type="button" onClick={() => void refetchProfile()} className="font-semibold text-primary underline underline-offset-4">Try again</button></div>}<p className="mt-2 text-sm text-muted-foreground">Your training. Your crew. Your progress.</p></div><Button asChild variant="hero" className="h-12"><Link to="/records/new"><Dumbbell className="mr-2 h-4 w-4"/>Submit a lift<ArrowRight className="ml-2 h-4 w-4"/></Link></Button></div>
       <section className="mt-6"><LiveBattleCard/></section>
       <HomeEngagement userId={user.id} />
+      <div className="mt-5"><WeeklyStreakCard userId={user.id} /></div>
       <RivalryInbox />
       <WeekendEvents />
       <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
