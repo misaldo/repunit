@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X, Share2 } from "lucide-react";
+import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -150,24 +150,6 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
       await refresh();
     } catch { toast.error("Could not send this crew challenge. Check your permissions and try again."); }
     finally { setBusy(false); }
-  }
-  async function shareResult(item: NonNullable<typeof data>["battles"][number]) {
-    const { battle, left, right, leftScore, rightScore } = item;
-    const winner = battle.winner_crew_id === left?.id ? left?.name
-      : battle.winner_crew_id === right?.id ? right?.name
-      : leftScore.total === rightScore.total ? "Draw"
-      : leftScore.total > rightScore.total ? left?.name : right?.name;
-    const summary = `REPUNIT WEEKLY BATTLE · ${categoryName[battle.category]}\n${left?.name ?? "Crew"} ${leftScore.total.toLocaleString()} — ${rightScore.total.toLocaleString()} ${right?.name ?? "Crew"}\n${winner === "Draw" ? "It's a draw." : `${winner ?? "A Crew"} wins.`}`;
-    const url = `${window.location.origin}/battles/${battle.id}`;
-    try {
-      if (navigator.share) await navigator.share({ title: "REPUNIT Battle result", text: summary, url });
-      else {
-        await navigator.clipboard.writeText(`${summary}\n${url}`);
-        toast.success("Battle result copied");
-      }
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === "AbortError")) toast.error("Could not share this result.");
-    }
   }
 
   async function respond(id:string, accept:boolean) {
