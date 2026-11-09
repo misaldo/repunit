@@ -25,6 +25,13 @@ begin
   if tg_op = 'UPDATE' and old.status = 'VERIFIED' and old.lifted_on = new.lifted_on then return new; end if;
 
   training_week := date_trunc('week', new.lifted_on::timestamp)::date;
+  if exists (
+    select 1 from public.weekly_training_streaks
+    where user_id = new.user_id and last_training_week > training_week
+  ) then
+    return new;
+  end if;
+
   insert into public.weekly_training_streaks (user_id, current_weeks, longest_weeks, last_training_week)
   values (new.user_id, 1, 1, training_week)
   on conflict (user_id) do update set
