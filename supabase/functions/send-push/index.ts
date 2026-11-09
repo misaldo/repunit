@@ -37,6 +37,13 @@ Deno.serve(async (request: Request) => {
       return json({ ignored: true });
     }
 
+    const result = await adminRest(
+      `push_subscriptions?user_id=eq.${encodeURIComponent(notification.user_id)}&select=id,endpoint,p256dh,auth`,
+    );
+    if (!result.ok) return json({ error: "Could not load push subscriptions." }, 500);
+    const subscriptions = await result.json();
+    if (!subscriptions?.length) return json({ sent: 0 });
+
     const quota = await adminRest("rpc/repunit_claim_push_slot", {
       method: "POST",
       body: JSON.stringify({
@@ -48,12 +55,6 @@ Deno.serve(async (request: Request) => {
     const maySend = await quota.json();
     if (maySend !== true) return json({ sent: 0, skipped: true });
 
-    const result = await adminRest(
-      `push_subscriptions?user_id=eq.${encodeURIComponent(notification.user_id)}&select=id,endpoint,p256dh,auth`,
-    );
-    if (!result.ok) return json({ error: "Could not load push subscriptions." }, 500);
-    const subscriptions = await result.json();
-    if (!subscriptions?.length) return json({ sent: 0 });
 
     webpush.setVapidDetails(
       required("VAPID_SUBJECT"),
