@@ -481,3 +481,77 @@ input, select, textarea {
     filter: brightness(.94);
   }
 }
+
+/* Universal REPUNIT button feedback — also covers native and link-based actions. */
+:where(
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  a[role="button"],
+  a[class*="bg-primary"],
+  a[class*="bg-gradient-red"]
+) {
+  transform-origin: center;
+  transition:
+    translate 180ms cubic-bezier(.2,.8,.2,1),
+    scale 140ms cubic-bezier(.2,.8,.2,1),
+    filter 180ms ease,
+    box-shadow 220ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    input[type="button"]:not(:disabled),
+    input[type="submit"]:not(:disabled),
+    input[type="reset"]:not(:disabled),
+    a[role="button"],
+    a[class*="bg-primary"],
+    a[class*="bg-gradient-red"]
+  ):hover {
+    translate: 0 -1px;
+    filter: brightness(1.045);
+  }
+}
+
+:where(
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  a[role="button"],
+  a[class*="bg-primary"],
+  a[class*="bg-gradient-red"]
+):active {
+  translate: 0 0;
+  scale: .975;
+  filter: brightness(.97);
+  transition-duration: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    a[role="button"],
+    a[class*="bg-primary"],
+    a[class*="bg-gradient-red"]
+  ) {
+    transition: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+}
+
