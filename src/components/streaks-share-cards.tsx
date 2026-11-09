@@ -41,7 +41,6 @@ export function ShareStoryButton({ eyebrow, title, metric, unit = "", detail = "
     ctx.fillText("REPUNIT", 112, 260);
     ctx.fillStyle = "#ef4444";
     ctx.font = "700 30px Arial";
-    ctx.letterSpacing = "8px";
     ctx.fillText(eyebrow.toUpperCase().slice(0, 34), 112, 430);
     ctx.fillStyle = "#ffffff";
     ctx.font = "900 76px Arial";
@@ -154,9 +153,9 @@ export function WeeklyStreakCard({ userId }: { userId: string }) {
   if (isLoading) return <div className="h-28 animate-pulse rounded-2xl bg-card" />;
   const current = Number(data?.current_weeks ?? 0);
   const longest = Number(data?.longest_weeks ?? current);
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  const freezeUsed = data?.freeze_month === monthStart.toISOString().slice(0, 10);
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const freezeUsed = data?.freeze_month === monthStart;
   return <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
     <div className="flex items-center gap-3">
       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Flame className="h-5 w-5" /></div>
