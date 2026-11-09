@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Crown, Dumbbell, Camera } from "lucide-react";
+import { AnimatedNumber } from "@/components/animated-number";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-session";
 import type { Exercise } from "@/lib/lifts";
@@ -90,7 +91,7 @@ export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: s
         <Link to="/u/$username" params={{ username: r.username }} className="flex w-full flex-col items-center">
           <CosmeticAvatar userId={r.user_id} name={r.username} url={r.avatar_url} className={rank === 1 ? "h-14 w-14" : "h-11 w-11"} />
           <p className="mt-2 w-full truncate text-xs font-semibold"><CosmeticName userId={r.user_id} username={r.username} />{currentUserId === r.user_id && <span className="ml-1 text-[9px] font-black uppercase text-primary">You</span>}</p>
-          <p className={cn("font-stat mt-1", rank === 1 ? "text-5xl" : "text-3xl")}>{Number(r.weight_kg)}<span className="text-base text-muted-foreground">kg</span></p>
+          <p className={cn("font-stat mt-1", rank === 1 ? "text-5xl" : "text-3xl")}><AnimatedNumber value={Number(r.weight_kg)} decimals={Math.min(2, (String(Number(r.weight_kg)).split(".")[1] ?? "").length)} /><span className="text-base text-muted-foreground">kg</span></p>
           {r.reps > 1 && <p className="text-[10px] text-muted-foreground">× {r.reps} reps</p>}{r.has_video && <span className="mt-1 inline-flex rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">Video</span>}
           <p className={cn("font-stat mt-2 text-2xl", PODIUM[rank - 1])}>#{rank}</p>
         </Link>

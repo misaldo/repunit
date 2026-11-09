@@ -614,3 +614,94 @@ details[open] > :where(div, nav, ul) {
   }
 }
 
+
+/* ------------------------------------------------------------------ */
+/* REPUNIT motion v2: scroll reveals, living icons, podium, bars.      */
+/* Everything below is switched off by prefers-reduced-motion.         */
+/* ------------------------------------------------------------------ */
+@keyframes repunit-reveal {
+  from { opacity: 0; translate: 0 18px; scale: .985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+/* Cards fade up as they scroll into view (browsers without scroll-driven
+   animations simply show them normally). */
+@supports (animation-timeline: view()) {
+  main :where(section, article, [class*="rounded-2xl"][class*="border"]):not(main > *):not(.rise):not(.battle-enter):not([class*="animate-"]) {
+    animation: repunit-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 38%;
+  }
+}
+
+/* Streak flame flickers, the throne crown floats. */
+@keyframes repunit-flame {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.07, 1.12) rotate(-3deg); }
+  50% { transform: scale(.97, 1.04) rotate(2deg); }
+  75% { transform: scale(1.05, 1.09) rotate(-2deg); }
+}
+@keyframes repunit-crown {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(-4deg); }
+}
+svg.lucide-flame {
+  transform-origin: 50% 90%;
+  animation: repunit-flame 1.9s ease-in-out infinite;
+}
+svg.lucide-crown {
+  transform-origin: 50% 80%;
+  animation: repunit-crown 3.2s ease-in-out infinite;
+}
+
+/* XP and other bars grow in from the left instead of appearing at full width. */
+@keyframes repunit-bar-grow {
+  from { transform: scaleX(0); }
+}
+[role="progressbar"] > div[style*="width"] {
+  transform-origin: left center;
+  animation: repunit-bar-grow 900ms cubic-bezier(.2, .8, .2, 1) both;
+}
+[role="progressbar"] > div {
+  transition-duration: 700ms;
+  transition-timing-function: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Podium builds up: 3rd place, then 2nd, then the winner with a pop. */
+@keyframes repunit-podium-winner {
+  0% { opacity: 0; transform: translateY(26px) scale(.92); }
+  60% { opacity: 1; transform: translateY(-5px) scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+.grid.grid-cols-3 > .rise:nth-child(3) { animation-delay: 0ms; }
+.grid.grid-cols-3 > .rise:nth-child(1) { animation-delay: 140ms; }
+.grid.grid-cols-3 > .rise:nth-child(2) {
+  animation: repunit-podium-winner 720ms cubic-bezier(.2, .8, .2, 1) 300ms both;
+}
+
+/* Cards that are links lift slightly on hover and sink when pressed. */
+@media (hover: hover) and (pointer: fine) {
+  main a[class*="rounded-2xl"][class*="border"]:not([class*="bg-primary"]) {
+    transition-property: transform, border-color, background-color, box-shadow;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(.2, .8, .2, 1);
+  }
+  main a[class*="rounded-2xl"][class*="border"]:not([class*="bg-primary"]):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -14px color-mix(in oklab, var(--primary) 45%, transparent);
+  }
+}
+main a[class*="rounded-2xl"][class*="border"]:active {
+  transform: scale(.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main :where(section, article, [class*="rounded-2xl"]),
+  svg.lucide-flame,
+  svg.lucide-crown,
+  [role="progressbar"] > div,
+  .grid.grid-cols-3 > .rise {
+    animation: none !important;
+    transition: none !important;
+  }
+}
