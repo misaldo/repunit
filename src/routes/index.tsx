@@ -105,15 +105,6 @@ export function Landing() {
         </div>
       </section>
 
-      {false && <section className="mx-auto max-w-6xl px-4 py-20">
-        <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card p-8 md:p-12">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-          <p className="eyebrow">REPUNIT Pro</p>
-          <h2 className="mt-2 max-w-lg text-3xl font-bold md:text-4xl">See the work behind the numbers.</h2>
-          <p className="mt-3 max-w-md text-muted-foreground">Track your progress over time and get more detail on your training.</p>
-          <Button asChild variant="line" className="mt-6"><Link to="/pricing">See plans</Link></Button>
-        </div>
-      </section>}
       <SiteFooter />
       <MobileNav />
       <InstallPrompt />
