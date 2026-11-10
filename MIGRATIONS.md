@@ -90,10 +90,6 @@ This is rule-based validation, not computer vision and not an AI assessment of l
 
 The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review.
 
-### Free launch billing pause: 0047
-
-35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later. Apply after the existing migrations, only once the earlier sequence is confirmed.
-
 ### Retention, events and social progression: 0044–0046
 
 32. `drizzle/migrations/0044_two_verified_pr_goal.sql` — persist the user's PR baseline and award the two-new-verified-PR milestone.
@@ -103,6 +99,11 @@ The follow-up `0038_proof_transition_hardening.sql` clears stale verification ti
 Apply 0044, then 0045, then 0046 only after confirming that all earlier migrations and their prerequisites are present. Migration 0046 is stored under `supabase/migrations/` (not `drizzle/migrations/`); run that exact file in the canonical project's SQL Editor. Do not paste it twice or assume it has run merely because the frontend code is present.
 
 The dashboard includes the weekly streak card, event leaderboards and rivalry inbox. The settings page includes notification controls. Story-card sharing is wired to verified lift highlights, completed Crew battles and completed weekend-event results. Crew battle cards and the profile/dashboard progression UI also rely on the earlier XP, achievement and progression migrations.
+
+### Free launch billing pause: 0047
+
+35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later. Apply after the existing migrations, only once the earlier sequence is confirmed.
+
 
 ## Database tests
 
