@@ -33,7 +33,14 @@ export function FirstRunSetup() {
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const open = Boolean(user?.id && profile && user.user_metadata?.["repunit_onboarding_required"] === true && (profile as any).onboarding_completed !== true && !locallyCompleted);
+  const accountCreatedAt = user?.created_at ? Date.parse(user.created_at) : Number.NaN;
+  const isFreshAccount = Number.isFinite(accountCreatedAt)
+    && Date.now() >= accountCreatedAt
+    && Date.now() - accountCreatedAt < 15 * 60 * 1000;
+  // Google OAuth does not accept the same signUp metadata flag as email registration.
+  // Detect newly-created OAuth accounts by their auth creation timestamp.
+  const onboardingRequired = user?.user_metadata?.["repunit_onboarding_required"] === true || isFreshAccount;
+  const open = Boolean(user?.id && profile && onboardingRequired && (profile as any).onboarding_completed !== true && !locallyCompleted);
   if (!open || !profile || !user) return null;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
