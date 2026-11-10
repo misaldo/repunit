@@ -70,6 +70,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-border/60 bg-background/90 px-4 backdrop-blur-2xl md:px-6">
       <div className="flex items-center gap-3"><div className="md:hidden"><Wordmark /></div><div className="hidden md:block"><span className="eyebrow">STRENGTH IS SOCIAL</span><p className="text-xs text-muted-foreground">Your training network</p></div></div>
       <div className="flex items-center gap-3">
+        <Link to="/workouts" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground transition hover:border-primary/50 hover:text-primary sm:hidden"><Dumbbell className="h-3.5 w-3.5" /> SPLITS</Link>
         {user && <details className="group relative">
           <summary aria-label={unreadCount ? `${unreadCount} unread notifications` : "Notifications"} className="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/50 hover:text-foreground [&::-webkit-details-marker]:hidden">
             <Bell className="h-4 w-4" />
@@ -133,7 +134,7 @@ export function MobileNav() {
       <Link to="/records/new" aria-label="Log a lift" className="relative -mt-5 flex h-[62px] w-[62px] shrink-0 flex-col items-center justify-center rounded-2xl border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_28px_-8px_hsl(var(--primary)/.8)] transition hover:brightness-110 active:scale-95">
         <Plus className="h-7 w-7"/><span className="text-[9px] font-black uppercase tracking-wider">{t("log")}</span>
       </Link>
-      <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>{t("split")}</Link>
+      <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5"/>{t("crews")}</Link>
       {profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>{t("profile")}</Link> : user ? <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>{t("profile")}</Link> : <Link to="/auth" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
     </div>
   </nav>;
