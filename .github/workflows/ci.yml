@@ -26,6 +26,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate lift verifier Python syntax
+        run: python -m py_compile services/lift-verifier/main.py
+      - name: Build lift verifier container
+        run: docker build -t repunit-lift-verifier ./services/lift-verifier
       - name: Set up Deno
         uses: denoland/setup-deno@v2
         with:
