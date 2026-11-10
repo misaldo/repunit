@@ -24,7 +24,13 @@ export function FirstRunSetup() {
   const [locallyCompleted, setLocallyCompleted] = useState(false);
 
   useEffect(() => {
-    if (!user?.id) return;
+    setStep("profile");
+    setAvatar(null);
+    setSaving(false);
+    if (!user?.id) {
+      setLocallyCompleted(false);
+      return;
+    }
     try { setLocallyCompleted(window.localStorage.getItem("repunit-onboarding-done:" + user.id) === "1"); } catch { setLocallyCompleted(false); }
   }, [user?.id]);
 
