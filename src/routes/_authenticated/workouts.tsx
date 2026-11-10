@@ -162,7 +162,6 @@ function WorkoutsPage() {
     },
   });
   const subscriptionQuery = useQuery({
-    enabled: false,
     queryKey: ["subscription", user.id],
     queryFn: async () => {
       const { data, error } = await db.from("user_subscriptions").select("status").eq("user_id", user.id).maybeSingle();
@@ -170,7 +169,7 @@ function WorkoutsPage() {
       return data;
     },
   });
-  const isPro = true;
+  const isPro = ["active", "trialing"].includes(subscriptionQuery.data?.status ?? "");
 
   const exercisesQuery = useQuery({
     queryKey: ["workout-plan-exercises", user.id, expanded],
