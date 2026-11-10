@@ -174,6 +174,6 @@ export function CosmeticAvatar({ userId, name, url, className }: { userId: strin
   });
   const frame = data?.equipped_frame;
   return <span className="inline-flex rounded-full p-[2px]" style={frame ? { boxShadow: `0 0 0 2px ${frame}, 0 0 12px ${frame}66` } : undefined}>
-    <AvatarChip name={name} url={url} className={className || "h-9 w-9"} />
+    <AvatarChip name={name} url={url ?? null} className={className || "h-9 w-9"} />
   </span>;
 }
