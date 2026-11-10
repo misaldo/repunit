@@ -128,10 +128,14 @@ function NewRecord() {
         queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
       ]);
       const funFact = await crewFunFact();
-      if (["NEEDS_PROOF", "UNDER_REVIEW", "PENDING", "NEEDS_REVIEW", "AI_ANALYZING"].includes(String((data as { status?: string }).status ?? ""))) {
-        toast.warning("Lift saved — proof needed", { description: `${data.verification_reason ?? "This lift is not counted in rankings yet."} ${funFact}` });
+      const savedStatus = String((data as { status?: string }).status ?? "");
+      if (savedStatus !== "VERIFIED") {
+        const rejected = savedStatus === "REJECTED";
+        toast.warning(rejected ? "Lift needs another attempt" : "Lift saved — not counted in PRs yet", {
+          description: `${data.verification_reason ?? (rejected ? "This submission was rejected." : "This lift is waiting for verification or proof.")} ${funFact}`,
+        });
       } else {
-        toast.success("PR logged", { description: funFact });
+        toast.success("Lift verified and PR logged", { description: funFact });
       }
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
