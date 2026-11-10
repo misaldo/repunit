@@ -1,7 +1,7 @@
 // @ts-nocheck -- references planned backend features not yet set up
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
@@ -19,9 +19,11 @@ export const Route = createFileRoute("/_authenticated/records/new")({
 function NewRecord() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
-  const savedExercise = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastExercise") : null;
-  const savedWeight = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastWeight") : null;
-  const savedReps = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastReps") : null;
+  const queryClient = useQueryClient();
+  // Prefill values are private to each account on shared browsers.
+  const savedExercise = typeof window !== "undefined" ? window.localStorage.getItem(`repunit.lastExercise:${user.id}`) : null;
+  const savedWeight = typeof window !== "undefined" ? window.localStorage.getItem(`repunit.lastWeight:${user.id}`) : null;
+  const savedReps = typeof window !== "undefined" ? window.localStorage.getItem(`repunit.lastReps:${user.id}`) : null;
   const hasSavedPrefill = Boolean(savedWeight);
   const [exercise, setExercise] = useState<Exercise>(EXERCISES.some((item) => item.id === savedExercise && item.id !== "pullup") ? savedExercise as Exercise : "bench");
   const [weight, setWeight] = useState(savedWeight ?? "");
@@ -96,9 +98,9 @@ function NewRecord() {
       }).select("id,status,verification_reason").single();
       if (error) throw error;
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("repunit.lastExercise", exercise);
-        window.localStorage.setItem("repunit.lastWeight", String(weight));
-        window.localStorage.setItem("repunit.lastReps", String(reps));
+        window.localStorage.setItem(`repunit.lastExercise:${user.id}`, exercise);
+        window.localStorage.setItem(`repunit.lastWeight:${user.id}`, String(weight));
+        window.localStorage.setItem(`repunit.lastReps:${user.id}`, String(reps));
       }
       const crewFunFact = async () => {
         try {
@@ -118,8 +120,15 @@ function NewRecord() {
         const comparison = getFunComparison(total);
         return comparison ? `You just moved ${formatLiftVolume(total)} — about ${comparison.label}.` : "Your result is on REPUNIT.";
       };
+      // Refresh profile PRs and rankings immediately after a successful insert.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile-progression", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["user-progression", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
+      ]);
       const funFact = await crewFunFact();
-      if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {
+      if (["NEEDS_PROOF", "UNDER_REVIEW", "PENDING", "NEEDS_REVIEW", "AI_ANALYZING"].includes(String((data as { status?: string }).status ?? ""))) {
         toast.warning("Lift saved — proof needed", { description: `${data.verification_reason ?? "This lift is not counted in rankings yet."} ${funFact}` });
       } else {
         toast.success("PR logged", { description: funFact });
