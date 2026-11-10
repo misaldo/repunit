@@ -126,6 +126,7 @@ function NewRecord() {
         queryClient.invalidateQueries({ queryKey: ["profile-progression", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["user-progression", user.id] }),
         queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["crew-ranks-rpc-v1"] }),
       ]);
       const funFact = await crewFunFact();
       const savedStatus = String((data as { status?: string }).status ?? "");
