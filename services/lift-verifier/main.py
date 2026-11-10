@@ -50,14 +50,33 @@ def _rest(method: str, path: str, **kwargs: Any) -> requests.Response:
     return response
 
 
-def _set_status(lift_id: str, status: str, reason: str) -> None:
+def _set_status(lift_id: str, video_path: str, status: str, reason: str) -> None:
+    # A delayed worker must never change the status of a newer replacement video.
     _rest(
         "PATCH",
-        f"lifts?id=eq.{lift_id}",
-        params={"select": "id"},
+        "lifts",
+        params={
+            "id": f"eq.{lift_id}",
+            "video_path": f"eq.{video_path}",
+            "status": "eq.AI_ANALYZING",
+            "select": "id",
+        },
         headers={"Prefer": "return=minimal"},
         json={"status": status, "verification_reason": reason[:500], "verified_at": None},
     )
+
+
+def _is_current_video(lift_id: str, video_path: str) -> bool:
+    rows = _rest(
+        "GET", "lifts",
+        params={
+            "id": f"eq.{lift_id}",
+            "status": "eq.AI_ANALYZING",
+            "select": "id,video_path",
+            "limit": "1",
+        },
+    ).json()
+    return bool(rows and rows[0].get("video_path") == video_path)
 
 
 def _download_video(video_path: str, destination: Path) -> None:
@@ -128,9 +147,12 @@ def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
 
 
 def _store_fingerprint(lift_id: str, digest: str, hashes: list[str]) -> None:
+    # Update this lift's fingerprint when its owner replaces the video.
+    # The unique SHA-256 constraint still rejects reuse by a different lift.
     _rest(
         "POST", "lift_video_fingerprints",
-        headers={"Prefer": "resolution=ignore-duplicates,return=minimal"},
+        params={"on_conflict": "lift_id"},
+        headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
         json={"lift_id": lift_id, "sha256": digest, "frame_hashes": hashes},
     )
 
@@ -179,30 +201,34 @@ def _process_lift(record: dict[str, Any]) -> None:
             video_file = Path(directory) / "proof-video"
             _download_video(video_path, video_file)
             digest, hashes = _sample_hashes(video_file)
+            if not _is_current_video(lift_id, video_path):
+                return
             duplicate_of = _find_duplicate(digest, hashes)
             if duplicate_of and duplicate_of != lift_id:
                 _set_status(
-                    lift_id, "REJECTED",
+                    lift_id, video_path, "REJECTED",
                     "This video appears to reuse footage already submitted for another lift.",
                 )
+                return
+            if not _is_current_video(lift_id, video_path):
                 return
             _store_fingerprint(lift_id, digest, hashes)
             pose_frames = _pose_screen(video_file)
             if pose_frames < 2:
                 _set_status(
-                    lift_id, "NEEDS_REVIEW",
+                    lift_id, video_path, "NEEDS_REVIEW",
                     "The lifter could not be reliably identified in enough frames. Manual review required.",
                 )
                 return
             _set_status(
-                lift_id, "NEEDS_REVIEW",
+                lift_id, video_path, "NEEDS_REVIEW",
                 f"Screening completed: person detected in {pose_frames} sampled frames and duplicate check passed. "
                 "Declared load, repetitions and competition-standard technique are not verified; manual review required.",
             )
     except Exception as error:
         try:
             _set_status(
-                lift_id, "NEEDS_REVIEW",
+                lift_id, video_path, "NEEDS_REVIEW",
                 f"Automatic screening could not finish safely ({type(error).__name__}). Manual review required.",
             )
         except Exception:
