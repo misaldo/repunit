@@ -20,7 +20,9 @@ export function useUser() {
         // Purge account-scoped cached data before rendering the next identity.
         void queryClient.cancelQueries();
         queryClient.clear();
-        void router.invalidate();
+        queueMicrotask(() => {
+          if (active) void router.invalidate();
+        });
       }
       previousUserId = nextUserId;
       setUser(nextUser);
