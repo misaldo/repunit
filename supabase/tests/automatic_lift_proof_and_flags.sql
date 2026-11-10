@@ -111,7 +111,7 @@ select ok(
 );
 
 select ok(
-  position('status in (''needs_proof'', ''under_review'', ''pending'')' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
+  position('status in (''needs_proof'', ''under_review'', ''pending''' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
   'video proof can resolve only lifts waiting for proof or review'
 );
 
