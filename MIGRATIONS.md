@@ -90,6 +90,10 @@ This is rule-based validation, not computer vision and not an AI assessment of l
 
 The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review.
 
+### Free launch billing pause: 0047
+
+35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later. Apply after the existing migrations, only once the earlier sequence is confirmed.
+
 ### Retention, events and social progression: 0044–0046
 
 32. `drizzle/migrations/0044_two_verified_pr_goal.sql` — persist the user's PR baseline and award the two-new-verified-PR milestone.
