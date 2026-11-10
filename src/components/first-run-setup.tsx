@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { USERNAME_RE } from "@/lib/lifts";
+import { isRecentlyCreatedAccount } from "@/lib/onboarding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -33,10 +34,7 @@ export function FirstRunSetup() {
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const accountCreatedAt = user?.created_at ? Date.parse(user.created_at) : Number.NaN;
-  const isFreshAccount = Number.isFinite(accountCreatedAt)
-    && Date.now() >= accountCreatedAt
-    && Date.now() - accountCreatedAt < 15 * 60 * 1000;
+  const isFreshAccount = isRecentlyCreatedAccount(user?.created_at);
   // Google OAuth does not accept the same signUp metadata flag as email registration.
   // Detect newly-created OAuth accounts by their auth creation timestamp.
   const onboardingRequired = user?.user_metadata?.["repunit_onboarding_required"] === true || isFreshAccount;
