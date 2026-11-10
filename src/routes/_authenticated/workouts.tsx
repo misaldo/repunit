@@ -1,7 +1,7 @@
 // @ts-nocheck -- references backend features not yet set up; typed once their tables exist
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dumbbell, Plus, Trash2, Globe, Lock, Users, Search, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/app-shell";
@@ -138,6 +138,11 @@ function WorkoutsPage() {
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [category, setCategory] = useState("All");
 
+  // Never keep an expanded plan from the previous signed-in account on screen.
+  useEffect(() => {
+    setExpanded(null);
+  }, [user.id]);
+
   const exerciseDbQuery = useQuery({
     queryKey: ["repunit-exercise-library"],
     staleTime: 1000 * 60 * 60 * 24,
@@ -151,7 +156,7 @@ function WorkoutsPage() {
   const plansQuery = useQuery({
     queryKey: ["workout-plans", user.id],
     queryFn: async () => {
-      const { data, error } = await db.from("workout_plans").select("*").order("created_at", { ascending: false });
+      const { data, error } = await db.from("workout_plans").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Plan[];
     },
@@ -168,7 +173,7 @@ function WorkoutsPage() {
   const isPro = true;
 
   const exercisesQuery = useQuery({
-    queryKey: ["workout-plan-exercises", expanded],
+    queryKey: ["workout-plan-exercises", user.id, expanded],
     enabled: !!expanded,
     queryFn: async () => {
       const { data, error } = await db.from("workout_plan_exercises").select("*").eq("plan_id", expanded!).order("position");
