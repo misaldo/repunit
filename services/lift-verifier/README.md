@@ -32,7 +32,7 @@ Health check: GET /health
 ## Supabase webhook
 After deploying this container to a private HTTPS service, create a Database Webhook in the Supabase Dashboard:
 - Table: public.lifts
-- Event: INSERT
+- Events: INSERT and UPDATE (the worker ignores rows that are not AI_ANALYZING)
 - Method: POST
 - URL: https://YOUR_WORKER_HOST/webhooks/lift-created
 - Header: x-lift-webhook-secret: YOUR_RANDOM_SECRET
