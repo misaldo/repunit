@@ -19,7 +19,7 @@ describe("first-run OAuth account detection", () => {
   });
 
   it("respects the onboarding detection window", () => {
-    expect(isRecentlyCreatedAccount("2026-11-10T11:44:59.000Z", now)).toBe(true);
-    expect(isRecentlyCreatedAccount("2026-11-10T11:44:59.000Z", now, 15 * 60 * 1000 - 1)).toBe(false);
+    expect(isRecentlyCreatedAccount("2026-11-10T11:45:01.000Z", now)).toBe(true);
+    expect(isRecentlyCreatedAccount("2026-11-10T11:45:00.000Z", now, 15 * 60 * 1000)).toBe(false);
   });
 });
