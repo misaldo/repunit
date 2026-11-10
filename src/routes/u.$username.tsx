@@ -329,7 +329,7 @@ function Profile() {
       </section>
 
       <div className="mt-8">
-        <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Personal records</h2></div>
+        <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Best lifts</h2></div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {EXERCISES.filter((e) => e.id !== "pullup").map((e) => {
             const best = lifts.filter((l) => l.exercise === e.id && l.status !== "REJECTED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
@@ -344,7 +344,7 @@ function Profile() {
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-xl font-bold">Recent lifts</h2>
+          <h2 className="mb-3 text-xl font-bold">PRs</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
             {liftsError ? <li className="p-4 text-sm text-muted-foreground"><p>Lift records are temporarily unavailable.</p><button type="button" onClick={() => void refetch()} className="mt-2 font-semibold text-primary underline underline-offset-4">Try again</button></li> : lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
             {lifts.slice(0, 10).map((l) => <li key={l.id}><Link to="/records/$id" params={{ id: l.id }} className="flex items-center justify-between gap-3 p-4 hover:bg-elevated">
