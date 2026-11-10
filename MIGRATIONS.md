@@ -88,7 +88,7 @@ Migration `0037_automatic_lift_proof_and_flags.sql` adds database-side plausibil
 
 This is rule-based validation, not computer vision and not an AI assessment of lifting technique. A video being attached does not prove that the lift was performed correctly.
 
-The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review.
+The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review. Migration `0048` supersedes its former behavior of immediately verifying a lift when a replacement video is attached. Until a trusted analysis worker is deployed and completes its checks, new videos remain outside verified rankings.
 
 ### Retention, events and social progression: 0044–0046
 
@@ -102,7 +102,8 @@ The dashboard includes the weekly streak card, event leaderboards and rivalry in
 
 ### Free launch billing pause: 0047
 
-35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later. Apply after the existing migrations, only once the earlier sequence is confirmed.
+35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later.
+36. `drizzle/migrations/0048_fail_closed_lift_ai_review.sql` — prevents client-submitted videos from being auto-verified, routes new/replacement proofs into AI_ANALYZING, and adds a private fingerprint table for the trusted analysis worker. Apply after the existing migrations, only once the earlier sequence is confirmed.
 
 
 ## Database tests
