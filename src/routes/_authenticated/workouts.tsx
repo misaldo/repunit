@@ -161,10 +161,8 @@ function WorkoutsPage() {
       return (data ?? []) as Plan[];
     },
   });
-  // Subscriptions are intentionally dormant for the launch phase.
-  // All accounts can use workout plans without a billing lookup.
-  const subscriptionsEnabled = false;
-  const isPro = !subscriptionsEnabled;
+  // Subscription checks and plan limits stay dormant until paid plans launch.
+  // All accounts can save workout plans without a billing lookup.
 
   const exercisesQuery = useQuery({
     queryKey: ["workout-plan-exercises", user.id, expanded],
