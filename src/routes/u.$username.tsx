@@ -261,7 +261,7 @@ function Profile() {
   }
 
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
-  if (isError && !data) return <PageShell><section className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-6 sm:p-8"><p className="eyebrow">PROFILE UNAVAILABLE</p><h1 className="mt-2 text-2xl font-bold">Could not load this profile.</h1><p className="mt-2 text-sm text-muted-foreground">{profileError instanceof Error ? profileError.message : "Check your connection and try again."}</p><Button variant="line" className="mt-5" onClick={() => void refetch()}>Try again</Button></section></PageShell>;
+  if (isError && !data) return <PageShell><section className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-6 sm:p-8"><p className="eyebrow">PROFILE UNAVAILABLE</p><h1 className="mt-2 text-2xl font-bold">Could not load this profile.</h1><p className="mt-2 text-sm text-muted-foreground">{(profileError as { message?: string } | null)?.message ?? "Check your connection and try again."}</p><Button variant="line" className="mt-5" onClick={() => void refetch()}>Try again</Button></section></PageShell>;
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
   const { p, lifts, posts, liftsError } = data;
   const isOwnProfile = user?.id === p.id;
