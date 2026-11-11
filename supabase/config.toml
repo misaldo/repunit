@@ -1,4 +1,4 @@
-project_id = "sfumcokjwvhxwuanlofw"
+project_id = "kqezgcwfqfntazucbbzt"
 
 # Stripe verifies its webhook signature and validates user tokens inside the function.
 [functions.stripe]

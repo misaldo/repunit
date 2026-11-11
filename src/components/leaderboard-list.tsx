@@ -8,6 +8,7 @@ import type { Exercise } from "@/lib/lifts";
 import { AvatarChip } from "./avatar-chip";
 import { cn } from "@/lib/utils";
 import { LiftVideoDialog } from "@/components/lift-video-dialog";
+import { CosmeticName, CosmeticAvatar } from "@/components/social-retention";
 
 export function useLeaderboard(
   exercise: Exercise | "total",
@@ -87,8 +88,8 @@ export function Podium({ rows, currentUserId }: { rows: Row[]; currentUserId?: s
       return <div key={r.user_id} className={cn("rise flex min-w-0 flex-col items-center rounded-xl border border-border bg-card p-3 text-center transition hover:border-foreground/30", rank === 1 && "border-primary/50 bg-gradient-to-b from-primary/15 to-card pb-5 shadow-glow", currentUserId === r.user_id && "ring-2 ring-primary ring-offset-2 ring-offset-background")}>
         {rank === 1 && <Crown className="mb-1 h-5 w-5 text-gold" />}
         <Link to="/u/$username" params={{ username: r.username }} className="flex w-full flex-col items-center">
-          <AvatarChip name={r.username} url={r.avatar_url} className={rank === 1 ? "h-14 w-14" : "h-11 w-11"} />
-          <p className="mt-2 w-full truncate text-xs font-semibold">@{r.username}{currentUserId === r.user_id && <span className="ml-1 text-[9px] font-black uppercase text-primary">You</span>}</p>
+          <CosmeticAvatar userId={r.user_id} name={r.username} url={r.avatar_url} className={rank === 1 ? "h-14 w-14" : "h-11 w-11"} />
+          <p className="mt-2 w-full truncate text-xs font-semibold"><CosmeticName userId={r.user_id} username={r.username} />{currentUserId === r.user_id && <span className="ml-1 text-[9px] font-black uppercase text-primary">You</span>}</p>
           <p className={cn("font-stat mt-1", rank === 1 ? "text-5xl" : "text-3xl")}>{Number(r.weight_kg)}<span className="text-base text-muted-foreground">kg</span></p>
           {r.reps > 1 && <p className="text-[10px] text-muted-foreground">× {r.reps} reps</p>}{r.has_video && <span className="mt-1 inline-flex rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">Video</span>}
           <p className={cn("font-stat mt-2 text-2xl", PODIUM[rank - 1])}>#{rank}</p>
@@ -122,9 +123,9 @@ export function RankList({ rows, start = 0, currentUserId }: { rows: Row[]; star
       const gap = prev && adjacent ? Number(prev.weight_kg) - Number(r.weight_kg) : null;
       return <li key={r.user_id} role="link" tabIndex={0} onClick={()=>navigate({to:"/u/$username",params:{username:r.username}})} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate({to:"/u/$username",params:{username:r.username}});}}} className={cn("group flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-elevated active:bg-primary/10", currentUserId === r.user_id && "bg-primary/[0.08] ring-1 ring-inset ring-primary/40") }>
         <span className="font-stat w-8 shrink-0 text-2xl text-muted-foreground">{rank}</span>
-        <Link to="/u/$username" params={{username:r.username}} onClick={e=>e.stopPropagation()} aria-label={`Open @${r.username} profile`} className="rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><AvatarChip name={r.username} url={r.avatar_url} className="h-9 w-9" /></Link>
+        <Link to="/u/$username" params={{username:r.username}} onClick={e=>e.stopPropagation()} aria-label={`Open @${r.username} profile`} className="rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><CosmeticAvatar userId={r.user_id} name={r.username} url={r.avatar_url} className="h-9 w-9" /></Link>
         <div className="min-w-0 flex-1">
-          <Link to="/u/$username" params={{ username: r.username }} className="truncate text-sm font-semibold hover:text-primary" onClick={e=>e.stopPropagation()}>@{r.username}{currentUserId === r.user_id && <span className="ml-1 text-[9px] font-black uppercase text-primary">You</span>}</Link>
+          <Link to="/u/$username" params={{ username: r.username }} className="truncate text-sm font-semibold hover:text-primary" onClick={e=>e.stopPropagation()}><CosmeticName userId={r.user_id} username={r.username} />{currentUserId === r.user_id && <span className="ml-1 text-[9px] font-black uppercase text-primary">You</span>}</Link>
           <Link to="/u/$username" params={{ username: r.username }} hash="training-split" className="relative z-10 mt-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-primary hover:underline" onClick={e=>e.stopPropagation()}><Dumbbell className="h-3 w-3" /> View SPLIT</Link>
         </div>
         <div className="text-right">

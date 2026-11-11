@@ -38,7 +38,7 @@
 
 ## Supabase database
 
-The single canonical backend is `https://sfumcokjwvhxwuanlofw.supabase.co` (project ref `sfumcokjwvhxwuanlofw`). Browser and server clients, Supabase CLI, migrations and Edge Functions must all target this exact project. The documented baseline is migrations through `0011_complete_backend_setup.sql`. Check the remote schema/history and apply only pending migrations in the exact order documented in [MIGRATIONS.md](./MIGRATIONS.md):
+The single canonical backend is `https://kqezgcwfqfntazucbbzt.supabase.co` (project ref `kqezgcwfqfntazucbbzt`). Browser and server clients, Supabase CLI, migrations and Edge Functions must all target this exact project. The documented baseline is migrations through `0011_complete_backend_setup.sql`. Check the remote schema/history and apply only pending migrations in the exact order documented in [MIGRATIONS.md](./MIGRATIONS.md):
 
 - `0012_repair_training_splits.sql`
 - `0013_repair_crew_battles.sql`
@@ -72,7 +72,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
    ```bash
    supabase login
-   supabase link --project-ref sfumcokjwvhxwuanlofw
+   supabase link --project-ref kqezgcwfqfntazucbbzt
    ```
 
 4. Set the Edge Function secrets (use your real values; do not commit them):
@@ -91,7 +91,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
 6. In Stripe Dashboard, add a webhook endpoint:
 
-   `https://sfumcokjwvhxwuanlofw.supabase.co/functions/v1/stripe`
+   `https://kqezgcwfqfntazucbbzt.supabase.co/functions/v1/stripe`
 
    Subscribe to:
    - `customer.subscription.created`
@@ -120,7 +120,7 @@ The Stripe integration runs as a Supabase Edge Function; Stripe secrets never go
 
 5. In Supabase Dashboard, create a Database Webhook for `public.notifications`, event `INSERT`, method `POST`, URL:
 
-   `https://sfumcokjwvhxwuanlofw.supabase.co/functions/v1/send-push`
+   `https://kqezgcwfqfntazucbbzt.supabase.co/functions/v1/send-push`
 
    Add the header `x-repunit-webhook-secret` with the exact `PUSH_WEBHOOK_SECRET` value. The webhook body must include the inserted row in `record`. The function sends only to registered subscriptions and removes endpoints that return 404/410.
 

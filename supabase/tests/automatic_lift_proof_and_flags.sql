@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(29);
 
 select ok(
   exists (
@@ -111,7 +111,7 @@ select ok(
 );
 
 select ok(
-  position('status in (''needs_proof'', ''under_review'', ''pending'')' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
+  position('status in (''needs_proof'', ''under_review'', ''pending''' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
   'video proof can resolve only lifts waiting for proof or review'
 );
 
@@ -123,6 +123,37 @@ select ok(
 select ok(
   position('pg_advisory_xact_lock' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0,
   'proof verification shares the per-user lock used by lift submissions'
+);
+
+
+select has_table('public', 'lift_video_fingerprints', 'Video fingerprints are stored for duplicate detection');
+
+select ok(
+  exists (
+    select 1 from pg_trigger
+    where tgrelid = 'public.lifts'::regclass
+      and tgname = 'zzzz_lifts_require_ai_review'
+      and not tgisinternal
+  ),
+  'every client lift insert is forced into AI review after legacy classification'
+);
+
+select ok(
+  position('ai_analyzing' in lower(pg_get_functiondef('public.repunit_force_lift_ai_review()'::regprocedure))) > 0
+  and position('verified_at := null' in lower(pg_get_functiondef('public.repunit_force_lift_ai_review()'::regprocedure))) > 0,
+  'client lift submissions cannot become verified just because a video exists'
+);
+
+select ok(
+  position('status = ''ai_analyzing''' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) > 0
+  and position('status = ''verified''' in lower(pg_get_functiondef('public.attach_lift_video(uuid,text)'::regprocedure))) = 0,
+  'attaching replacement video starts analysis instead of verifying the lift'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.lift_video_fingerprints', 'SELECT')
+  and not has_table_privilege('authenticated', 'public.lift_video_fingerprints', 'INSERT'),
+  'video fingerprint records are private to the trusted analysis worker'
 );
 
 select * from finish();

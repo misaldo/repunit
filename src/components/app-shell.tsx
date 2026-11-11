@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { InstallPrompt } from "./install-prompt";
 import { FirstRunSetup } from "./first-run-setup";
-import { useI18n, LANGUAGES, LANGUAGE_LABELS } from "@/i18n/i18n-provider";
+import { useI18n } from "@/i18n/i18n-provider";
 
 const nav = [
   { to: "/leaderboards" as const, label: "TOP", icon: Trophy },
@@ -21,7 +21,7 @@ const nav = [
 
 export function SiteHeader() {
   const { user, ready } = useUser();
-  const { language, setLanguage, t } = useI18n();
+  const { t } = useI18n();
   const { data: profile } = useMyProfile(user?.id);
   const { data: progress, isError: progressError } = useQuery({
     queryKey: ["user-progression", user?.id], enabled: !!user?.id,
@@ -70,6 +70,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 flex h-[68px] items-center justify-between border-b border-border/60 bg-background/90 px-4 backdrop-blur-2xl md:px-6">
       <div className="flex items-center gap-3"><div className="md:hidden"><Wordmark /></div><div className="hidden md:block"><span className="eyebrow">STRENGTH IS SOCIAL</span><p className="text-xs text-muted-foreground">Your training network</p></div></div>
       <div className="flex items-center gap-3">
+        <Link to="/workouts" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground transition hover:border-primary/50 hover:text-primary sm:hidden"><Dumbbell className="h-3.5 w-3.5" /> SPLITS</Link>
         {user && <details className="group relative">
           <summary aria-label={unreadCount ? `${unreadCount} unread notifications` : "Notifications"} className="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/50 hover:text-foreground [&::-webkit-details-marker]:hidden">
             <Bell className="h-4 w-4" />
@@ -91,7 +92,6 @@ export function SiteHeader() {
           <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-2xl shadow-black/40">
             <div className="border-b border-border px-3 py-3"><p className="font-semibold">{profile?.display_name || profile?.username || "Lifter"}</p><p className="text-xs text-muted-foreground">@{profile?.username ?? "member"}</p><div className="mt-3">{progressError && !progress ? <p className="text-xs text-muted-foreground">Streak unavailable.</p> : progress ? <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground"><Flame className="h-4 w-4 text-primary" /><span>{progress.streak} day streak</span></div> : <p className="text-xs text-muted-foreground">Loading streak…</p>}</div></div>
             {profile && <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><UserRound className="h-4 w-4" /> {t("myProfile")}</Link>}
-            <div className="px-3 py-2"><label htmlFor="repunit-language" className="mb-2 block text-xs font-semibold text-muted-foreground">{t("language")}</label><select id="repunit-language" value={language} onChange={(event) => setLanguage(event.target.value as (typeof LANGUAGES)[number])} className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground">{LANGUAGES.map((code) => <option key={code} value={code}>{t(LANGUAGE_LABELS[code])}</option>)}</select></div>
             <Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-elevated"><Settings className="h-4 w-4" /> {t("settings")}</Link>
             <button onClick={signOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-muted-foreground transition hover:bg-elevated hover:text-foreground"><LogOut className="h-4 w-4" /> {t("logOut")}</button>
           </div>
@@ -109,9 +109,9 @@ export function DesktopSidebar() {
   return <aside className="sticky top-[68px] hidden h-[calc(100vh-68px)] w-[220px] shrink-0 flex-col border-r border-border/70 bg-background/70 px-3 py-6 lg:flex">
     <div className="px-3 pb-7"><Wordmark /></div>
     <p className="px-3 pb-3 text-[9px] font-black uppercase tracking-[.22em] text-muted-foreground">Workspace</p>
-    <nav className="space-y-1">\n      {nav.map(({to,label,icon:Icon})=><Link key={to} to={to} className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-elevated hover:text-foreground" activeProps={{className:"!bg-primary/10 !text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"}}><Icon className="h-[18px] w-[18px] transition group-hover:scale-110"/>{label==="TOP"?t("top"):label==="BATTLES"?t("battles"):t("split")}</Link>)}
+    <nav className="space-y-1">
+      {nav.map(({to,label,icon:Icon})=><Link key={to} to={to} className="group flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:translate-x-0.5 hover:bg-elevated hover:text-foreground" activeProps={{className:"!bg-primary/10 !text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"}}><Icon className="h-[18px] w-[18px] transition group-hover:scale-110"/>{label==="TOP"?t("top"):label==="BATTLES"?t("battles"):t("split")}</Link>)}
       <Link to="/crews" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>{t("crews")}</Link>
-      <Link to="/challenges" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Swords className="h-[18px] w-[18px]"/>{t("battles")}</Link>
       <Link to="/people" className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground transition hover:bg-elevated hover:text-foreground"><Users className="h-[18px] w-[18px]"/>{t("findLifters")}</Link>
     </nav>
     <div className="mt-auto space-y-2">
@@ -130,11 +130,11 @@ export function MobileNav() {
   return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_-24px_rgba(0,0,0,.9)] backdrop-blur-2xl lg:hidden">
     <div className="mx-auto flex h-[76px] max-w-xl items-center justify-between gap-1 px-2">
       <Link to="/leaderboards" className={item} activeProps={active}><Trophy className="h-5 w-5"/>{t("top")}</Link>
-      <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5"/>{t("crews")}</Link>
+      <Link to="/battles" className={item} activeProps={active}><Swords className="h-5 w-5"/>{t("battles")}</Link>
       <Link to="/records/new" aria-label="Log a lift" className="relative -mt-5 flex h-[62px] w-[62px] shrink-0 flex-col items-center justify-center rounded-2xl border-4 border-background bg-primary text-primary-foreground shadow-[0_8px_28px_-8px_hsl(var(--primary)/.8)] transition hover:brightness-110 active:scale-95">
         <Plus className="h-7 w-7"/><span className="text-[9px] font-black uppercase tracking-wider">{t("log")}</span>
       </Link>
-      <Link to="/workouts" className={item} activeProps={active}><Dumbbell className="h-5 w-5"/>{t("split")}</Link>
+      <Link to="/crews" className={item} activeProps={active}><Users className="h-5 w-5"/>{t("crews")}</Link>
       {profile ? <Link to="/u/$username" params={{username:profile.username}} className={item} activeProps={active}><Avatar className="h-5 w-5"><AvatarImage src={profile.avatar_url??undefined}/><AvatarFallback className="text-[8px]">{profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>{t("profile")}</Link> : user ? <Link to="/settings" className={item} activeProps={active}><UserRound className="h-5 w-5"/>{t("profile")}</Link> : <Link to="/auth" className={item} activeProps={active}><UserRound className="h-5 w-5"/>PROFILE</Link>}
     </div>
   </nav>;

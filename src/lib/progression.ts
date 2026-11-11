@@ -1,11 +1,11 @@
 export const LEVELS = [
-  { name: "Foam", min: 0, max: 100, icon: "🫧" },
-  { name: "Tin", min: 100, max: 300, icon: "🥫" },
-  { name: "Brass", min: 300, max: 700, icon: "🟡" },
-  { name: "Iron", min: 700, max: 1500, icon: "⚙️" },
-  { name: "Tungsten", min: 1500, max: 3000, icon: "🔩" },
-  { name: "Osmium", min: 3000, max: 6000, icon: "💎" },
-  { name: "Neutron Star", min: 6000, max: 6000, icon: "🌌" },
+  { name: "Foam", min: 0, max: 100, strengthTargets: { bench: 0, squat: 0, deadlift: 0 }, icon: "🫧" },
+  { name: "Tin", min: 100, max: 300, strengthTargets: { bench: 40, squat: 60, deadlift: 80 }, icon: "🥫" },
+  { name: "Brass", min: 300, max: 700, strengthTargets: { bench: 80, squat: 100, deadlift: 120 }, icon: "🟡" },
+  { name: "Iron", min: 700, max: 1500, strengthTargets: { bench: 120, squat: 150, deadlift: 170 }, icon: "⚙️" },
+  { name: "Tungsten", min: 1500, max: 3000, strengthTargets: { bench: 160, squat: 200, deadlift: 220 }, icon: "🔩" },
+  { name: "Osmium", min: 3000, max: 6000, strengthTargets: { bench: 200, squat: 250, deadlift: 270 }, icon: "💎" },
+  { name: "Neutron Star", min: 6000, max: 6000, strengthTargets: { bench: 240, squat: 300, deadlift: 320 }, icon: "🌌" },
 ] as const;
 
 export function getLevel(xp: number) {
@@ -20,6 +20,7 @@ export function getLevel(xp: number) {
 export type Achievement = { title: string; description: string; icon: string; category: string };
 export const ACHIEVEMENTS: Record<string, Achievement> = {
   first_pr: { title: "First Verified Lift", description: "Get your first lift approved by REPUNIT.", icon: "🏆", category: "Milestones" },
+  pr_duo: { title: "PR Duo", description: "Set two new verified personal records after your PR Duo goal starts.", icon: "⚡", category: "Milestones" },
   bench_100: { title: "100 kg Bench Club", description: "Bench press at least 100 kg.", icon: "💯", category: "Strength" },
   streak_7: { title: "One Week Strong", description: "Reach a 7-day training streak.", icon: "🔥", category: "Consistency" },
   volume_1000: { title: "1,000 kg Volume", description: "Lift 1,000 kg in verified total volume.", icon: "📈", category: "Volume" },

@@ -1,7 +1,7 @@
 // @ts-nocheck -- references planned backend features not yet set up
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/app-shell";
@@ -19,9 +19,11 @@ export const Route = createFileRoute("/_authenticated/records/new")({
 function NewRecord() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
-  const savedExercise = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastExercise") : null;
-  const savedWeight = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastWeight") : null;
-  const savedReps = typeof window !== "undefined" ? window.localStorage.getItem("repunit.lastReps") : null;
+  const queryClient = useQueryClient();
+  // Prefill values are private to each account on shared browsers.
+  const savedExercise = typeof window !== "undefined" ? window.localStorage.getItem(`repunit.lastExercise:${user.id}`) : null;
+  const savedWeight = typeof window !== "undefined" ? window.localStorage.getItem(`repunit.lastWeight:${user.id}`) : null;
+  const savedReps = typeof window !== "undefined" ? window.localStorage.getItem(`repunit.lastReps:${user.id}`) : null;
   const hasSavedPrefill = Boolean(savedWeight);
   const [exercise, setExercise] = useState<Exercise>(EXERCISES.some((item) => item.id === savedExercise && item.id !== "pullup") ? savedExercise as Exercise : "bench");
   const [weight, setWeight] = useState(savedWeight ?? "");
@@ -52,10 +54,11 @@ function NewRecord() {
     const weight = Number(f.get("weight")); const reps = Number(f.get("reps"));
     if (!Number.isFinite(weight) || !Number.isInteger(reps) || weight < 0 || reps < 1) { toast.error("Enter a valid weight and whole number of reps."); return; }
     const file = f.get("video") as File | null;
+    if (!file || file.size === 0) { toast.error("Video proof is required to submit a lift."); return; }
     let video_path: string | null = null;
     setBusy(true);
     try {
-      if (file && file.size > 0) {
+      {
         const err = validateVideo(file); if (err) throw new Error(err);
         video_path = `${user.id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -95,9 +98,9 @@ function NewRecord() {
       }).select("id,status,verification_reason").single();
       if (error) throw error;
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("repunit.lastExercise", exercise);
-        window.localStorage.setItem("repunit.lastWeight", String(weight));
-        window.localStorage.setItem("repunit.lastReps", String(reps));
+        window.localStorage.setItem(`repunit.lastExercise:${user.id}`, exercise);
+        window.localStorage.setItem(`repunit.lastWeight:${user.id}`, String(weight));
+        window.localStorage.setItem(`repunit.lastReps:${user.id}`, String(reps));
       }
       const crewFunFact = async () => {
         try {
@@ -117,32 +120,54 @@ function NewRecord() {
         const comparison = getFunComparison(total);
         return comparison ? `You just moved ${formatLiftVolume(total)} — about ${comparison.label}.` : "Your result is on REPUNIT.";
       };
+      // Refresh profile PRs and rankings immediately after a successful insert.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["public-profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile-progression", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["user-progression", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["crew-ranks-rpc-v1"] }),
+      ]);
       const funFact = await crewFunFact();
-      if ((data as { status?: string }).status === "NEEDS_PROOF" || (data as { status?: string }).status === "UNDER_REVIEW") {
-        toast.warning("Lift saved — proof needed", { description: `${data.verification_reason ?? "This lift is not counted in rankings yet."} ${funFact}` });
+      const savedStatus = String((data as { status?: string }).status ?? "");
+      if (savedStatus !== "VERIFIED") {
+        const rejected = savedStatus === "REJECTED";
+        toast.warning(rejected ? "Lift needs another attempt" : "Lift saved — not counted in PRs yet", {
+          description: `${data.verification_reason ?? (rejected ? "This submission was rejected." : "This lift is waiting for verification or proof.")} ${funFact}`,
+        });
       } else {
-        toast.success("PR logged", { description: funFact });
+        toast.success("Lift verified and PR logged", { description: funFact });
       }
       navigate({ to: "/records/$id", params: { id: data.id } });
     } catch (err) {
+      console.error("[REPUNIT] Lift submission failed", err);
       let cleanupFailed = false;
       if (video_path) {
         const { error: cleanupError } = await supabase.storage.from("lift-videos").remove([video_path]);
         cleanupFailed = Boolean(cleanupError);
+        if (cleanupError) console.error("[REPUNIT] Uploaded lift video cleanup failed", cleanupError);
       }
       if (cleanupFailed) {
         toast.error("Your lift could not be saved and its uploaded video could not be removed. Please contact support.");
       } else {
-        const message = err instanceof Error ? err.message : "";
+        const errorObject = err && typeof err === "object" ? err as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown } : null;
+        const message = err instanceof Error ? err.message : typeof errorObject?.message === "string" ? errorObject.message : "";
+        const code = typeof errorObject?.code === "string" ? errorObject.code : "";
         const safeMessages = [
           "Use an MP4, MOV or WebM video.",
-          "Video must be 100 MB or smaller.",
+          "Video must be 50 MB or smaller.",
           "Your session expired. Please sign in again.",
           "Storage is not configured.",
           "Network error while uploading the video.",
           "Video upload was cancelled.",
         ];
-        toast.error(safeMessages.includes(message) ? message : "Could not submit your lift. Check your connection and try again.");
+        const detail = safeMessages.includes(message)
+          ? message
+          : message || "The server returned an unknown error.";
+        toast.error("Could not submit your lift.", {
+          description: code ? `${detail} (Code: ${code})` : detail,
+          duration: 9000,
+        });
       }
     } finally { setBusy(false); setUploadProgress(null); }
   }
@@ -157,7 +182,7 @@ function NewRecord() {
           <div className="space-y-1.5"><Label htmlFor="weight">Weight (kg)</Label><Input id="weight" name="weight" value={weight} onChange={(event) => setWeight(event.target.value)} type="number" step="0.01" min="0" max="9999.99" inputMode="decimal" placeholder="100" className="h-12 text-lg font-bold" required /></div>
           <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" value={reps} onChange={(event) => setReps(event.target.value)} type="number" min="1" max="1000" inputMode="numeric" className="h-12 text-lg font-bold" required /></div>
         </div>
-        <div className="space-y-1.5"><Label htmlFor="video">Video proof <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /></div>
+        <div className="space-y-1.5"><Label htmlFor="video">Video proof <span className="text-primary">(required)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" required className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /></div>
         {uploadProgress !== null && (
           <div className="space-y-2" aria-live="polite">
             <div className="flex justify-between text-xs text-muted-foreground"><span>Uploading video</span><span>{uploadProgress}%</span></div>
@@ -167,7 +192,7 @@ function NewRecord() {
           </div>
         )}
         <Button variant="hero" className="h-13 w-full text-base font-black uppercase tracking-wide" disabled={busy}>{busy ? (uploadProgress === null ? "Saving PR…" : `Uploading ${uploadProgress}%`) : "Log PR"}</Button>
-        <p className="text-center text-[11px] text-muted-foreground">Video is optional. Unusual jumps, duplicates or suspicious entries are saved as Needs proof and stay out of rankings until you attach a video.</p>
+        <p className="text-center text-[11px] text-muted-foreground">Every lift requires an MP4, MOV or WebM video (max 50 MB). Lifts without video cannot be submitted.</p>
       </form>
     </PageShell>
   );

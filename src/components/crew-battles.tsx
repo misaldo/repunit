@@ -2,10 +2,11 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X, Share2 } from "lucide-react";
+import { Swords, Trophy, Clock3, ShieldCheck, Zap, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { ShareStoryButton } from "@/components/streaks-share-cards";
 
 type Category = "bench" | "squat" | "deadlift" | "volume";
 type Battle = {
@@ -150,24 +151,6 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
     } catch { toast.error("Could not send this crew challenge. Check your permissions and try again."); }
     finally { setBusy(false); }
   }
-  async function shareResult(item: NonNullable<typeof data>["battles"][number]) {
-    const { battle, left, right, leftScore, rightScore } = item;
-    const winner = battle.winner_crew_id === left?.id ? left?.name
-      : battle.winner_crew_id === right?.id ? right?.name
-      : leftScore.total === rightScore.total ? "Draw"
-      : leftScore.total > rightScore.total ? left?.name : right?.name;
-    const summary = `REPUNIT WEEKLY BATTLE · ${categoryName[battle.category]}\n${left?.name ?? "Crew"} ${leftScore.total.toLocaleString()} — ${rightScore.total.toLocaleString()} ${right?.name ?? "Crew"}\n${winner === "Draw" ? "It's a draw." : `${winner ?? "A Crew"} wins.`}`;
-    const url = `${window.location.origin}/battles/${battle.id}`;
-    try {
-      if (navigator.share) await navigator.share({ title: "REPUNIT Battle result", text: summary, url });
-      else {
-        await navigator.clipboard.writeText(`${summary}\n${url}`);
-        toast.success("Battle result copied");
-      }
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === "AbortError")) toast.error("Could not share this result.");
-    }
-  }
 
   async function respond(id:string, accept:boolean) {
     setBusy(true);
@@ -215,7 +198,7 @@ export function CrewBattles({ crewId, userId, isAdmin, focusBattleId }: { crewId
         {isEnded&&(leftWon||rightWon)&&<span className="inline-flex items-center gap-1 text-primary"><ShieldCheck className="h-3.5 w-3.5"/>Crew badge earned</span>}
       </div>
       {isEnded&&(leftWon||rightWon)&&<div className="battle-winner mt-4 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-3 text-xs font-black uppercase tracking-widest text-primary"><Trophy className="h-4 w-4"/> {leftWon?left?.name:right?.name} wins the battle!</div>}
-      {isEnded && <button type="button" onClick={(event) => { event.stopPropagation(); void shareResult(item); }} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-black uppercase tracking-wider text-muted-foreground transition hover:border-primary/50 hover:text-primary"><Share2 className="h-4 w-4"/>Share result</button>}
+      {isEnded && <div onClick={event => event.stopPropagation()} className="mt-3"><ShareStoryButton eyebrow="Crew battle result" title={categoryName[battle.category]} metric={leftWon || rightWon ? "VICTORY" : "DRAW"} unit={leftWon || rightWon ? "CREW WINS" : "FINAL RESULT"} detail={`${left?.name ?? "Crew"} ${leftTotal.toLocaleString()} — ${right?.name ?? "Crew"} ${rightTotal.toLocaleString()} kg`} filename="repunit-battle" /></div>}
     </article>;
   };
 

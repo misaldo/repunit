@@ -118,32 +118,26 @@
   body::before {
     content: "";
     position: fixed;
-    inset: -18%;
+    inset: 0;
     z-index: -2;
     pointer-events: none;
     background:
-      radial-gradient(ellipse at 18% 34%, rgba(255, 20, 42, .34) 0%, rgba(150, 8, 28, .16) 18%, transparent 42%),
-      radial-gradient(ellipse at 78% 62%, rgba(210, 12, 36, .28) 0%, rgba(100, 5, 20, .13) 22%, transparent 46%),
-      radial-gradient(ellipse at 50% 5%, rgba(115, 10, 24, .2), transparent 38%),
-      radial-gradient(ellipse at 48% 95%, rgba(160, 8, 28, .17), transparent 40%),
-      linear-gradient(135deg, #050505 0%, #100608 48%, #050505 100%);
-    background-size: 170% 170%;
-    animation: repunit-hypnotic-flow 26s ease-in-out infinite alternate;
-    will-change: background-position, transform;
+      radial-gradient(ellipse 62% 34% at 50% -8%, rgba(255, 48, 60, .11), transparent 72%),
+      linear-gradient(180deg, #080808 0%, #090909 100%);
   }
   body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    opacity: .2;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: min(76vw, 760px) auto;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 520'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop stop-color='%23ff263f' stop-opacity='.34'/%3E%3Cstop offset='1' stop-color='%23ff263f' stop-opacity='0'/%3E%3C/radialGradient%3E%3ClinearGradient id='r' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23ff6671'/%3E%3Cstop offset='1' stop-color='%23a90d20'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='260' cy='260' r='245' fill='url(%23g)'/%3E%3Ccircle cx='260' cy='260' r='205' fill='none' stroke='%23ff3448' stroke-opacity='.28' stroke-width='1' stroke-dasharray='2 10'/%3E%3Ccircle cx='260' cy='260' r='174' fill='none' stroke='%23ff3448' stroke-opacity='.18' stroke-width='1'/%3E%3Cpath d='M260 52a208 208 0 0 1 208 208' fill='none' stroke='%23ff3448' stroke-opacity='.8' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M260 468A208 208 0 0 1 52 260' fill='none' stroke='%23ff3448' stroke-opacity='.55' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M260 103 397 182v156l-137 79-137-79V182L260 103Z' fill='%230b0809' fill-opacity='.58' stroke='url(%23r)' stroke-width='5'/%3E%3Cpath d='M204 177h79a51 51 0 0 1 18 99l39 72h-51l-33-52h-17v52h-45V177Zm45 43v35h36a17 17 0 1 0 0-35h-36Z' fill='url(%23r)'/%3E%3C/svg%3E");
-    filter: drop-shadow(0 0 34px rgba(255, 20, 48, .22));
-    animation: repunit-logo-presence 18s ease-in-out infinite;
+    content: none;
+  }
+  ::selection {
+    color: var(--primary-foreground);
+    background: color-mix(in oklab, var(--primary) 78%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  a, button {
+    -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-heading);
@@ -328,3 +322,295 @@
   animation-fill-mode: both;
 }
 @media (prefers-reduced-motion: reduce) { .pr-confetti-piece { animation: none !important; display: none; } }
+
+/* PR celebration is deliberately brief and can always be dismissed. */
+@keyframes repunit-pr-celebration-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pr-celebration-panel { animation: repunit-pr-celebration-enter .22s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .pr-celebration-panel { animation: none !important; }
+  .pr-confetti-piece { display: none !important; }
+}
+
+
+/* REPUNIT tactile button system — consistent feedback across the whole app */
+@layer base {
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled) {
+    transition:
+      transform 180ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 220ms ease,
+      filter 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    button:not(:disabled):hover,
+    [role="button"]:not([aria-disabled="true"]):hover,
+    input[type="button"]:not(:disabled):hover,
+    input[type="submit"]:not(:disabled):hover,
+    input[type="reset"]:not(:disabled):hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  input[type="button"]:not(:disabled):active,
+  input[type="submit"]:not(:disabled):active,
+  input[type="reset"]:not(:disabled):active {
+    transform: translateY(0) scale(.97);
+    filter: brightness(.96);
+    transition-duration: 80ms;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input[type="button"]:disabled,
+  input[type="submit"]:disabled,
+  input[type="reset"]:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Keep motion comfortable for visitors who request reduced animation. */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    transition: none !important;
+  }
+}
+
+
+/* REPUNIT mobile-first comfort and layout safeguards */
+html {
+  min-width: 320px;
+  scroll-padding-top: 5rem;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-width: 320px;
+  overflow-x: clip;
+}
+img, video, canvas, svg {
+  max-width: 100%;
+}
+button, a, [role="button"], summary, input, select, textarea {
+  touch-action: manipulation;
+}
+input, select, textarea {
+  max-width: 100%;
+}
+:where(table) {
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  /* Prevent accidental sideways scrolling from wide stats, tables and cards. */
+  #root, main, main > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  main {
+    overflow-wrap: anywhere;
+  }
+  main :where(img, video, canvas) {
+    height: auto;
+  }
+  main :where(table) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  main :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 44px;
+    font-size: 16px; /* Avoid iOS focus zoom. */
+  }
+  main :where(textarea) {
+    min-height: 104px;
+  }
+  /* Keep page actions comfortably tappable without enlarging compact icon controls. */
+  main :where(button:not([class*="h-"]), a[role="button"]) {
+    min-height: 44px;
+  }
+  main :where(button, a, summary) {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Long usernames, URLs and leaderboard values must wrap instead of widening the page. */
+  main :where(p, span, h1, h2, h3, h4, a, label) {
+    overflow-wrap: anywhere;
+  }
+  /* Use the full available width on phones and keep safe-area spacing at the bottom. */
+  main {
+    padding-top: 1.25rem;
+    padding-bottom: 1.5rem;
+  }
+}
+@media (max-width: 380px) {
+  main {
+    padding-left: .75rem !important;
+    padding-right: .75rem !important;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a:active,
+  summary:active {
+    filter: brightness(.94);
+  }
+}
+
+/* Universal REPUNIT button feedback — also covers native and link-based actions. */
+:where(
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  a[role="button"],
+  a[class*="bg-primary"],
+  a[class*="bg-gradient-red"]
+) {
+  transform-origin: center;
+  transition:
+    translate 180ms cubic-bezier(.2,.8,.2,1),
+    scale 140ms cubic-bezier(.2,.8,.2,1),
+    filter 180ms ease,
+    box-shadow 220ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    input[type="button"]:not(:disabled),
+    input[type="submit"]:not(:disabled),
+    input[type="reset"]:not(:disabled),
+    a[role="button"],
+    a[class*="bg-primary"],
+    a[class*="bg-gradient-red"]
+  ):hover {
+    translate: 0 -1px;
+    filter: brightness(1.045);
+  }
+}
+
+:where(
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  a[role="button"],
+  a[class*="bg-primary"],
+  a[class*="bg-gradient-red"]
+):active {
+  translate: 0 0;
+  scale: .975;
+  filter: brightness(.97);
+  transition-duration: 80ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    a[role="button"],
+    a[class*="bg-primary"],
+    a[class*="bg-gradient-red"]
+  ) {
+    transition: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+}
+
+/* REPUNIT global polish: page, navigation, menus, fields and interactive surfaces. */
+@keyframes repunit-page-enter {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+main > div {
+  animation: repunit-page-enter 360ms cubic-bezier(.2,.8,.2,1) both;
+}
+html { scroll-behavior: smooth; }
+
+:where(a, summary, [role="menuitem"], [role="option"], [role="tab"]) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    opacity 180ms ease;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 200ms ease,
+    outline-color 180ms ease;
+}
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  border-color: color-mix(in oklab, var(--primary) 72%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent);
+}
+
+details[open] > :where(div, nav, ul) {
+  animation: repunit-menu-enter 180ms cubic-bezier(.2,.8,.2,1) both;
+  transform-origin: top right;
+}
+@keyframes repunit-menu-enter {
+  from { opacity: 0; translate: 0 -5px; scale: .985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  main a[class*="rounded-2xl"]:not([class*="bg-primary"]):hover {
+    border-color: color-mix(in oklab, var(--primary) 34%, var(--border));
+  }
+  nav a:not([aria-current="page"]):hover {
+    color: var(--foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  main > div,
+  details[open] > :where(div, nav, ul) {
+    animation: none !important;
+  }
+}
+

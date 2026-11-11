@@ -4,9 +4,9 @@
 
 All app environments and database operations must use this single Supabase project:
 
-- Project ref: `sfumcokjwvhxwuanlofw`
-- Project URL: `https://sfumcokjwvhxwuanlofw.supabase.co`
-- Supabase CLI link: `supabase link --project-ref sfumcokjwvhxwuanlofw`
+- Project ref: `kqezgcwfqfntazucbbzt`
+- Project URL: `https://kqezgcwfqfntazucbbzt.supabase.co`
+- Supabase CLI link: `supabase link --project-ref kqezgcwfqfntazucbbzt`
 
 Do not use the Lovable Cloud gateway as `SUPABASE_URL` or `VITE_SUPABASE_URL`. The committed `.env.example` points both variables to the canonical project. Real `.env` files are local-only and must never be committed.
 
@@ -31,7 +31,7 @@ The existing database baseline is documented as migrations `0000`–`0011`. Conf
 
 The onboarding/avatar migration was assigned a duplicate `0019` in an earlier version. Its unique filename is `0024_first_run_onboarding_and_avatars.sql`; apply it after all of 0012–0023.
 
-### Subsequent migrations: 0024–0040
+### Subsequent migrations: 0024–0042
 
 13. `drizzle/migrations/0024_first_run_onboarding_and_avatars.sql`
 14. `drizzle/migrations/0025_admin_lift_review.sql`
@@ -50,6 +50,8 @@ The onboarding/avatar migration was assigned a duplicate `0019` in an earlier ve
 27. `drizzle/migrations/0038_proof_transition_hardening.sql`
 28. `drizzle/migrations/0039_pr_celebrations_always_fire.sql`
 29. `drizzle/migrations/0040_weekly_winners_badge_trigger.sql`
+30. `drizzle/migrations/0041_require_video_for_lifts.sql` — require uploaded video proof for every new lift.
+31. `drizzle/migrations/0042_pr_rank_movement.sql` — store previous and new exercise ranks on the private PR celebration event.\n32. `drizzle/migrations/0043_repair_pr_celebration_wiring.sql` — safely restore the PR reward function and its missing lift trigger, preserve the existing +25 XP/streak trigger, and ensure notifications are published to Realtime.
 
 The proof-transition hardening migration previously shared the `0038` number with the PR-celebration migration. The PR-celebration and Weekly Winners migrations are now numbered `0039` and `0040` so the sequence is unique. Their SQL behavior is unchanged.
 
@@ -58,7 +60,7 @@ The proof-transition hardening migration previously shared the `0038` number wit
 The SQL files live under `drizzle/migrations/`; do not assume Supabase CLI migration commands discover them automatically.
 
 1. Back up the target database.
-2. Link the intended project: `supabase link --project-ref sfumcokjwvhxwuanlofw`.
+2. Link the intended project: `supabase link --project-ref kqezgcwfqfntazucbbzt`.
 3. Inspect `supabase_migrations.schema_migrations` and the actual schema before deciding what is pending. A manually pasted SQL Editor migration may not be registered in that table.
 4. Apply each missing SQL file in the exact order above using the Supabase SQL Editor, one file at a time.
 5. Wait for success before moving to the next file. If any statement fails, stop and resolve it before continuing.
@@ -86,7 +88,23 @@ Migration `0037_automatic_lift_proof_and_flags.sql` adds database-side plausibil
 
 This is rule-based validation, not computer vision and not an AI assessment of lifting technique. A video being attached does not prove that the lift was performed correctly.
 
-The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review.
+The follow-up `0038_proof_transition_hardening.sql` clears stale verification timestamps and restricts proof attachment to lifts actually waiting for proof/review. Migration `0048` supersedes its former behavior of immediately verifying a lift when a replacement video is attached. Until a trusted analysis worker is deployed and completes its checks, new videos remain outside verified rankings.
+
+### Retention, events and social progression: 0044–0046
+
+32. `drizzle/migrations/0044_two_verified_pr_goal.sql` — persist the user's PR baseline and award the two-new-verified-PR milestone.
+33. `drizzle/migrations/0045_events_rivalry_cosmetics.sql` — create admin-managed weekend events and verified-lift event leaderboards, Crew rivalry notifications/challenge-back RPCs, and achievement cosmetic unlocks/equipping.
+34. `supabase/migrations/0046_gentle_streaks_share_cards_notification_controls.sql` — add weekly training streaks with one monthly freeze, notification preferences/quiet hours, and a server-enforced maximum of three push deliveries per user per local day.
+
+Apply 0044, then 0045, then 0046 only after confirming that all earlier migrations and their prerequisites are present. Migration 0046 is stored under `supabase/migrations/` (not `drizzle/migrations/`); run that exact file in the canonical project's SQL Editor. Do not paste it twice or assume it has run merely because the frontend code is present.
+
+The dashboard includes the weekly streak card, event leaderboards and rivalry inbox. The settings page includes notification controls. Story-card sharing is wired to verified lift highlights, completed Crew battles and completed weekend-event results. Crew battle cards and the profile/dashboard progression UI also rely on the earlier XP, achievement and progression migrations.
+
+### Free launch billing pause: 0047
+
+35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later.
+36. `drizzle/migrations/0048_fail_closed_lift_ai_review.sql` — prevents client-submitted videos from being auto-verified, routes new/replacement proofs into AI_ANALYZING, and adds a private fingerprint table for the trusted analysis worker. Apply after the existing migrations, only once the earlier sequence is confirmed.
+
 
 ## Database tests
 
@@ -101,5 +119,6 @@ The repository includes:
 - `supabase/tests/privacy_hardening.sql`
 - `supabase/tests/automatic_lift_proof_and_flags.sql`
 - `supabase/tests/home_retention_features.sql`
+- `supabase/tests/pr_rank_celebration.sql`
 
 The local test database must first have the complete migration sequence applied. A passing local pgTAP run does not by itself prove the remote production database has been migrated.
