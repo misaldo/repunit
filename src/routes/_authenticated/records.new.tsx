@@ -55,12 +55,7 @@ function NewRecord() {
     if (!Number.isFinite(weight) || !Number.isInteger(reps) || weight < 0 || reps < 1) { toast.error("Enter a valid weight and whole number of reps."); return; }
     const file = f.get("video") as File | null;
     if (!file || file.size === 0) { toast.error("Lift video is required."); return; }
-    const plateFile = f.get("plate_video") as File | null;
-    if (!plateFile || plateFile.size === 0) { toast.error("A separate close-up video of the weight plates is required."); return; }
-    const plateValidationError = validateVideo(plateFile);
-    if (plateValidationError) { toast.error(`Plate video: ${plateValidationError}`); return; }
     let video_path: string | null = null;
-    let plate_video_path: string | null = null;
     setBusy(true);
     try {
       {
@@ -96,27 +91,10 @@ function NewRecord() {
           xhr.onabort = () => reject(new Error("Video upload was cancelled."));
           xhr.send(file);
         });
-      plate_video_path = `${user.id}/${crypto.randomUUID()}-plates-${plateFile.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const encodedPath = plate_video_path!.split("/").map(encodeURIComponent).join("/");
-        xhr.open("POST", `${storageUrl.replace(/\/+$/, "")}/storage/v1/object/lift-videos/${encodedPath}`);
-        xhr.setRequestHeader("apikey", publishableKey);
-        xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
-        xhr.setRequestHeader("Content-Type", plateFile.type);
-        xhr.setRequestHeader("x-upsert", "false");
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else { let message = "Plate video upload failed."; try { message = JSON.parse(xhr.responseText).message || message; } catch { /* fallback */ } reject(new Error(message)); }
-        };
-        xhr.onerror = () => reject(new Error("Network error while uploading the plate video."));
-        xhr.onabort = () => reject(new Error("Plate video upload was cancelled."));
-        xhr.send(plateFile);
-      });
       }
       const { data, error } = await supabase.from("lifts").insert({
         user_id: user.id, exercise, weight_kg: weight, reps,
-        lifted_on: String(f.get("date")), description: null, video_path, plate_video_path,
+        lifted_on: String(f.get("date")), description: null, video_path,
       }).select("id,status,verification_reason").single();
       if (error) throw error;
       if (typeof window !== "undefined") {
@@ -164,7 +142,7 @@ function NewRecord() {
     } catch (err) {
       console.error("[REPUNIT] Lift submission failed", err);
       let cleanupFailed = false;
-      const uploadedPaths = [video_path, plate_video_path].filter(Boolean) as string[];
+      const uploadedPaths = [video_path].filter(Boolean) as string[];
       if (uploadedPaths.length) {
         const { error: cleanupError } = await supabase.storage.from("lift-videos").remove(uploadedPaths);
         cleanupFailed = Boolean(cleanupError);
@@ -206,7 +184,7 @@ function NewRecord() {
           <div className="space-y-1.5"><Label htmlFor="reps">Reps</Label><Input id="reps" name="reps" value={reps} onChange={(event) => setReps(event.target.value)} type="number" min="1" max="1000" inputMode="numeric" className="h-12 text-lg font-bold" required /></div>
         </div>
         <div className="space-y-1.5"><Label htmlFor="video">Lift video <span className="text-primary">(required)</span></Label><Input id="video" name="video" type="file" accept="video/mp4,video/quicktime,video/webm" required className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /><p className="text-xs text-muted-foreground">Show the full lift clearly from start to finish.</p></div>
-        <div className="space-y-1.5"><Label htmlFor="plate_video">Weight plate close-up <span className="text-primary">(required)</span></Label><Input id="plate_video" name="plate_video" type="file" accept="video/mp4,video/quicktime,video/webm" required className="min-h-11 w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" /><p className="text-xs text-muted-foreground">Record both loaded sides close enough to read the kg markings. Keep the plates in focus.</p></div>
+
         {uploadProgress !== null && (
           <div className="space-y-2" aria-live="polite">
             <div className="flex justify-between text-xs text-muted-foreground"><span>Uploading video</span><span>{uploadProgress}%</span></div>
@@ -216,7 +194,7 @@ function NewRecord() {
           </div>
         )}
         <Button variant="hero" className="h-13 w-full text-base font-black uppercase tracking-wide" disabled={busy}>{busy ? (uploadProgress === null ? "Saving PR…" : `Uploading ${uploadProgress}%`) : "Log PR"}</Button>
-        <p className="text-center text-[11px] text-muted-foreground">Both videos are required: the full lift and a clear close-up of the loaded plates. MP4, MOV or WebM, max 50 MB each.</p>
+        <p className="text-center text-[11px] text-muted-foreground">One full lift video is required. REPUNIT analyzes the submitted video; no separate plate close-up is needed.</p>
       </form>
     </PageShell>
   );
