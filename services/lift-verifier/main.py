@@ -1,7 +1,7 @@
 """REPUNIT lift-video screening: repetition counting and visible plate OCR.
 
 This worker produces AI screening results only. It never grants VERIFIED status.
-Unreadable evidence is sent to NEEDS_REVIEW instead of guessing.
+Ambiguous evidence remains unknown and is sent to NEEDS_REVIEW instead of guessing.
 """
 from __future__ import annotations
 
@@ -16,6 +16,8 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
+
+from signal_logic import count_angle_cycles, stable_plate_load
 
 import cv2
 import mediapipe as mp
@@ -193,30 +195,15 @@ def _count_repetitions(video_file: Path, exercise: str) -> dict[str, Any]:
         return {"reps_detected": None, "reps_confidence": 0.0, "samples": len(values), "reason": "Not enough clear body landmarks; use a stable side view."}
     # Median smoothing suppresses one-frame landmark jumps.
     smooth = [sorted(values[max(0, i-2):min(len(values), i+3)])[len(values[max(0, i-2):min(len(values), i+3)])//2] for i in range(len(values))]
-    low, high = (115.0, 150.0)
-    if exercise == "squat":
-        low, high = 115.0, 155.0
-    elif exercise == "deadlift":
-        low, high = 105.0, 150.0
-    elif exercise == "pullup":
-        low, high = 95.0, 150.0
-    count, reached_bottom = 0, False
-    amplitudes: list[float] = []
-    state_values: list[float] = []
-    for value in smooth:
-        if value <= low:
-            reached_bottom = True
-            state_values.append(value)
-        elif value >= high and reached_bottom:
-            count += 1
-            reached_bottom = False
-            state_values.append(value)
+    # Dynamic thresholds adapt to the camera angle and each lifter's joint range.
+    # No complete cycle means UNKNOWN, not a confident zero-rep mismatch.
+    reps = count_angle_cycles(smooth, min_amplitude=28.0, min_separation=5)
     amplitude = max(smooth) - min(smooth)
     coverage = min(1.0, len(values) / max(20.0, (total / max(fps, 1.0)) * 3.0))
-    confidence = max(0.0, min(0.95, 0.35 + min(0.35, amplitude / 100.0) + 0.25 * (sum(visibilities) / len(visibilities)) + 0.05 * coverage))
-    if amplitude < 28:
-        confidence *= 0.45
-    return {"reps_detected": count, "reps_confidence": round(confidence, 3), "samples": len(values), "angle_range": [round(min(smooth), 1), round(max(smooth), 1)], "reason": "Estimated from repeated joint-angle cycles; camera angle and full-body visibility affect accuracy."}
+    confidence = max(0.0, min(0.80, 0.30 + min(0.30, amplitude / 100.0) + 0.15 * (sum(visibilities) / len(visibilities)) + 0.05 * coverage))
+    if reps is None:
+        confidence = 0.0
+    return {"reps_detected": reps, "reps_confidence": round(confidence, 3), "samples": len(values), "angle_range": [round(min(smooth), 1), round(max(smooth), 1)], "reason": "Adaptive joint-angle cycle estimate. This is screening only; camera angle, occlusion and lift technique can affect the count."}
 
 
 def _ocr_plate_value(image: Any) -> float | None:
@@ -270,12 +257,15 @@ def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
         if frame_values:
             observations.append(BAR_WEIGHT_KG + 2.0 * sum(frame_values))
     capture.release()
-    if not observations:
-        return {"weight_read_kg": None, "weight_confidence": 0.0, "reason": "Plate markings were not clearly readable. No weight estimate was invented."}
-    rounded = [round(value * 2) / 2 for value in observations]
-    common, hits = Counter(rounded).most_common(1)[0]
-    confidence = min(0.75, 0.35 + 0.12 * hits + 0.05 * min(len(observations), 3))
-    return {"weight_read_kg": common, "weight_confidence": round(confidence, 3), "observations": len(observations), "reason": "Estimate assumes a 20 kg bar and mirrors the readable plates on one side; hidden or unreadable plates cannot be confirmed."}
+    # A single OCR hit can be one plate, a label, or background text. It is
+    # not enough to infer the total bar load. Require repeated agreement across
+    # independent sampled frames and keep the result explicitly approximate.
+    common = stable_plate_load(observations, min_frames=3, tolerance_kg=1.0)
+    if common is None:
+        return {"weight_read_kg": None, "weight_confidence": 0.0, "observations": len(observations), "reason": "Plate OCR was absent or inconsistent across at least three sampled frames; total load is unknown."}
+    hits = sum(1 for value in observations if abs(round(value * 2) / 2 - common) <= 1.0)
+    confidence = min(0.70, 0.30 + 0.10 * hits)
+    return {"weight_read_kg": common, "weight_confidence": round(confidence, 3), "observations": len(observations), "reason": "Repeated approximate OCR estimate across sampled frames. Hidden plates, bar type and plate count are not independently proven."}
 
 
 def _process_lift(record: dict[str, Any]) -> None:
