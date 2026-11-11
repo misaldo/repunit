@@ -13,10 +13,11 @@ import math
 import os
 import re
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from signal_logic import count_angle_cycles, is_verified_duplicate, stable_plate_load
+from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate, stable_plate_load
 
 import cv2
 import mediapipe as mp
@@ -57,7 +58,7 @@ def _rest(method: str, path: str, **kwargs: Any) -> requests.Response:
 
 
 def _set_status(lift_id: str, video_path: str, status: str, reason: str, analysis: dict[str, Any] | None = None) -> None:
-    payload: dict[str, Any] = {"status": status, "verification_reason": reason[:500], "verified_at": None}
+    payload: dict[str, Any] = {"status": status, "verification_reason": reason[:500], "verified_at": datetime.now(timezone.utc).isoformat() if status == "VERIFIED" else None}
     if analysis is not None:
         payload.update({
             "ai_reps_detected": analysis.get("reps_detected"),
@@ -321,25 +322,25 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_confidence": weight["weight_confidence"],
                 "weight_match": weight_match,
                 "weight_reason": weight["reason"],
-                "decision": "AI_CHECKED" if reps_match is True and weight_match is True else "NEEDS_REVIEW",
-                "note": "AI_CHECKED is only a screening pass. A moderator must still approve the lift; this worker never sets VERIFIED."
+                "decision": decide_lift_status(reps_match, weight_match),
+                "note": "The worker makes an automatic VERIFIED/REJECTED decision. VERIFIED requires both repetition and load checks to match; uncertain evidence is rejected, never sent to manual review."
             }
             if not _is_current_video(lift_id, video_path):
                 return
-            if reps_match is True and weight_match is True:
-                _set_status(lift_id, video_path, "AI_CHECKED", f"AI screening matched {reps['reps_detected']} reps and approximately {weight_read:g} kg. Moderator approval is still required.", analysis)
+            if decide_lift_status(reps_match, weight_match) == "VERIFIED":
+                _set_status(lift_id, video_path, "VERIFIED", f"AI automatically verified {reps['reps_detected']} reps and approximately {weight_read:g} kg.", analysis)
             else:
                 reasons = []
                 if reps_match is None: reasons.append("repetition count is uncertain")
                 elif reps_match is False: reasons.append(f"detected {reps['reps_detected']} reps, declared {declared_reps}")
                 if weight_match is None: reasons.append("plate weight is unreadable or uncertain")
                 elif weight_match is False: reasons.append(f"visible plate estimate {weight_read:g} kg differs from declared {declared_weight:g} kg")
-                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI could not confirm the submission: " + "; ".join(reasons) + ". Moderator review required.", analysis)
-            logger.info("AI screening finished for lift %s with status %s", lift_id, "AI_CHECKED" if reps_match is True and weight_match is True else "NEEDS_REVIEW")
+                _set_status(lift_id, video_path, "REJECTED", "AI could not verify the submission: " + "; ".join(reasons) + ". Upload a clearer video and submit again.", analysis)
+            logger.info("AI verification finished for lift %s with status %s", lift_id, decide_lift_status(reps_match, weight_match))
     except Exception as error:
         logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
         try:
-            _set_status(lift_id, video_path, "NEEDS_REVIEW", f"Automatic analysis could not finish safely ({type(error).__name__}). Manual review required.")
+            _set_status(lift_id, video_path, "REJECTED", f"AI could not complete verification ({type(error).__name__}). Upload the video again and retry.")
         except Exception:
             logger.exception("Could not persist failure status for lift %s", lift_id)
 
