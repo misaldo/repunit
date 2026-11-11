@@ -1,7 +1,7 @@
-"""REPUNIT lift-video screening: repetition counting and visible plate OCR.
+"""REPUNIT automatic lift verification: repetition counting and visible plate OCR.
 
-This worker produces AI screening results only. It never grants VERIFIED status.
-Ambiguous evidence remains unknown and is sent to NEEDS_REVIEW instead of guessing.
+This worker returns only VERIFIED or REJECTED. It never routes a submission to manual review.
+Ambiguous or unreadable evidence is rejected so the user can submit clearer proof.
 """
 from __future__ import annotations
 
