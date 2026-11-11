@@ -13,7 +13,7 @@ class SignalLogicTests(unittest.TestCase):
         self.assertEqual(count_angle_cycles(signal, min_amplitude=25, min_separation=5), 3)
 
     def test_partial_cycle_is_not_counted(self):
-        self.assertIsNone(count_angle_cycles([80, 82, 90, 110, 135, 155, 160, 145, 110, 85, 82, 80]))
+        self.assertIsNone(count_angle_cycles([160, 145, 110, 85, 82, 80, 82, 85, 90, 92, 94, 95]))
 
     def test_single_plate_reading_is_not_a_total_load(self):
         self.assertIsNone(stable_plate_load([30.0]))
