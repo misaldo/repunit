@@ -11,12 +11,12 @@ class SignalLogicTests(unittest.TestCase):
         self.assertFalse(is_verified_duplicate("PENDING"))
         self.assertFalse(is_verified_duplicate(None))
 
-    def test_automatic_verdict_never_routes_to_manual_review(self):
+    def test_uncertain_evidence_is_never_automatically_verified(self):
         self.assertEqual(decide_lift_status(True, True), "VERIFIED")
         self.assertEqual(decide_lift_status(False, True), "REJECTED")
-        self.assertEqual(decide_lift_status(True, False), "REJECTED")
-        self.assertEqual(decide_lift_status(True, None), "REJECTED")
-        self.assertEqual(decide_lift_status(None, None), "REJECTED")
+        self.assertEqual(decide_lift_status(True, False), "NEEDS_REVIEW")
+        self.assertEqual(decide_lift_status(True, None), "NEEDS_REVIEW")
+        self.assertEqual(decide_lift_status(None, None), "NEEDS_REVIEW")
 
     def test_stationary_or_low_motion_is_unknown_not_zero_reps(self):
         self.assertIsNone(count_angle_cycles([120.0] * 30))
