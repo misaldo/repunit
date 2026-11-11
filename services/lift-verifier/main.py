@@ -355,15 +355,21 @@ def _process_lift(record: dict[str, Any]) -> None:
         return
     logger.info("Starting AI screening for lift %s", lift_id)
     try:
-        rows = _rest("GET", "lifts", params={"id": f"eq.{lift_id}", "select": "id,status,video_path,exercise,weight_kg,reps", "limit": "1"}).json()
+        rows = _rest("GET", "lifts", params={"id": f"eq.{lift_id}", "select": "id,status,video_path,plate_video_path,exercise,weight_kg,reps", "limit": "1"}).json()
         if not rows or rows[0].get("status") != "AI_ANALYZING" or rows[0].get("video_path") != video_path:
             return
         lift = rows[0]
+        plate_video_path = str(lift.get("plate_video_path") or "")
+        if not plate_video_path:
+            _set_status(lift_id, video_path, "NEEDS_REVIEW", "A separate plate close-up video is required to verify the declared load.")
+            return
         exercise = str(lift.get("exercise", "")).lower()
         declared_weight, declared_reps = float(lift["weight_kg"]), int(lift["reps"])
         with tempfile.TemporaryDirectory(prefix="repunit-lift-") as directory:
             video_file = Path(directory) / "proof-video"
+            plate_video_file = Path(directory) / "plate-proof-video"
             _download_video(video_path, video_file)
+            _download_video(plate_video_path, plate_video_file)
             digest, hashes = _sample_hashes(video_file)
             if not _is_current_video(lift_id, video_path):
                 return
@@ -374,10 +380,10 @@ def _process_lift(record: dict[str, Any]) -> None:
                 return
             _store_fingerprint(lift_id, digest, hashes)
             reps = _count_repetitions(video_file, exercise)
-            weight = _read_plate_markings(video_file, exercise)
-            visual_plates = inspect_weight_plates(str(video_file))
-            crop_ocr = _read_detected_plate_crops(video_file, visual_plates, exercise)
-            # Prefer crop-based OCR only when it has stronger repeated evidence.
+            weight = _read_plate_markings(plate_video_file, exercise)
+            visual_plates = inspect_weight_plates(str(plate_video_file))
+            crop_ocr = _read_detected_plate_crops(plate_video_file, visual_plates, exercise)
+            # The dedicated plate close-up is the sole load evidence source.
             if crop_ocr.get("weight_read_kg") is not None and crop_ocr.get("weight_confidence", 0) > weight.get("weight_confidence", 0):
                 weight = crop_ocr
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
@@ -396,10 +402,11 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_confidence": weight["weight_confidence"],
                 "weight_match": weight_match,
                 "weight_reason": weight["reason"],
+                "plate_video_path": plate_video_path,
                 "visual_plate_detection": visual_plates,
                 "visual_plate_crop_ocr": crop_ocr,
                 "decision": final_status,
-                "note": "VERIFIED requires both checks to match. Unreadable or conflicting load evidence is NEEDS_REVIEW, not an automatic rejection. Plate OCR is approximate and assumes matching plates on both sleeves and a 20 kg bar."
+                "note": "VERIFIED requires both checks to match. Unreadable or conflicting load evidence is NEEDS_REVIEW, not an automatic rejection. Plate Load OCR uses the separate plate close-up and remains approximate; it assumes matching plates on both sleeves and a 20 kg bar."
             }
             if not _is_current_video(lift_id, video_path):
                 return
