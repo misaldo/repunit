@@ -22,7 +22,7 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
     enabled: open && !!liftId,
     queryFn: async () => {
       const { data: lift, error: liftError } = await (supabase as any).from("lifts")
-        .select("id,user_id,exercise,weight_kg,reps,lifted_on,description,video_path")
+        .select("id,user_id,exercise,weight_kg,reps,lifted_on,description,video_path,plate_video_path")
         .eq("id", liftId).single();
       if (liftError) throw liftError;
       const [{ data: profile, error: profileError }, { data: likes, error: likesError }, { data: comments, error: commentsError }] = await Promise.all([
@@ -45,12 +45,17 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
       const profileMap = new Map<string, any>();
       for (const row of commentProfiles ?? []) profileMap.set(row.id, row);
       let videoUrl: string | null = null;
+      let plateVideoUrl: string | null = null;
       if (lift.video_path) {
         const { data: signed, error: signedError } = await supabase.storage.from("lift-videos").createSignedUrl(lift.video_path, 3600);
         if (!signedError) videoUrl = signed?.signedUrl ?? null;
       }
+      if (lift.plate_video_path) {
+        const { data: signedPlate, error: signedPlateError } = await supabase.storage.from("lift-videos").createSignedUrl(lift.plate_video_path, 3600);
+        if (!signedPlateError) plateVideoUrl = signedPlate?.signedUrl ?? null;
+      }
       return {
-        lift, profile, videoUrl,
+        lift, profile, videoUrl, plateVideoUrl,
         likes: safeLikes.map((like: any) => like.user_id),
         likesAvailable,
         commentsAvailable,
@@ -93,7 +98,9 @@ export function LiftVideoDialog({ liftId, open, onOpenChange }: { liftId: string
             <DialogTitle className="font-stat text-3xl uppercase">{exerciseLabel(data.lift.exercise)} · {Number(data.lift.weight_kg)} kg</DialogTitle>
             <DialogDescription>{data.lift.reps} reps · {data.lift.lifted_on}</DialogDescription>
           </DialogHeader>
-          {data.videoUrl ? <video src={data.videoUrl} controls playsInline preload="metadata" className="mt-2 max-h-[52vh] w-full rounded-xl border border-border bg-black"/> : <div className="mt-2 flex aspect-video items-center justify-center rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground">Video evidence is not available right now.</div>}
+          <p className="mt-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Full lift evidence</p>
+          {data.videoUrl ? <video src={data.videoUrl} controls playsInline preload="metadata" className="mt-1 max-h-[52vh] w-full rounded-xl border border-border bg-black"/> : <div className="mt-1 flex aspect-video items-center justify-center rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground">Video evidence is not available right now.</div>}
+          {data.plateVideoUrl && <section className="mt-4"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Weight plate evidence</p><video src={data.plateVideoUrl} controls playsInline preload="metadata" className="mt-1 max-h-[40vh] w-full rounded-xl border border-border bg-black"/></section>}
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10"><AvatarImage src={data.profile.avatar_url ?? undefined}/><AvatarFallback>{data.profile.username.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>
             <div className="min-w-0 flex-1"><Link to="/u/$username" params={{username:data.profile.username}} className="text-sm font-bold hover:text-primary">{data.profile.display_name || data.profile.username}</Link><p className="text-xs text-muted-foreground">@{data.profile.username}</p></div>

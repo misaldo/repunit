@@ -1,7 +1,9 @@
-"""REPUNIT lift-video screening: repetition counting and visible plate OCR.
+"""REPUNIT lift-video screening.
 
-This worker produces AI screening results only. It never grants VERIFIED status.
-Unreadable evidence is sent to NEEDS_REVIEW instead of guessing.
+The worker verifies only when both rep count and load are supported by evidence.
+Uncertain load/rep evidence is routed to NEEDS_REVIEW, never guessed or falsely rejected.
+A confident rep-count mismatch can be rejected; OCR weight mismatches require review
+because plate OCR can misread markings and cannot prove hidden plates or bar weight.
 """
 from __future__ import annotations
 
@@ -11,11 +13,13 @@ import json
 import logging
 import math
 import os
-import re
 import tempfile
-from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate
+from visual_plate_model import inspect_weight_plates
 
 import cv2
 import mediapipe as mp
@@ -39,8 +43,6 @@ LIFT_WEBHOOK_SECRET = os.environ.get("LIFT_WEBHOOK_SECRET", "")
 BUCKET = "lift-videos"
 MAX_VIDEO_BYTES = 50 * 1024 * 1024
 REQUEST_TIMEOUT = 30
-BAR_WEIGHT_KG = 20.0
-PLATE_WEIGHTS = (0.5, 1.0, 1.25, 2.0, 2.5, 5.0, 10.0, 15.0, 20.0, 25.0)
 
 
 def _headers() -> dict[str, str]:
@@ -56,7 +58,7 @@ def _rest(method: str, path: str, **kwargs: Any) -> requests.Response:
 
 
 def _set_status(lift_id: str, video_path: str, status: str, reason: str, analysis: dict[str, Any] | None = None) -> None:
-    payload: dict[str, Any] = {"status": status, "verification_reason": reason[:500], "verified_at": None}
+    payload: dict[str, Any] = {"status": status, "verification_reason": reason[:500], "verified_at": datetime.now(timezone.utc).isoformat() if status == "VERIFIED" else None}
     if analysis is not None:
         payload.update({
             "ai_reps_detected": analysis.get("reps_detected"),
@@ -118,13 +120,25 @@ def _hamming(left: str, right: str) -> int:
 
 
 def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
-    # Only byte-for-byte identical files are rejected automatically.
-    # Perceptual frame similarity is not proof of reused footage: separate
-    # attempts can share a camera angle, rack, platform, or background.
-    rows = _rest("GET", "lift_video_fingerprints", params={"select": "lift_id,sha256", "limit": "5000"}).json()
+    # Only an identical video that already earned VERIFIED blocks reuse.
+    # A previous PENDING/REJECTED/NEEDS_REVIEW attempt must remain retryable:
+    # otherwise a user's own failed test permanently blocks the same proof.
+    rows = _rest(
+        "GET",
+        "lift_video_fingerprints",
+        params={"select": "lift_id,sha256", "sha256": f"eq.{digest}", "limit": "50"},
+    ).json()
     for row in rows:
-        if row.get("sha256") == digest:
-            return str(row["lift_id"])
+        previous_lift_id = str(row.get("lift_id", ""))
+        if not previous_lift_id:
+            continue
+        previous = _rest(
+            "GET",
+            "lifts",
+            params={"id": f"eq.{previous_lift_id}", "select": "id,status", "limit": "1"},
+        ).json()
+        if previous and is_verified_duplicate(previous[0].get("status")):
+            return previous_lift_id
     return None
 
 
@@ -193,89 +207,64 @@ def _count_repetitions(video_file: Path, exercise: str) -> dict[str, Any]:
         return {"reps_detected": None, "reps_confidence": 0.0, "samples": len(values), "reason": "Not enough clear body landmarks; use a stable side view."}
     # Median smoothing suppresses one-frame landmark jumps.
     smooth = [sorted(values[max(0, i-2):min(len(values), i+3)])[len(values[max(0, i-2):min(len(values), i+3)])//2] for i in range(len(values))]
-    low, high = (115.0, 150.0)
-    if exercise == "squat":
-        low, high = 115.0, 155.0
-    elif exercise == "deadlift":
-        low, high = 105.0, 150.0
-    elif exercise == "pullup":
-        low, high = 95.0, 150.0
-    count, reached_bottom = 0, False
-    amplitudes: list[float] = []
-    state_values: list[float] = []
-    for value in smooth:
-        if value <= low:
-            reached_bottom = True
-            state_values.append(value)
-        elif value >= high and reached_bottom:
-            count += 1
-            reached_bottom = False
-            state_values.append(value)
+    # Dynamic thresholds adapt to the camera angle and each lifter's joint range.
+    # No complete cycle means UNKNOWN, not a confident zero-rep mismatch.
+    reps = count_angle_cycles(smooth, min_amplitude=28.0, min_separation=5)
     amplitude = max(smooth) - min(smooth)
     coverage = min(1.0, len(values) / max(20.0, (total / max(fps, 1.0)) * 3.0))
-    confidence = max(0.0, min(0.95, 0.35 + min(0.35, amplitude / 100.0) + 0.25 * (sum(visibilities) / len(visibilities)) + 0.05 * coverage))
-    if amplitude < 28:
-        confidence *= 0.45
-    return {"reps_detected": count, "reps_confidence": round(confidence, 3), "samples": len(values), "angle_range": [round(min(smooth), 1), round(max(smooth), 1)], "reason": "Estimated from repeated joint-angle cycles; camera angle and full-body visibility affect accuracy."}
-
-
-def _ocr_plate_value(image: Any) -> float | None:
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 else image
-    enlarged = cv2.resize(gray, None, fx=2.5, fy=2.5, interpolation=cv2.INTER_CUBIC)
-    variants = [enlarged, cv2.threshold(enlarged, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]]
-    for variant in variants:
-        text = pytesseract.image_to_string(variant, config="--psm 11 -c tessedit_char_whitelist=0123456789.")
-        for raw in re.findall(r"\d{1,2}(?:\.\d{1,2})?", text):
-            try:
-                value = float(raw)
-            except ValueError:
-                continue
-            match = min(PLATE_WEIGHTS, key=lambda item: abs(item - value))
-            if abs(match - value) <= 0.35:
-                return match
-    return None
+    confidence = max(0.0, min(0.80, 0.30 + min(0.30, amplitude / 100.0) + 0.15 * (sum(visibilities) / len(visibilities)) + 0.05 * coverage))
+    if reps is None:
+        confidence = 0.0
+    return {"reps_detected": reps, "reps_confidence": round(confidence, 3), "samples": len(values), "angle_range": [round(min(smooth), 1), round(max(smooth), 1)], "reason": "Adaptive joint-angle cycle estimate. This is screening only; camera angle, occlusion and lift technique can affect the count."}
 
 
 def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
-    if exercise == "pullup":
-        return {"weight_read_kg": None, "weight_confidence": 0.0, "reason": "Pull-up loading cannot be inferred from plate OCR."}
-    capture = cv2.VideoCapture(str(video_file))
-    total = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    if total < 1:
-        capture.release()
-        return {"weight_read_kg": None, "weight_confidence": 0.0, "reason": "No frames available for plate reading."}
-    observations: list[float] = []
-    for fraction in (0.2, 0.35, 0.5, 0.65, 0.8):
-        capture.set(cv2.CAP_PROP_POS_FRAMES, min(total - 1, int(total * fraction)))
-        ok, frame = capture.read()
-        if not ok or frame is None:
-            continue
-        height, width = frame.shape[:2]
-        scale = min(1.0, 1280.0 / max(width, height))
-        if scale < 1.0:
-            frame = cv2.resize(frame, (int(width * scale), int(height * scale)))
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        circles = cv2.HoughCircles(cv2.medianBlur(gray, 5), cv2.HOUGH_GRADIENT, dp=1.2, minDist=max(24, gray.shape[1] // 12), param1=100, param2=34, minRadius=max(12, gray.shape[1] // 90), maxRadius=max(20, gray.shape[1] // 3))
-        frame_values: list[float] = []
-        if circles is not None:
-            for x, y, radius in circles[0][:12]:
-                r = int(radius * 0.62)
-                cx, cy = int(x), int(y)
-                crop = frame[max(0, cy-r):min(frame.shape[0], cy+r), max(0, cx-r):min(frame.shape[1], cx+r)]
-                if crop.size:
-                    value = _ocr_plate_value(crop)
-                    if value is not None:
-                        frame_values.append(value)
-        # Keep a frame only when at least one plausible plate marking was read.
-        if frame_values:
-            observations.append(BAR_WEIGHT_KG + 2.0 * sum(frame_values))
-    capture.release()
-    if not observations:
-        return {"weight_read_kg": None, "weight_confidence": 0.0, "reason": "Plate markings were not clearly readable. No weight estimate was invented."}
-    rounded = [round(value * 2) / 2 for value in observations]
-    common, hits = Counter(rounded).most_common(1)[0]
-    confidence = min(0.75, 0.35 + 0.12 * hits + 0.05 * min(len(observations), 3))
-    return {"weight_read_kg": common, "weight_confidence": round(confidence, 3), "observations": len(observations), "reason": "Estimate assumes a 20 kg bar and mirrors the readable plates on one side; hidden or unreadable plates cannot be confirmed."}
+    """Do not infer total load from incomplete markings in the full lift video.
+
+    Sampled frames may hide inner plates, the far sleeve, or the bar marking.
+    Repeated OCR is not proof of the complete loaded bar weight, so this
+    function deliberately never sums partial observations.
+    """
+    reason = (
+        "Pull-up loading cannot be inferred from barbell plate OCR."
+        if exercise == "pullup"
+        else "Plate markings alone cannot establish total load: the video does not "
+             "prove every plate on both sleeves or the bar's actual weight. "
+             "Total load is unknown pending a complete, independently validated model."
+    )
+    return {"weight_read_kg": None, "weight_confidence": 0.0,
+            "observations": 0, "reason": reason}
+
+
+def _read_detected_plate_crops(
+    video_file: Path, visual_plates: dict[str, Any], exercise: str
+) -> dict[str, Any]:
+    """Expose RF-DETR/PaddleOCR evidence without claiming a complete bar load."""
+    frames = visual_plates.get("frames") or []
+    detections = [
+        detection
+        for frame in frames
+        for detection in frame.get("detections", [])
+    ]
+    ocr_observations = [
+        observation
+        for detection in detections
+        for observation in detection.get("ocr", [])
+    ]
+    mass_candidates = visual_plates.get("explicit_marking_candidates_not_total_load") or []
+    return {
+        "weight_read_kg": None,
+        "weight_confidence": 0.0,
+        "observations": len(ocr_observations),
+        "candidate_plate_detections_across_frames": len(detections),
+        "ocr_observations": ocr_observations,
+        "explicit_marking_candidates_not_total_load": mass_candidates,
+        "reason": (
+            "RF-DETR Small and PaddleOCR provide plate and marking evidence, but this video analysis "
+            "does not yet establish unique plates on both sleeves or the actual bar mass. "
+            "Total load remains unknown."
+        ),
+    }
 
 
 def _process_lift(record: dict[str, Any]) -> None:
@@ -305,9 +294,15 @@ def _process_lift(record: dict[str, Any]) -> None:
             _store_fingerprint(lift_id, digest, hashes)
             reps = _count_repetitions(video_file, exercise)
             weight = _read_plate_markings(video_file, exercise)
+            visual_plates = inspect_weight_plates(str(video_file))
+            crop_ocr = _read_detected_plate_crops(video_file, visual_plates, exercise)
+            # RF-DETR/PaddleOCR evidence is diagnostic only; it does not prove total bar load.
+            if crop_ocr.get("weight_confidence", 0) > weight.get("weight_confidence", 0):
+                weight = crop_ocr
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
             weight_read = weight["weight_read_kg"]
             weight_match = abs(weight_read - declared_weight) <= 2.5 if weight_read is not None and weight["weight_confidence"] >= 0.55 else None
+            final_status = decide_lift_status(reps_match, weight_match)
             analysis = {
                 "exercise": exercise,
                 "declared_reps": declared_reps,
@@ -320,25 +315,42 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_confidence": weight["weight_confidence"],
                 "weight_match": weight_match,
                 "weight_reason": weight["reason"],
-                "decision": "AI_CHECKED" if reps_match is True and weight_match is True else "NEEDS_REVIEW",
-                "note": "AI_CHECKED is only a screening pass. A moderator must still approve the lift; this worker never sets VERIFIED."
+                "visual_plate_detection": visual_plates,
+                "visual_plate_crop_ocr": crop_ocr,
+                "decision": final_status,
+                "note": "Plate detection runs on sampled frames from the full lift video; no separate close-up is requested. RF-DETR Small and PaddleOCR provide plate and marking evidence, but the custom checkpoint and total-load reconstruction have not been validated. No bar-weight or left/right symmetry assumptions are made."
             }
             if not _is_current_video(lift_id, video_path):
                 return
             if reps_match is True and weight_match is True:
-                _set_status(lift_id, video_path, "AI_CHECKED", f"AI screening matched {reps['reps_detected']} reps and approximately {weight_read:g} kg. Moderator approval is still required.", analysis)
+                # AI_CHECKED is deliberately not VERIFIED. Migration 0051 requires
+                # an authorized moderator to make the final approval decision.
+                _set_status(
+                    lift_id, video_path, "AI_CHECKED",
+                    f"AI matched {reps['reps_detected']} reps, but load evidence is not independently validated. Moderator approval is still required.",
+                    analysis,
+                )
+                final_status = "AI_CHECKED"
+                analysis["decision"] = final_status
             else:
                 reasons = []
-                if reps_match is None: reasons.append("repetition count is uncertain")
-                elif reps_match is False: reasons.append(f"detected {reps['reps_detected']} reps, declared {declared_reps}")
-                if weight_match is None: reasons.append("plate weight is unreadable or uncertain")
-                elif weight_match is False: reasons.append(f"visible plate estimate {weight_read:g} kg differs from declared {declared_weight:g} kg")
-                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI could not confirm the submission: " + "; ".join(reasons) + ". Moderator review required.", analysis)
-            logger.info("AI screening finished for lift %s with status %s", lift_id, "AI_CHECKED" if reps_match is True and weight_match is True else "NEEDS_REVIEW")
+                if reps_match is None:
+                    reasons.append("rep count could not be confirmed confidently")
+                elif reps_match is False:
+                    reasons.append(f"AI detected {reps['reps_detected']} reps but {declared_reps} were declared")
+                if weight_match is None:
+                    visual_note = "plate objects were detected, but total load cannot be established without both sleeves and bar mass" if visual_plates.get("available") and visual_plates.get("candidate_labels") else "total load cannot be established reliably"
+                    reasons.append(visual_note)
+                elif weight_match is False:
+                    reasons.append(f"OCR estimated about {weight_read:g} kg versus declared {declared_weight:g} kg")
+                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI screening needs a moderator check: " + "; ".join(reasons) + ".", analysis)
+                final_status = "NEEDS_REVIEW"
+                analysis["decision"] = final_status
+            logger.info("AI screening finished for lift %s with status %s", lift_id, final_status)
     except Exception as error:
         logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
         try:
-            _set_status(lift_id, video_path, "NEEDS_REVIEW", f"Automatic analysis could not finish safely ({type(error).__name__}). Manual review required.")
+            _set_status(lift_id, video_path, "NEEDS_REVIEW", f"AI could not complete screening ({type(error).__name__}). A moderator must review the submitted proof.")
         except Exception:
             logger.exception("Could not persist failure status for lift %s", lift_id)
 
