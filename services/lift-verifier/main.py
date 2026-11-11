@@ -410,24 +410,33 @@ def _process_lift(record: dict[str, Any]) -> None:
             }
             if not _is_current_video(lift_id, video_path):
                 return
-            if final_status == "VERIFIED":
-                _set_status(lift_id, video_path, "VERIFIED", f"AI screening matched {reps['reps_detected']} reps and an approximate load of {weight_read:g} kg.", analysis)
-            elif final_status == "REJECTED":
-                _set_status(lift_id, video_path, "REJECTED", f"AI detected {reps['reps_detected']} reps but the submission declares {declared_reps}; the rep-count mismatch is the only automatic rejection condition.", analysis)
+            if reps_match is True and weight_match is True:
+                # AI_CHECKED is deliberately not VERIFIED. Migration 0051 requires
+                # an authorized moderator to make the final approval decision.
+                _set_status(
+                    lift_id, video_path, "AI_CHECKED",
+                    f"AI matched {reps['reps_detected']} reps and an estimated {weight_read:g} kg. Both proofs passed screening; moderator approval is still required.",
+                    analysis,
+                )
+                final_status = "AI_CHECKED"
             else:
                 reasons = []
-                if reps_match is None: reasons.append("rep count could not be confirmed confidently")
+                if reps_match is None:
+                    reasons.append("rep count could not be confirmed confidently")
+                elif reps_match is False:
+                    reasons.append(f"AI detected {reps['reps_detected']} reps but {declared_reps} were declared")
                 if weight_match is None:
                     visual_note = "plate objects were detected but their markings/load are not readable consistently" if visual_plates.get("available") and visual_plates.get("candidate_labels") else "plates/load could not be read reliably"
                     reasons.append(visual_note)
                 elif weight_match is False:
-                    reasons.append(f"OCR estimated about {weight_read:g} kg versus declared {declared_weight:g} kg, but OCR mismatch is not reliable enough to reject automatically")
-                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI screening needs a human check: " + "; ".join(reasons) + ".", analysis)
+                    reasons.append(f"OCR estimated about {weight_read:g} kg versus declared {declared_weight:g} kg")
+                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI screening needs a moderator check: " + "; ".join(reasons) + ".", analysis)
+                final_status = "NEEDS_REVIEW"
             logger.info("AI screening finished for lift %s with status %s", lift_id, final_status)
     except Exception as error:
         logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
         try:
-            _set_status(lift_id, video_path, "REJECTED", f"AI could not complete verification ({type(error).__name__}). Upload the video again and retry.")
+            _set_status(lift_id, video_path, "NEEDS_REVIEW", f"AI could not complete screening ({type(error).__name__}). A moderator must review the submitted proof.")
         except Exception:
             logger.exception("Could not persist failure status for lift %s", lift_id)
 
