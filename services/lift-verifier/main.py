@@ -1,7 +1,9 @@
-"""REPUNIT automatic lift verification: repetition counting and visible plate OCR.
+"""REPUNIT lift-video screening.
 
-This worker returns only VERIFIED or REJECTED. It never routes a submission to manual review.
-Ambiguous or unreadable evidence is rejected so the user can submit clearer proof.
+The worker verifies only when both rep count and load are supported by evidence.
+Uncertain load/rep evidence is routed to NEEDS_REVIEW, never guessed or falsely rejected.
+A confident rep-count mismatch can be rejected; OCR weight mismatches require review
+because plate OCR can misread markings and cannot prove hidden plates or bar weight.
 """
 from __future__ import annotations
 
@@ -381,6 +383,7 @@ def _process_lift(record: dict[str, Any]) -> None:
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
             weight_read = weight["weight_read_kg"]
             weight_match = abs(weight_read - declared_weight) <= 2.5 if weight_read is not None and weight["weight_confidence"] >= 0.55 else None
+            final_status = decide_lift_status(reps_match, weight_match)
             analysis = {
                 "exercise": exercise,
                 "declared_reps": declared_reps,
@@ -395,23 +398,25 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_reason": weight["reason"],
                 "visual_plate_detection": visual_plates,
                 "visual_plate_crop_ocr": crop_ocr,
-                "decision": decide_lift_status(reps_match, weight_match),
-                "note": "The worker verifies only when repetition and load checks both match. Plate-crop OCR is an approximate screen and assumes matching plates on both sleeves and a 20 kg bar."
+                "decision": final_status,
+                "note": "VERIFIED requires both checks to match. Unreadable or conflicting load evidence is NEEDS_REVIEW, not an automatic rejection. Plate OCR is approximate and assumes matching plates on both sleeves and a 20 kg bar."
             }
             if not _is_current_video(lift_id, video_path):
                 return
-            if decide_lift_status(reps_match, weight_match) == "VERIFIED":
-                _set_status(lift_id, video_path, "VERIFIED", f"AI automatically verified {reps['reps_detected']} reps and approximately {weight_read:g} kg.", analysis)
+            if final_status == "VERIFIED":
+                _set_status(lift_id, video_path, "VERIFIED", f"AI screening matched {reps['reps_detected']} reps and an approximate load of {weight_read:g} kg.", analysis)
+            elif final_status == "REJECTED":
+                _set_status(lift_id, video_path, "REJECTED", f"AI detected {reps['reps_detected']} reps but the submission declares {declared_reps}; the rep-count mismatch is the only automatic rejection condition.", analysis)
             else:
                 reasons = []
-                if reps_match is None: reasons.append("repetition count is uncertain")
-                elif reps_match is False: reasons.append(f"detected {reps['reps_detected']} reps, declared {declared_reps}")
+                if reps_match is None: reasons.append("rep count could not be confirmed confidently")
                 if weight_match is None:
-                    visual_note = "visual model detected likely plate objects" if visual_plates.get("available") and visual_plates.get("candidate_labels") else "visual model could not confidently locate plates"
-                    reasons.append("plate weight is unreadable or uncertain (" + visual_note + "; object detection cannot prove exact kilograms)")
-                elif weight_match is False: reasons.append(f"visible plate estimate {weight_read:g} kg differs from declared {declared_weight:g} kg")
-                _set_status(lift_id, video_path, "REJECTED", "AI could not verify the submission: " + "; ".join(reasons) + ". Upload a clearer video and submit again.", analysis)
-            logger.info("AI verification finished for lift %s with status %s", lift_id, decide_lift_status(reps_match, weight_match))
+                    visual_note = "plate objects were detected but their markings/load are not readable consistently" if visual_plates.get("available") and visual_plates.get("candidate_labels") else "plates/load could not be read reliably"
+                    reasons.append(visual_note)
+                elif weight_match is False:
+                    reasons.append(f"OCR estimated about {weight_read:g} kg versus declared {declared_weight:g} kg, but OCR mismatch is not reliable enough to reject automatically")
+                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI screening needs a human check: " + "; ".join(reasons) + ".", analysis)
+            logger.info("AI screening finished for lift %s with status %s", lift_id, final_status)
     except Exception as error:
         logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
         try:
