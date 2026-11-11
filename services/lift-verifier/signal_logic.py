@@ -55,3 +55,8 @@ def stable_plate_load(observations: Sequence[float], *, min_frames: int = 3,
         if len(agreeing) >= min_frames:
             return round(sum(agreeing) / len(agreeing) * 2) / 2
     return None
+
+
+def decide_lift_status(reps_match: bool | None, weight_match: bool | None) -> str:
+    """Return a final automatic verdict; uncertain evidence is not approved."""
+    return "VERIFIED" if reps_match is True and weight_match is True else "REJECTED"
