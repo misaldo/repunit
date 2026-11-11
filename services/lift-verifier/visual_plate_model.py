@@ -232,4 +232,3 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "UNKNOWN until temporal association, both-sleeve completeness and bar mass are validated."
         ),
     }
-}
