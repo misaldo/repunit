@@ -46,3 +46,11 @@ The webhook and worker must be deployed only after migration 0048 is applied. Us
 - Keep the worker private and rate-limited; do not expose its admin credentials.
 - This initial worker is intended for small-volume screening. Add a durable queue and retry/dead-letter handling before scaling.
 - Review the hosting provider's retention, region and privacy terms before sending videos to a third party.
+
+## Unit tests for conservative signal helpers
+
+From this directory, run:
+
+```bash
+python -m unittest discover -s tests -v
+```
