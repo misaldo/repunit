@@ -271,17 +271,11 @@ def _process_lift(record: dict[str, Any]) -> None:
         if not rows or rows[0].get("status") != "AI_ANALYZING" or rows[0].get("video_path") != video_path:
             return
         lift = rows[0]
-        plate_video_path = str(lift.get("plate_video_path") or "")
-        if not plate_video_path:
-            _set_status(lift_id, video_path, "NEEDS_REVIEW", "A separate plate close-up video is required to verify the declared load.")
-            return
         exercise = str(lift.get("exercise", "")).lower()
         declared_weight, declared_reps = float(lift["weight_kg"]), int(lift["reps"])
         with tempfile.TemporaryDirectory(prefix="repunit-lift-") as directory:
             video_file = Path(directory) / "proof-video"
-            plate_video_file = Path(directory) / "plate-proof-video"
             _download_video(video_path, video_file)
-            _download_video(plate_video_path, plate_video_file)
             digest, hashes = _sample_hashes(video_file)
             if not _is_current_video(lift_id, video_path):
                 return
@@ -292,9 +286,9 @@ def _process_lift(record: dict[str, Any]) -> None:
                 return
             _store_fingerprint(lift_id, digest, hashes)
             reps = _count_repetitions(video_file, exercise)
-            weight = _read_plate_markings(plate_video_file, exercise)
-            visual_plates = inspect_weight_plates(str(plate_video_file))
-            crop_ocr = _read_detected_plate_crops(plate_video_file, visual_plates, exercise)
+            weight = _read_plate_markings(video_file, exercise)
+            visual_plates = inspect_weight_plates(str(video_file))
+            crop_ocr = _read_detected_plate_crops(video_file, visual_plates, exercise)
             # OCR and OWLv2 are diagnostic only; neither proves total bar load.
             if crop_ocr.get("weight_confidence", 0) > weight.get("weight_confidence", 0):
                 weight = crop_ocr
@@ -314,11 +308,10 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_confidence": weight["weight_confidence"],
                 "weight_match": weight_match,
                 "weight_reason": weight["reason"],
-                "plate_video_path": plate_video_path,
                 "visual_plate_detection": visual_plates,
                 "visual_plate_crop_ocr": crop_ocr,
                 "decision": final_status,
-                "note": "The current plate detector and OCR do not prove total bar load. Weight is intentionally unknown; no bar-weight or left/right symmetry assumptions are made. A validated total-load model and labelled video evaluation are required before automatic load matching can be enabled."
+                "note": "Plate detection runs on sampled frames from the full lift video; no separate close-up is requested. The current detector does not prove total bar load. No bar-weight or left/right symmetry assumptions are made. A validated total-load model and labelled video evaluation are required before automatic load matching can be enabled."
             }
             if not _is_current_video(lift_id, video_path):
                 return
