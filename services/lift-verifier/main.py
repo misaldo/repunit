@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate, stable_plate_load
+from visual_plate_model import inspect_weight_plates
 
 import cv2
 import mediapipe as mp
@@ -307,6 +308,7 @@ def _process_lift(record: dict[str, Any]) -> None:
             _store_fingerprint(lift_id, digest, hashes)
             reps = _count_repetitions(video_file, exercise)
             weight = _read_plate_markings(video_file, exercise)
+            visual_plates = inspect_weight_plates(str(video_file))
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
             weight_read = weight["weight_read_kg"]
             weight_match = abs(weight_read - declared_weight) <= 2.5 if weight_read is not None and weight["weight_confidence"] >= 0.55 else None
@@ -322,6 +324,7 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_confidence": weight["weight_confidence"],
                 "weight_match": weight_match,
                 "weight_reason": weight["reason"],
+                "visual_plate_detection": visual_plates,
                 "decision": decide_lift_status(reps_match, weight_match),
                 "note": "The worker makes an automatic VERIFIED/REJECTED decision. VERIFIED requires both repetition and load checks to match; uncertain evidence is rejected, never sent to manual review."
             }
@@ -333,7 +336,9 @@ def _process_lift(record: dict[str, Any]) -> None:
                 reasons = []
                 if reps_match is None: reasons.append("repetition count is uncertain")
                 elif reps_match is False: reasons.append(f"detected {reps['reps_detected']} reps, declared {declared_reps}")
-                if weight_match is None: reasons.append("plate weight is unreadable or uncertain")
+                if weight_match is None:
+                    visual_note = "visual model detected likely plate objects" if visual_plates.get("available") and visual_plates.get("candidate_labels") else "visual model could not confidently locate plates"
+                    reasons.append("plate weight is unreadable or uncertain (" + visual_note + "; object detection cannot prove exact kilograms)")
                 elif weight_match is False: reasons.append(f"visible plate estimate {weight_read:g} kg differs from declared {declared_weight:g} kg")
                 _set_status(lift_id, video_path, "REJECTED", "AI could not verify the submission: " + "; ".join(reasons) + ". Upload a clearer video and submit again.", analysis)
             logger.info("AI verification finished for lift %s with status %s", lift_id, decide_lift_status(reps_match, weight_match))
