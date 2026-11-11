@@ -8,6 +8,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 
+def is_verified_duplicate(status: str | None) -> bool:
+    """Only a lift already VERIFIED makes identical footage a duplicate."""
+    return status == "VERIFIED"
+
+
 def count_angle_cycles(values: Sequence[float], *, min_amplitude: float = 28.0,
                        min_separation: int = 5) -> int | None:
     """Count complete low-to-high angle cycles using thresholds from the clip.
