@@ -296,7 +296,7 @@ def _process_lift(record: dict[str, Any]) -> None:
             weight = _read_plate_markings(video_file, exercise)
             visual_plates = inspect_weight_plates(str(video_file))
             crop_ocr = _read_detected_plate_crops(video_file, visual_plates, exercise)
-            # OCR and OWLv2 are diagnostic only; neither proves total bar load.
+            # RF-DETR/PaddleOCR evidence is diagnostic only; it does not prove total bar load.
             if crop_ocr.get("weight_confidence", 0) > weight.get("weight_confidence", 0):
                 weight = crop_ocr
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
