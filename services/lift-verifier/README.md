@@ -1,4 +1,4 @@
-# REPUNIT lift video screening worker
+# REPUNIT automatic lift verification worker
 
 This is a separate Python service because full video decoding and computer-vision work should not run inside a Supabase Edge Function.
 
@@ -9,11 +9,11 @@ This is a separate Python service because full video decoding and computer-visio
 - Flags exact duplicates and strong frame-sequence matches, including many re-encoded copies and screen recordings.
 - Uses adaptive joint-angle cycle thresholds for a conservative repetition screening estimate.
 - Requires repeated, consistent plate OCR observations across multiple sampled frames before returning an approximate load estimate.
-- Fails closed: insufficient motion or inconsistent OCR is unknown, not a zero-rep or guessed-load result, and never becomes VERIFIED.
+- Returns only final VERIFIED or REJECTED decisions. Both repetition count and total-load OCR must match to earn VERIFIED; uncertain evidence is REJECTED and can be resubmitted with clearer footage.
 
 ## Important limitation
 
-**This worker intentionally does not mark any lift VERIFIED.** Adaptive pose-angle cycles and repeated plate OCR reduce some obvious false mismatches, but they do not prove the total load, exercise identity, competition-valid repetitions, range of motion, or technique. Camera angle, occlusion, plate visibility and bar type remain major limitations. This is still screening, not an automatic competition-lift judge. Do not deploy it as automatic approval without a labelled video evaluation set and independently validated exercise-specific models.
+**This worker now makes automatic VERIFIED/REJECTED decisions and never routes a lift to manual review.** VERIFIED requires both repetition and load checks to match. The current pose-angle and plate OCR methods are heuristic and have not been validated as a competition-grade judge; poor camera angles or unreadable plates can cause REJECTED outcomes. Validate against labelled videos before using results for prizes or high-stakes competitions.
 
 Perceptual hashing is a strong duplicate signal, not an unbreakable anti-cheat system. Heavy crops, mirroring, speed changes, overlays, or camera changes can evade simple frame-hash matching. Suspected matches should be reviewed rather than advertised as impossible to bypass.
 
