@@ -1,6 +1,6 @@
 import unittest
 
-from signal_logic import count_angle_cycles, is_verified_duplicate, stable_plate_load
+from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate, stable_plate_load
 
 
 class SignalLogicTests(unittest.TestCase):
@@ -10,6 +10,13 @@ class SignalLogicTests(unittest.TestCase):
         self.assertFalse(is_verified_duplicate("REJECTED"))
         self.assertFalse(is_verified_duplicate("PENDING"))
         self.assertFalse(is_verified_duplicate(None))
+
+    def test_automatic_verdict_never_routes_to_manual_review(self):
+        self.assertEqual(decide_lift_status(True, True), "VERIFIED")
+        self.assertEqual(decide_lift_status(False, True), "REJECTED")
+        self.assertEqual(decide_lift_status(True, False), "REJECTED")
+        self.assertEqual(decide_lift_status(True, None), "REJECTED")
+        self.assertEqual(decide_lift_status(None, None), "REJECTED")
 
     def test_stationary_or_low_motion_is_unknown_not_zero_reps(self):
         self.assertIsNone(count_angle_cycles([120.0] * 30))
