@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from signal_logic import count_angle_cycles, stable_plate_load
+from signal_logic import count_angle_cycles, is_verified_duplicate, stable_plate_load
 
 import cv2
 import mediapipe as mp
@@ -119,13 +119,25 @@ def _hamming(left: str, right: str) -> int:
 
 
 def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
-    # Only byte-for-byte identical files are rejected automatically.
-    # Perceptual frame similarity is not proof of reused footage: separate
-    # attempts can share a camera angle, rack, platform, or background.
-    rows = _rest("GET", "lift_video_fingerprints", params={"select": "lift_id,sha256", "limit": "5000"}).json()
+    # Only an identical video that already earned VERIFIED blocks reuse.
+    # A previous PENDING/REJECTED/NEEDS_REVIEW attempt must remain retryable:
+    # otherwise a user's own failed test permanently blocks the same proof.
+    rows = _rest(
+        "GET",
+        "lift_video_fingerprints",
+        params={"select": "lift_id,sha256", "sha256": f"eq.{digest}", "limit": "50"},
+    ).json()
     for row in rows:
-        if row.get("sha256") == digest:
-            return str(row["lift_id"])
+        previous_lift_id = str(row.get("lift_id", ""))
+        if not previous_lift_id:
+            continue
+        previous = _rest(
+            "GET",
+            "lifts",
+            params={"id": f"eq.{previous_lift_id}", "select": "id,status", "limit": "1"},
+        ).json()
+        if previous and is_verified_duplicate(previous[0].get("status")):
+            return previous_lift_id
     return None
 
 
