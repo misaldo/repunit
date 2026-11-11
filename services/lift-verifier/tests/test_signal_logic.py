@@ -1,0 +1,27 @@
+import unittest
+
+from signal_logic import count_angle_cycles, stable_plate_load
+
+
+class SignalLogicTests(unittest.TestCase):
+    def test_stationary_or_low_motion_is_unknown_not_zero_reps(self):
+        self.assertIsNone(count_angle_cycles([120.0] * 30))
+        self.assertIsNone(count_angle_cycles([120.0 + (i % 2) for i in range(30)]))
+
+    def test_complete_cycles_are_counted(self):
+        signal = [80, 82, 90, 110, 135, 155, 160, 145, 110, 85] * 3
+        self.assertEqual(count_angle_cycles(signal, min_amplitude=25, min_separation=5), 3)
+
+    def test_partial_cycle_is_not_counted(self):
+        self.assertIsNone(count_angle_cycles([80, 82, 90, 110, 135, 155, 160, 145, 110, 85, 82, 80]))
+
+    def test_single_plate_reading_is_not_a_total_load(self):
+        self.assertIsNone(stable_plate_load([30.0]))
+        self.assertIsNone(stable_plate_load([30.0, 60.0]))
+
+    def test_consistent_repeated_readings_are_retained(self):
+        self.assertEqual(stable_plate_load([60.0, 60.0, 60.0]), 60.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
