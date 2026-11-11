@@ -281,6 +281,71 @@ def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
     return {"weight_read_kg": common, "weight_confidence": round(confidence, 3), "observations": len(observations), "reason": "Repeated approximate OCR estimate across sampled frames. Hidden plates, bar type and plate count are not independently proven."}
 
 
+def _read_detected_plate_crops(video_file: Path, visual_plates: dict[str, Any], exercise: str) -> dict[str, Any]:
+    """Run OCR inside OWLv2 plate boxes, then require repeatable total-load readings.
+
+    OWLv2 boxes are only crop proposals. They do not themselves establish plate mass.
+    """
+    if exercise == "pullup" or not visual_plates.get("available"):
+        return {"weight_read_kg": None, "weight_confidence": 0.0, "observations": 0,
+                "reason": "No usable visual plate boxes for crop OCR."}
+    frames = visual_plates.get("frames") or []
+    if len(frames) < 3:
+        return {"weight_read_kg": None, "weight_confidence": 0.0, "observations": 0,
+                "reason": "Too few visual plate frames for crop OCR."}
+    capture = cv2.VideoCapture(str(video_file))
+    total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    if total_frames < 1:
+        capture.release()
+        return {"weight_read_kg": None, "weight_confidence": 0.0, "observations": 0,
+                "reason": "No frames available for visual crop OCR."}
+    fractions = (0.12, 0.22, 0.32, 0.42, 0.52, 0.62, 0.72, 0.82)
+    estimates: list[float] = []
+    frame_details: list[dict[str, Any]] = []
+    for item in frames:
+        index = int(item.get("frame", -1))
+        if index < 0 or index >= len(fractions):
+            continue
+        capture.set(cv2.CAP_PROP_POS_FRAMES, min(total_frames - 1, int(total_frames * fractions[index])))
+        ok, frame = capture.read()
+        if not ok or frame is None:
+            continue
+        height, width = frame.shape[:2]
+        scale = min(1.0, 960.0 / max(height, width))
+        if scale < 1.0:
+            frame = cv2.resize(frame, (int(width * scale), int(height * scale)), interpolation=cv2.INTER_AREA)
+        values: list[float] = []
+        for detection in item.get("detections", []):
+            box = detection.get("box_xyxy")
+            if not box or len(box) != 4:
+                continue
+            x1, y1, x2, y2 = [float(v) for v in box]
+            pad_x, pad_y = (x2 - x1) * 0.12, (y2 - y1) * 0.12
+            left = max(0, int(x1 - pad_x)); top = max(0, int(y1 - pad_y))
+            right = min(frame.shape[1], int(x2 + pad_x)); bottom = min(frame.shape[0], int(y2 + pad_y))
+            crop = frame[top:bottom, left:right]
+            if crop.size and crop.shape[0] >= 12 and crop.shape[1] >= 12:
+                value = _ocr_plate_value(crop)
+                if value is not None:
+                    values.append(value)
+        if values:
+            estimate = BAR_WEIGHT_KG + 2.0 * sum(values)
+            estimates.append(estimate)
+            frame_details.append({"frame": index, "read_plate_markings_kg": values,
+                                  "estimated_total_kg": round(estimate, 1)})
+    capture.release()
+    stable = stable_plate_load(estimates, min_frames=3, tolerance_kg=2.5)
+    if stable is None:
+        return {"weight_read_kg": None, "weight_confidence": 0.0,
+                "observations": len(estimates), "frames": frame_details,
+                "reason": "OCR inside detected plate crops did not produce a consistent total across at least three frames."}
+    agreeing = sum(1 for value in estimates if abs(value - stable) <= 2.5)
+    confidence = min(0.72, 0.42 + 0.08 * agreeing)
+    return {"weight_read_kg": stable, "weight_confidence": round(confidence, 3),
+            "observations": len(estimates), "frames": frame_details,
+            "reason": "Repeated OCR of markings inside detected plate crops; estimated load assumes matching plates on both sleeves and a 20 kg bar."}
+
+
 def _process_lift(record: dict[str, Any]) -> None:
     lift_id, video_path = str(record.get("id", "")), str(record.get("video_path", ""))
     if not lift_id or not video_path:
@@ -309,6 +374,10 @@ def _process_lift(record: dict[str, Any]) -> None:
             reps = _count_repetitions(video_file, exercise)
             weight = _read_plate_markings(video_file, exercise)
             visual_plates = inspect_weight_plates(str(video_file))
+            crop_ocr = _read_detected_plate_crops(video_file, visual_plates, exercise)
+            # Prefer crop-based OCR only when it has stronger repeated evidence.
+            if crop_ocr.get("weight_read_kg") is not None and crop_ocr.get("weight_confidence", 0) > weight.get("weight_confidence", 0):
+                weight = crop_ocr
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
             weight_read = weight["weight_read_kg"]
             weight_match = abs(weight_read - declared_weight) <= 2.5 if weight_read is not None and weight["weight_confidence"] >= 0.55 else None
@@ -325,8 +394,9 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_match": weight_match,
                 "weight_reason": weight["reason"],
                 "visual_plate_detection": visual_plates,
+                "visual_plate_crop_ocr": crop_ocr,
                 "decision": decide_lift_status(reps_match, weight_match),
-                "note": "The worker makes an automatic VERIFIED/REJECTED decision. VERIFIED requires both repetition and load checks to match; uncertain evidence is rejected, never sent to manual review."
+                "note": "The worker verifies only when repetition and load checks both match. Plate-crop OCR is an approximate screen and assumes matching plates on both sleeves and a 20 kg bar."
             }
             if not _is_current_video(lift_id, video_path):
                 return
