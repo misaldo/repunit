@@ -8,13 +8,13 @@ This is a separate Python service because full video decoding and computer-visio
 - Computes SHA-256 and five sampled-frame perceptual hashes.
 - Flags exact duplicates and strong frame-sequence matches, including many re-encoded copies and screen recordings.
 - Uses adaptive joint-angle cycle thresholds for a conservative repetition screening estimate.
-- Runs OWLv2 over sampled frames of the full-lift video to collect diagnostic plate evidence; no separate close-up is requested.
+- Runs a custom-checkpoint RF-DETR Small detector over sampled full-lift video frames and sends detected plate crops to PaddleOCR; no separate close-up is requested.
 - Never derives total bar load by doubling a single OCR value or assuming a 20 kg bar.
 - Routes load claims to NEEDS_REVIEW until a validated model can account for every plate on both sleeves and the actual bar mass. A confident rep-count mismatch is REJECTED.
 
 ## Important limitation
 
-**The current worker is not a fully automatic weight verifier.** It no longer asks users for a separate plate close-up: plate detection runs on the normal lift video. The earlier implementation added 20 kg for the bar and doubled OCR plate readings. That assumption could report a false total when the bar differs from 20 kg, one sleeve is obscured, plates are not symmetric, or OCR reads background text. This calculation has been removed. OWLv2 detects candidate plate objects but is not a calibrated mass classifier; OCR text and repeated frames do not prove the complete load. Consequently, the worker deliberately leaves total load unknown and routes the lift to NEEDS_REVIEW rather than falsely claiming a weight match.
+**The current worker is not a fully automatic weight verifier.** It no longer asks users for a separate plate close-up: plate detection runs on the normal lift video. The earlier implementation added 20 kg for the bar and doubled OCR plate readings. That assumption could report a false total when the bar differs from 20 kg, one sleeve is obscured, plates are not symmetric, or OCR reads background text. This calculation has been removed. RF-DETR Small must be fine-tuned on labelled REPUNIT plate imagery; its per-frame detections are not unique plate counts. PaddleOCR reads visible crop markings, but OCR text and repeated frames do not prove the complete load. Consequently, the worker deliberately leaves total load unknown and routes the lift to NEEDS_REVIEW rather than falsely claiming a weight match.
 
 The pose-angle repetition counter is also a screening heuristic, not a validated competition judge. A labelled video corpus, an independently validated plate/bar recognition model, and measured false-accept/false-reject rates are required before automatic weight approval can be enabled. Do not use the current worker for prize decisions or claim zero-error verification.
 
@@ -57,3 +57,23 @@ From this directory, run:
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+
+## RF-DETR Small + PaddleOCR integration
+
+The worker now has an inference pipeline for a **custom plate-trained RF-DETR Small checkpoint** and PaddleOCR 3.x. Set the following server-side environment variables when deploying:
+
+- `REPUNIT_PLATE_MODEL_PATH`: absolute path to the fine-tuned RF-DETR Small checkpoint (required to activate plate detection).
+- `REPUNIT_PLATE_CLASS_NAMES`: optional comma-separated detector class names; defaults to `plate,weight_plate,barbell_plate,weight plate`.
+
+Do not point `REPUNIT_PLATE_MODEL_PATH` at generic COCO weights: the COCO model is not trained to detect gym plates. The detector returns plate boxes per sampled frame and PaddleOCR reads text from each detected crop. PaddleOCR is initialized locally by the worker.
+
+**Important:** the pipeline intentionally does not sum detections across frames or OCR markings into total kilograms. A production load recognizer still needs a labelled plate dataset, a fine-tuned checkpoint, temporal tracking of physical plates, proof that both sleeves are completely observed, and a known bar mass. Until those checks are implemented and evaluated on held-out videos, `weight_read_kg` remains unknown and the lift is routed to review.
+
+### Model training starting point
+
+Use the RF-DETR training guide to fine-tune Small on a labelled plate dataset, then deploy the resulting checkpoint to the worker and set `REPUNIT_PLATE_MODEL_PATH`:
+
+https://github.com/roboflow/rf-detr/blob/develop/docs/learn/train/index.md
+
+The RF-DETR Small package/checkpoint is Apache-2.0. PaddleOCR 3.x CPU inference requires PaddlePaddle 3.x; the Docker requirements install the CPU runtime.
