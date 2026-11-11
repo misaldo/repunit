@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import math
 import os
 import re
@@ -28,6 +29,8 @@ load_dotenv(BASE_DIR / ".env")
 TESSERACT_CMD = os.environ.get("TESSERACT_CMD", "").strip()
 if TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+
+logger = logging.getLogger("repunit.lift_verifier")
 
 app = FastAPI(title="REPUNIT Lift Video Screening", version="0.2.0")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
@@ -115,13 +118,12 @@ def _hamming(left: str, right: str) -> int:
 
 
 def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
-    rows = _rest("GET", "lift_video_fingerprints", params={"select": "lift_id,sha256,frame_hashes", "limit": "5000"}).json()
+    # Only byte-for-byte identical files are rejected automatically.
+    # Perceptual frame similarity is not proof of reused footage: separate
+    # attempts can share a camera angle, rack, platform, or background.
+    rows = _rest("GET", "lift_video_fingerprints", params={"select": "lift_id,sha256", "limit": "5000"}).json()
     for row in rows:
         if row.get("sha256") == digest:
-            return str(row["lift_id"])
-        old = row.get("frame_hashes") or []
-        count = min(len(hashes), len(old))
-        if count >= 3 and sum(_hamming(hashes[i], old[i]) <= 8 for i in range(count)) >= count - 1:
             return str(row["lift_id"])
     return None
 
@@ -279,7 +281,9 @@ def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
 def _process_lift(record: dict[str, Any]) -> None:
     lift_id, video_path = str(record.get("id", "")), str(record.get("video_path", ""))
     if not lift_id or not video_path:
+        logger.warning("Ignoring lift webhook without id or video_path")
         return
+    logger.info("Starting AI screening for lift %s", lift_id)
     try:
         rows = _rest("GET", "lifts", params={"id": f"eq.{lift_id}", "select": "id,status,video_path,exercise,weight_kg,reps", "limit": "1"}).json()
         if not rows or rows[0].get("status") != "AI_ANALYZING" or rows[0].get("video_path") != video_path:
@@ -295,7 +299,8 @@ def _process_lift(record: dict[str, Any]) -> None:
                 return
             duplicate_of = _find_duplicate(digest, hashes)
             if duplicate_of and duplicate_of != lift_id:
-                _set_status(lift_id, video_path, "REJECTED", "This video appears to reuse footage already submitted for another lift.")
+                logger.warning("Exact duplicate video for lift %s matches lift %s", lift_id, duplicate_of)
+                _set_status(lift_id, video_path, "REJECTED", "This exact video file was already submitted for another lift.")
                 return
             _store_fingerprint(lift_id, digest, hashes)
             reps = _count_repetitions(video_file, exercise)
@@ -329,11 +334,13 @@ def _process_lift(record: dict[str, Any]) -> None:
                 if weight_match is None: reasons.append("plate weight is unreadable or uncertain")
                 elif weight_match is False: reasons.append(f"visible plate estimate {weight_read:g} kg differs from declared {declared_weight:g} kg")
                 _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI could not confirm the submission: " + "; ".join(reasons) + ". Moderator review required.", analysis)
+            logger.info("AI screening finished for lift %s with status %s", lift_id, "AI_CHECKED" if reps_match is True and weight_match is True else "NEEDS_REVIEW")
     except Exception as error:
+        logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
         try:
             _set_status(lift_id, video_path, "NEEDS_REVIEW", f"Automatic analysis could not finish safely ({type(error).__name__}). Manual review required.")
         except Exception:
-            pass
+            logger.exception("Could not persist failure status for lift %s", lift_id)
 
 
 @app.get("/health")
