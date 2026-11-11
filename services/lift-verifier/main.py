@@ -419,6 +419,7 @@ def _process_lift(record: dict[str, Any]) -> None:
                     analysis,
                 )
                 final_status = "AI_CHECKED"
+                analysis["decision"] = final_status
             else:
                 reasons = []
                 if reps_match is None:
@@ -432,6 +433,7 @@ def _process_lift(record: dict[str, Any]) -> None:
                     reasons.append(f"OCR estimated about {weight_read:g} kg versus declared {declared_weight:g} kg")
                 _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI screening needs a moderator check: " + "; ".join(reasons) + ".", analysis)
                 final_status = "NEEDS_REVIEW"
+                analysis["decision"] = final_status
             logger.info("AI screening finished for lift %s with status %s", lift_id, final_status)
     except Exception as error:
         logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
