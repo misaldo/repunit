@@ -96,12 +96,11 @@ function NewRecord() {
           xhr.onabort = () => reject(new Error("Video upload was cancelled."));
           xhr.send(file);
         });
-      }
       plate_video_path = `${user.id}/${crypto.randomUUID()}-plates-${plateFile.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         const encodedPath = plate_video_path!.split("/").map(encodeURIComponent).join("/");
-        xhr.open("POST", `${storageUrl.replace(/\\/+$/, "")}/storage/v1/object/lift-videos/${encodedPath}`);
+        xhr.open("POST", `${storageUrl.replace(/\/+$/, "")}/storage/v1/object/lift-videos/${encodedPath}`);
         xhr.setRequestHeader("apikey", publishableKey);
         xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
         xhr.setRequestHeader("Content-Type", plateFile.type);
@@ -114,6 +113,7 @@ function NewRecord() {
         xhr.onabort = () => reject(new Error("Plate video upload was cancelled."));
         xhr.send(plateFile);
       });
+      }
       const { data, error } = await supabase.from("lifts").insert({
         user_id: user.id, exercise, weight_kg: weight, reps,
         lifted_on: String(f.get("date")), description: null, video_path, plate_video_path,
