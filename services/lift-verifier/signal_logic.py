@@ -58,5 +58,13 @@ def stable_plate_load(observations: Sequence[float], *, min_frames: int = 3,
 
 
 def decide_lift_status(reps_match: bool | None, weight_match: bool | None) -> str:
-    """Return a final automatic verdict; uncertain evidence is not approved."""
-    return "VERIFIED" if reps_match is True and weight_match is True else "REJECTED"
+    """Only matching rep+load evidence verifies; uncertain load goes to review.
+
+    A confident rep mismatch is rejected. OCR load mismatches are not hard rejects:
+    visual OCR is too error-prone to prove the actual loaded weight.
+    """
+    if reps_match is False:
+        return "REJECTED"
+    if reps_match is True and weight_match is True:
+        return "VERIFIED"
+    return "NEEDS_REVIEW"
