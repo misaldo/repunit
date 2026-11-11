@@ -4,17 +4,17 @@ This is a separate Python service because full video decoding and computer-visio
 
 ## What this first version does
 - Authenticates Supabase Database Webhook requests with a shared secret.
-- Downloads both private videos (full lift + separate plate close-up) using the Supabase service-role key.
+- Downloads the single private full-lift video using the Supabase service-role key.
 - Computes SHA-256 and five sampled-frame perceptual hashes.
 - Flags exact duplicates and strong frame-sequence matches, including many re-encoded copies and screen recordings.
 - Uses adaptive joint-angle cycle thresholds for a conservative repetition screening estimate.
-- Uses the separate plate close-up and OWLv2 only to collect diagnostic visual evidence.
+- Runs OWLv2 over sampled frames of the full-lift video to collect diagnostic plate evidence; no separate close-up is requested.
 - Never derives total bar load by doubling a single OCR value or assuming a 20 kg bar.
 - Routes load claims to NEEDS_REVIEW until a validated model can account for every plate on both sleeves and the actual bar mass. A confident rep-count mismatch is REJECTED.
 
 ## Important limitation
 
-**The current worker is not a fully automatic weight verifier.** The earlier implementation added 20 kg for the bar and doubled OCR plate readings. That assumption could report a false total when the bar differs from 20 kg, one sleeve is obscured, plates are not symmetric, or OCR reads background text. This calculation has been removed. OWLv2 detects candidate plate objects but is not a calibrated mass classifier; OCR text and repeated frames do not prove the complete load. Consequently, the worker deliberately leaves total load unknown and routes the lift to NEEDS_REVIEW rather than falsely claiming a weight match.
+**The current worker is not a fully automatic weight verifier.** It no longer asks users for a separate plate close-up: plate detection runs on the normal lift video. The earlier implementation added 20 kg for the bar and doubled OCR plate readings. That assumption could report a false total when the bar differs from 20 kg, one sleeve is obscured, plates are not symmetric, or OCR reads background text. This calculation has been removed. OWLv2 detects candidate plate objects but is not a calibrated mass classifier; OCR text and repeated frames do not prove the complete load. Consequently, the worker deliberately leaves total load unknown and routes the lift to NEEDS_REVIEW rather than falsely claiming a weight match.
 
 The pose-angle repetition counter is also a screening heuristic, not a validated competition judge. A labelled video corpus, an independently validated plate/bar recognition model, and measured false-accept/false-reject rates are required before automatic weight approval can be enabled. Do not use the current worker for prize decisions or claim zero-error verification.
 
