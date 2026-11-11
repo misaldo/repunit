@@ -4,3 +4,5 @@ requests==2.32.3
 opencv-contrib-python-headless==4.11.0.86
 mediapipe==0.10.21
 numpy<2
+pytesseract==0.3.13
+python-dotenv==1.0.1
