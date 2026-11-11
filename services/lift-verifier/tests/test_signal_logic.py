@@ -1,9 +1,16 @@
 import unittest
 
-from signal_logic import count_angle_cycles, stable_plate_load
+from signal_logic import count_angle_cycles, is_verified_duplicate, stable_plate_load
 
 
 class SignalLogicTests(unittest.TestCase):
+    def test_only_previously_verified_lifts_block_video_reuse(self):
+        self.assertTrue(is_verified_duplicate("VERIFIED"))
+        self.assertFalse(is_verified_duplicate("NEEDS_REVIEW"))
+        self.assertFalse(is_verified_duplicate("REJECTED"))
+        self.assertFalse(is_verified_duplicate("PENDING"))
+        self.assertFalse(is_verified_duplicate(None))
+
     def test_stationary_or_low_motion_is_unknown_not_zero_reps(self):
         self.assertIsNone(count_angle_cycles([120.0] * 30))
         self.assertIsNone(count_angle_cycles([120.0 + (i % 2) for i in range(30)]))
