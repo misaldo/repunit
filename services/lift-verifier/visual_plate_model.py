@@ -1,8 +1,9 @@
 """Open-vocabulary visual detection of gym plates using Google's OWLv2.
 
-This model locates likely plates and reports visual weight-label candidates. Its
-scores are not calibrated mass measurements; never treat a text candidate as
-proof of the actual load without readable markings or a calibrated setup.
+OWLv2 can locate likely plates and compare text-conditioned appearance labels.
+It is NOT a calibrated mass classifier. This module suppresses overlapping
+boxes and aggregates evidence per frame so duplicate boxes cannot masquerade
+as repeated detections or a plate count.
 """
 from __future__ import annotations
 
@@ -25,6 +26,8 @@ QUERIES = [
     "a 25 kg barbell weight plate",
     "a 45 lb barbell weight plate",
 ]
+SCORE_THRESHOLD = 0.12
+NMS_IOU_THRESHOLD = 0.45
 
 
 @lru_cache(maxsize=1)
@@ -35,8 +38,27 @@ def _load_model() -> tuple[Any, Any]:
     return processor, model
 
 
-def inspect_weight_plates(video_file: str, *, max_frames: int = 4) -> dict[str, Any]:
-    """Detect visible plates in sampled frames; do not claim exact load."""
+def _iou(a: list[float], b: list[float]) -> float:
+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])
+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])
+    intersection = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+    area_a = max(0.0, a[2] - a[0]) * max(0.0, a[3] - a[1])
+    area_b = max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1])
+    union = area_a + area_b - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def _suppress_duplicate_boxes(detections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Class-agnostic NMS: the same physical plate often matches several prompts."""
+    kept: list[dict[str, Any]] = []
+    for candidate in sorted(detections, key=lambda item: item["confidence"], reverse=True):
+        if all(_iou(candidate["box_xyxy"], prior["box_xyxy"]) < NMS_IOU_THRESHOLD for prior in kept):
+            kept.append(candidate)
+    return kept
+
+
+def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, Any]:
+    """Detect visible plates across sampled frames; never invent exact kilograms."""
     capture = cv2.VideoCapture(video_file)
     if not capture.isOpened():
         return {"available": False, "reason": "Video could not be opened for visual plate detection."}
@@ -45,10 +67,8 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 4) -> dict[str, 
         capture.release()
         return {"available": False, "reason": "No video frames available for visual plate detection."}
 
-    positions = sorted(set(
-        max(0, min(total - 1, int(total * fraction)))
-        for fraction in (0.18, 0.38, 0.58, 0.78)[:max_frames]
-    ))
+    fractions = (0.12, 0.22, 0.32, 0.42, 0.52, 0.62, 0.72, 0.82)[:max(1, max_frames)]
+    positions = sorted(set(max(0, min(total - 1, int(total * fraction))) for fraction in fractions))
     frames: list[Image.Image] = []
     for position in positions:
         capture.set(cv2.CAP_PROP_POS_FRAMES, position)
@@ -65,35 +85,47 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 4) -> dict[str, 
 
     processor, model = _load_model()
     frame_results: list[dict[str, Any]] = []
-    for frame in frames:
+    for frame_index, frame in enumerate(frames):
         inputs = processor(text=[QUERIES], images=frame, return_tensors="pt")
         with torch.inference_mode():
             outputs = model(**inputs)
         target_sizes = torch.tensor([(frame.height, frame.width)])
         result = processor.post_process_object_detection(
-            outputs=outputs, target_sizes=target_sizes, threshold=0.12
+            outputs=outputs, target_sizes=target_sizes, threshold=SCORE_THRESHOLD
         )[0]
-        detections = []
+        raw: list[dict[str, Any]] = []
         for box, score, label in zip(result["boxes"], result["scores"], result["labels"]):
             idx = int(label.item())
-            detections.append({
+            raw.append({
                 "candidate": QUERIES[idx],
                 "confidence": round(float(score.item()), 3),
                 "box_xyxy": [round(float(v), 1) for v in box.tolist()],
             })
-        detections.sort(key=lambda item: item["confidence"], reverse=True)
-        frame_results.append({"detections": detections[:12]})
+        detections = _suppress_duplicate_boxes(raw)[:12]
+        frame_results.append({"frame": frame_index, "detections": detections})
 
+    # Count each label at most once per frame. The previous implementation
+    # counted every box as a new frame observation, inflating evidence badly.
     candidates: dict[str, list[float]] = {}
     for item in frame_results:
+        per_frame: dict[str, float] = {}
         for detection in item["detections"]:
-            candidates.setdefault(detection["candidate"], []).append(detection["confidence"])
+            label = detection["candidate"]
+            per_frame[label] = max(per_frame.get(label, 0.0), detection["confidence"])
+        for label, confidence in per_frame.items():
+            candidates.setdefault(label, []).append(confidence)
+
     ranked = sorted(
         (
-            {"candidate": name, "best_confidence": round(max(scores), 3), "frames_seen": len(scores)}
-            for name, scores in candidates.items()
+            {
+                "candidate": label,
+                "best_confidence": round(max(scores), 3),
+                "mean_confidence": round(sum(scores) / len(scores), 3),
+                "frames_seen": len(scores),
+            }
+            for label, scores in candidates.items()
         ),
-        key=lambda item: (item["frames_seen"], item["best_confidence"]),
+        key=lambda item: (item["frames_seen"], item["mean_confidence"]),
         reverse=True,
     )
     return {
@@ -103,5 +135,9 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 4) -> dict[str, 
         "candidate_labels": ranked[:8],
         "frames": frame_results,
         "mass_estimate_kg": None,
-        "note": "OWLv2 detects visual objects and text-conditioned candidates. Candidate labels are not calibrated plate weights; exact load still requires readable labels, a known plate system, or calibrated reference geometry.",
+        "note": (
+            "Detections are deduplicated with non-maximum suppression and label evidence is counted once per frame. "
+            "Text-conditioned labels are visual hypotheses, not calibrated mass measurements. Exact load still "
+            "requires readable markings or a trained/calibrated plate classifier for the actual plate system."
+        ),
     }
