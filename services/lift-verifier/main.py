@@ -239,23 +239,30 @@ def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
 def _read_detected_plate_crops(
     video_file: Path, visual_plates: dict[str, Any], exercise: str
 ) -> dict[str, Any]:
-    """Return diagnostic plate detections without inventing total kilograms.
-
-    OWLv2 is an open-vocabulary object detector, not a calibrated plate-mass
-    classifier. Its boxes cannot prove plate count, hidden plates, the opposite
-    sleeve, or bar mass.
-    """
+    """Expose RF-DETR/PaddleOCR evidence without claiming a complete bar load."""
     frames = visual_plates.get("frames") or []
-    detections = sum(len(item.get("detections", [])) for item in frames)
+    detections = [
+        detection
+        for frame in frames
+        for detection in frame.get("detections", [])
+    ]
+    ocr_observations = [
+        observation
+        for detection in detections
+        for observation in detection.get("ocr", [])
+    ]
+    mass_candidates = visual_plates.get("explicit_marking_candidates_not_total_load") or []
     return {
         "weight_read_kg": None,
         "weight_confidence": 0.0,
-        "observations": 0,
-        "candidate_plate_detections": detections,
+        "observations": len(ocr_observations),
+        "candidate_plate_detections_across_frames": len(detections),
+        "ocr_observations": ocr_observations,
+        "explicit_marking_candidates_not_total_load": mass_candidates,
         "reason": (
-            "Visual detections are diagnostic only. No total load is reported "
-            "until all plates on both sleeves and bar mass can be established "
-            "by a validated model."
+            "RF-DETR Small and PaddleOCR provide plate and marking evidence, but this video analysis "
+            "does not yet establish unique plates on both sleeves or the actual bar mass. "
+            "Total load remains unknown."
         ),
     }
 
@@ -311,7 +318,7 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "visual_plate_detection": visual_plates,
                 "visual_plate_crop_ocr": crop_ocr,
                 "decision": final_status,
-                "note": "Plate detection runs on sampled frames from the full lift video; no separate close-up is requested. The current detector does not prove total bar load. No bar-weight or left/right symmetry assumptions are made. A validated total-load model and labelled video evaluation are required before automatic load matching can be enabled."
+                "note": "Plate detection runs on sampled frames from the full lift video; no separate close-up is requested. RF-DETR Small and PaddleOCR provide plate and marking evidence, but the custom checkpoint and total-load reconstruction have not been validated. No bar-weight or left/right symmetry assumptions are made."
             }
             if not _is_current_video(lift_id, video_path):
                 return
