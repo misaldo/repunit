@@ -219,11 +219,11 @@ def _count_repetitions(video_file: Path, exercise: str) -> dict[str, Any]:
 
 
 def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
-    """Never infer total load from OCR of an incomplete plate close-up.
+    """Do not infer total load from incomplete markings in the full lift video.
 
-    A close-up may show only one sleeve, hide inner plates, omit the bar marking,
-    or show the same plate in several frames. Repeated OCR is not proof of the
-    complete loaded bar weight, so this function deliberately never sums it.
+    Sampled frames may hide inner plates, the far sleeve, or the bar marking.
+    Repeated OCR is not proof of the complete loaded bar weight, so this
+    function deliberately never sums partial observations.
     """
     reason = (
         "Pull-up loading cannot be inferred from barbell plate OCR."
@@ -267,7 +267,7 @@ def _process_lift(record: dict[str, Any]) -> None:
         return
     logger.info("Starting AI screening for lift %s", lift_id)
     try:
-        rows = _rest("GET", "lifts", params={"id": f"eq.{lift_id}", "select": "id,status,video_path,plate_video_path,exercise,weight_kg,reps", "limit": "1"}).json()
+        rows = _rest("GET", "lifts", params={"id": f"eq.{lift_id}", "select": "id,status,video_path,exercise,weight_kg,reps", "limit": "1"}).json()
         if not rows or rows[0].get("status") != "AI_ANALYZING" or rows[0].get("video_path") != video_path:
             return
         lift = rows[0]
