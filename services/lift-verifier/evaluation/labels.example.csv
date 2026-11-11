@@ -1,0 +1,3 @@
+video_id,exercise,declared_reps,declared_weight_kg,ground_truth_reps,ground_truth_weight_kg,is_valid
+example-valid-bench,bench,5,100,5,100,true
+example-invalid-squat,squat,3,120,2,100,false
