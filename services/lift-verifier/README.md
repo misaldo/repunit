@@ -7,12 +7,13 @@ This is a separate Python service because full video decoding and computer-visio
 - Downloads the private lift video using the Supabase service-role key.
 - Computes SHA-256 and five sampled-frame perceptual hashes.
 - Flags exact duplicates and strong frame-sequence matches, including many re-encoded copies and screen recordings.
-- Runs MediaPipe Pose on sampled frames to check whether a lifter is visible.
-- Fails closed: processing failures and uncertain evidence never become VERIFIED.
+- Uses adaptive joint-angle cycle thresholds for a conservative repetition screening estimate.
+- Requires repeated, consistent plate OCR observations across multiple sampled frames before returning an approximate load estimate.
+- Fails closed: insufficient motion or inconsistent OCR is unknown, not a zero-rep or guessed-load result, and never becomes VERIFIED.
 
 ## Important limitation
 
-**This worker intentionally does not mark any lift VERIFIED.** MediaPipe Pose detects body landmarks; it does not read the weight on the bar, reliably count competition-valid repetitions, or prove range of motion/technique. The worker therefore sends screened videos to NEEDS_REVIEW. A real plate/load detector and exercise-specific repetition/technique evaluator must be trained and validated before automatic approval is safe.
+**This worker intentionally does not mark any lift VERIFIED.** Adaptive pose-angle cycles and repeated plate OCR reduce some obvious false mismatches, but they do not prove the total load, exercise identity, competition-valid repetitions, range of motion, or technique. Camera angle, occlusion, plate visibility and bar type remain major limitations. This is still screening, not an automatic competition-lift judge. Do not deploy it as automatic approval without a labelled video evaluation set and independently validated exercise-specific models.
 
 Perceptual hashing is a strong duplicate signal, not an unbreakable anti-cheat system. Heavy crops, mirroring, speed changes, overlays, or camera changes can evade simple frame-hash matching. Suspected matches should be reviewed rather than advertised as impossible to bypass.
 
