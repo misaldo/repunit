@@ -4,16 +4,16 @@ This is a separate Python service because full video decoding and computer-visio
 
 ## What this first version does
 - Authenticates Supabase Database Webhook requests with a shared secret.
-- Downloads the private lift video using the Supabase service-role key.
+- Downloads both private videos (full lift + separate plate close-up) using the Supabase service-role key.
 - Computes SHA-256 and five sampled-frame perceptual hashes.
 - Flags exact duplicates and strong frame-sequence matches, including many re-encoded copies and screen recordings.
 - Uses adaptive joint-angle cycle thresholds for a conservative repetition screening estimate.
-- Requires repeated, consistent plate OCR observations across multiple sampled frames before returning an approximate load estimate.
-- Returns only final VERIFIED or REJECTED decisions. Both repetition count and total-load OCR must match to earn VERIFIED; uncertain evidence is REJECTED and can be resubmitted with clearer footage.
+- Requires a separate close-up video of the loaded plates and repeated, consistent plate OCR observations across multiple sampled frames before returning an approximate load estimate.
+- Returns VERIFIED only when both repetition count from the full-lift video and total-load OCR from the separate plate close-up match the declared values. Uncertain evidence is NEEDS_REVIEW; a confident rep-count mismatch is REJECTED.
 
 ## Important limitation
 
-**This worker now makes automatic VERIFIED/REJECTED decisions and never routes a lift to manual review.** VERIFIED requires both repetition and load checks to match. The current pose-angle and plate OCR methods are heuristic and have not been validated as a competition-grade judge; poor camera angles or unreadable plates can cause REJECTED outcomes. Validate against labelled videos before using results for prizes or high-stakes competitions.
+**VERIFIED requires both checks to match:** repetition count from the full-lift video and load estimate from the separate plate close-up. The plate close-up should show the markings on the loaded plates clearly, ideally both sleeves. Unreadable or inconsistent markings remain NEEDS_REVIEW. The current pose-angle and plate OCR methods are heuristic and have not been validated as a competition-grade judge. Validate against labelled videos before using results for prizes or high-stakes competitions.
 
 Perceptual hashing is a strong duplicate signal, not an unbreakable anti-cheat system. Heavy crops, mirroring, speed changes, overlays, or camera changes can evade simple frame-hash matching. Suspected matches should be reviewed rather than advertised as impossible to bypass.
 
