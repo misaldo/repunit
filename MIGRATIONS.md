@@ -105,6 +105,16 @@ The dashboard includes the weekly streak card, event leaderboards and rivalry in
 35. `drizzle/migrations/0047_pause_subscription_enforcement.sql` — temporarily disables the database-side workout-plan limit while REPUNIT is free for everyone. It preserves the subscription table, Stripe integration, trigger, and function so paid-plan enforcement can be restored later.
 36. `drizzle/migrations/0048_fail_closed_lift_ai_review.sql` — prevents client-submitted videos from being auto-verified, routes new/replacement proofs into AI_ANALYZING, and adds a private fingerprint table for the trusted analysis worker. Apply after the existing migrations, only once the earlier sequence is confirmed.
 
+37. `drizzle/migrations/0049_ai_rep_and_plate_screening.sql` — stores the worker's repetition, OCR and structured analysis evidence.
+38. `drizzle/migrations/0050_lift_worker_requeue_and_replacements.sql` — queues replacement videos and re-queued analysis jobs.
+39. `drizzle/migrations/0051_moderator_review_ai_lifts.sql` — legacy moderator review workflow; migration 0055 below removes it.
+40. `drizzle/migrations/0052_separate_plate_video_evidence.sql` — adds the optional separate plate-evidence path.
+41. `drizzle/migrations/0053_protect_plate_video_evidence.sql` — protects submitted plate evidence.
+42. `drizzle/migrations/0054_add_not_verified_status.sql` — adds the AI-only terminal failure status. Apply this file separately so the enum value is committed before the next migration uses it.
+43. `drizzle/migrations/0055_ai_only_lift_verification.sql` — removes moderator approval, makes replacement uploads re-enter AI_ANALYZING, and restricts VERIFIED decisions to the trusted worker.
+
+Apply 0049–0055 in filename order only after confirming each prerequisite and the actual database migration history. Back up the database first; do not blindly replay files that may already have been manually applied.
+
 
 ## Database tests
 
