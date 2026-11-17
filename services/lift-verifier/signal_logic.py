@@ -9,6 +9,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 
+STANDARD_BAR_MASS_KG = 20.0
+
+
 def is_verified_duplicate(status: str | None) -> bool:
     """Only a lift already VERIFIED makes identical footage a duplicate."""
     return status == "VERIFIED"
@@ -38,6 +41,20 @@ def count_angle_cycles(values: Sequence[float], *, min_amplitude: float = 28.0,
                 last_rep_at = index
                 saw_low = False
     return reps if reps > 0 else None
+
+
+def total_barbell_load(plates_left_kg: Sequence[float], plates_right_kg: Sequence[float]) -> float | None:
+    """Add REPUNIT's fixed 20 kg standard bar to complete, uniquely counted plate stacks.
+
+    The caller must independently prove both sleeves are fully visible and each
+    physical plate is counted exactly once. Empty or invalid stacks fail closed.
+    """
+    if not plates_left_kg or not plates_right_kg:
+        return None
+    values = [float(value) for value in (*plates_left_kg, *plates_right_kg)]
+    if any(value <= 0 for value in values):
+        return None
+    return round(STANDARD_BAR_MASS_KG + sum(values), 2)
 
 
 def stable_plate_load(observations: Sequence[float], *, min_frames: int = 3,
