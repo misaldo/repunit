@@ -11,6 +11,7 @@ pytesseract==0.3.13
 torch==2.6.0+cpu
 torchvision==0.21.0+cpu
 rfdetr
+huggingface_hub>=0.27,<2
 --extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
 paddlepaddle==3.2.0
 paddleocr>=3.0,<4
