@@ -59,6 +59,12 @@ def main() -> None:
 
     from rfdetr import RFDETRSmall
 
+    import torch
+    device = "cuda" if args.device == "auto" and torch.cuda.is_available() else ("cpu" if args.device == "auto" else args.device)
+    if device == "cuda" and not torch.cuda.is_available():
+        parser.error("--device cuda requested, but CUDA is not available")
+    if device == "cpu":
+        print("WARNING: CPU training is supported but may be extremely slow; a CUDA GPU is strongly recommended.")
     model = RFDETRSmall()
     args.output.mkdir(parents=True, exist_ok=True)
     model.train(
@@ -67,7 +73,7 @@ def main() -> None:
         batch_size=args.batch_size,
         grad_accum_steps=args.grad_accum_steps,
         output_dir=str(args.output.resolve()),
-        accelerator=args.device,
+        device=device,
         early_stopping=True,
         log_per_class_metrics=True,
     )
