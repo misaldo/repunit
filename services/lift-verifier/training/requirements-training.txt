@@ -1,0 +1,2 @@
+# Separate training environment; do not install this on the production CPU worker.
+rfdetr[train]==1.12.0
