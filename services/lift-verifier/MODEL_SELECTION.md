@@ -20,6 +20,15 @@ The adapter currently returns per-frame candidate boxes and OCR observations onl
 
 The pose-angle repetition counter is also a screening heuristic, not a validated competition judge. It needs independent video evaluation before being trusted for competition results.
 
+## Public datasets found for bootstrapping
+
+Two public Roboflow Universe datasets may help bootstrap a detector, but neither is sufficient evidence for production load reconstruction:
+
+- [Weightlifting Plates by ProjektCiezary](https://universe.roboflow.com/projektciezary/weightlifting-plates): 2,251 images, 11 classes including individual plate masses from 0.5 kg to 25 kg, listed as CC BY 4.0. Its published model reports only 52.0% mAP@50, 63.4% precision and 47.4% recall. This is a useful candidate source for pretraining/annotation experiments, not an acceptable production checkpoint.
+- [Plate Detection by Personal](https://universe.roboflow.com/personal-4yjis/plate-detection-xvycd): 659 images, two classes (visible plate and plate stack), listed as CC BY 4.0. Its description says it covers only three barbell exercises and prominent fully visible plates; its plate_stack class groups a stack on one side and does not account for perspective. Its reported model metrics do not establish complete-load accuracy.
+
+Before importing either dataset, preserve attribution and license metadata, inspect the actual images/labels, remove duplicates, and split by source/session. The stack dataset cannot teach per-plate mass when its annotation groups the stack as one object. Public images should be treated as a starting point; REPUNIT still needs consented footage from the actual gym environments and camera angles it will support.
+
 ## Data required before training
 
 Collect user-consented, labelled full-lift videos and frame annotations covering:
