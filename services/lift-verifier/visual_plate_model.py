@@ -2,7 +2,7 @@
 
 This module only emits per-frame evidence. It never sums frame detections into a
 barbell load: that requires temporal tracking, both-sleeve completeness, known
-plate masses and known bar mass. A pinned public plate checkpoint is used by default.
+plate masses and known a fixed 20 kg standard-bar rule. A pinned public plate checkpoint is used by default.
 """
 from __future__ import annotations
 
@@ -184,7 +184,7 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "complete_barbell_evidence": False,
             "both_sleeves_complete": False,
             "unique_plate_instances": False,
-            "bar_mass_kg": None,
+            "bar_mass_kg": 20.0,
         }
     try:
         ocr = _load_ocr()
@@ -198,7 +198,7 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "complete_barbell_evidence": False,
             "both_sleeves_complete": False,
             "unique_plate_instances": False,
-            "bar_mass_kg": None,
+            "bar_mass_kg": 20.0,
         }
 
     capture = cv2.VideoCapture(video_file)
@@ -299,11 +299,11 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
         "complete_barbell_evidence": False,
         "both_sleeves_complete": False,
         "unique_plate_instances": False,
-        "bar_mass_kg": None,
+        "bar_mass_kg": 20.0,
         "note": (
             "RF-DETR and PaddleOCR are connected for plate-instance detection and crop OCR. "
             "The public checkpoint detects plate-mass classes but was trained on side-on single-sleeve photos. Per-frame detections "
             "are not unique plate counts; OCR markings are not total load. Total load remains "
-            "UNKNOWN until temporal association, both-sleeve completeness and bar mass are validated."
+            "UNKNOWN until temporal association, both-sleeve completeness is validated; the standard bar adds 20 kg."
         ),
     }
