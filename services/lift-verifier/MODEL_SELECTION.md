@@ -7,10 +7,10 @@ Status: research decision and implementation specification. This is NOT a traine
 1. **RF-DETR Small public weightlifting-plate checkpoint** as an experimental plate detector, with further REPUNIT-specific evaluation/fine-tuning required. Generic COCO weights are not a plate detector.
 2. **PaddleOCR 3.x** for reading visible markings inside detected plate crops. OCR is supporting evidence, not a total-load measurement.
 3. **Temporal tracking** to associate the same physical plate across frames so repeated observations are never counted as additional plates.
-4. **Load reconstruction** only after every physical plate on both sleeves is accounted for, the bar type and mass are known, and observations are consistent.
-5. **Fail-closed decision**: if any sleeve, plate, marking, or bar-mass evidence is incomplete, return UNKNOWN and keep the lift NOT_VERIFIED.
+4. **Load reconstruction** only after every physical plate on both sleeves is accounted for, the standard 20 kg bar is added, and observations are consistent.
+5. **Fail-closed decision**: if any sleeve, plate, marking, or plate/sleeve evidence is incomplete, return UNKNOWN and keep the lift NOT_VERIFIED.
 
-Never infer the far sleeve by symmetry, never assume a 20 kg bar, and never sum detections across frames.
+The standard bar is always 20 kg in REPUNIT and is not AI-detected. Never infer the far sleeve by symmetry or sum detections across frames.
 
 ## Current code status
 
