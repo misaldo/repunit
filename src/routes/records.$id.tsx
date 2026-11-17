@@ -21,6 +21,7 @@ function Record() {
   const [busy, setBusy] = useState(false);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["lift", id],
+    refetchInterval: (query) => query.state.data?.l?.status === "AI_ANALYZING" ? 3000 : false,
     queryFn: async () => {
       // Fetch the lift independently of the PostgREST profile relationship cache.
       // Lovable preview projects can have stale/missing relationship metadata even
@@ -74,7 +75,7 @@ function Record() {
       if (data?.l.video_path && data.l.video_path !== path) {
         await supabase.storage.from("lift-videos").remove([data.l.video_path]);
       }
-      toast.success("Video proof added", { description: "Your lift is now back in the rankings." });
+      toast.success("Video proof uploaded", { description: "AI verification has started. The lift counts only if it is verified." });
       await refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not upload video proof.");
@@ -95,10 +96,10 @@ function Record() {
       {l.description && <p className="mt-4 max-w-xl">{l.description}</p>}
       {video ? <video src={video} controls playsInline className="mt-6 w-full max-w-xl rounded-xl border border-border" /> :
         videoUnavailable ? <p className="mt-6 text-sm text-muted-foreground">Video evidence is temporarily unavailable.</p> : <p className="mt-6 text-sm text-muted-foreground">No video evidence attached.</p>}
-      {(l.status === "NEEDS_PROOF" || l.status === "UNDER_REVIEW") && <div className="mt-5 max-w-xl rounded-xl border border-warning/30 bg-warning/5 p-4"><p className="text-sm font-semibold">{l.status === "UNDER_REVIEW" ? "Your Crew flagged this lift." : l.video_path ? "This lift is waiting for verification." : "This lift needs video proof."}</p><p className="mt-1 text-xs text-muted-foreground">{l.verification_reason ?? "This result is not counted in rankings until you add a video."}</p></div>}
-      {user?.id === l.user_id && l.status !== "VERIFIED" && <div className="mt-5 max-w-xl"><label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-wide text-primary-foreground">{busy ? "Uploading…" : l.video_path ? "Replace video proof" : "Add video proof"}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addVideoProof(file); event.currentTarget.value = ""; }} /></label></div>}
+      {["AI_ANALYZING", "NOT_VERIFIED", "NEEDS_PROOF", "UNDER_REVIEW", "NEEDS_REVIEW", "AI_CHECKED"].includes(l.status) && <div className="mt-5 max-w-xl rounded-xl border border-warning/30 bg-warning/5 p-4"><p className="text-sm font-semibold">{l.status === "AI_ANALYZING" ? "AI is analyzing your video." : l.status === "UNDER_REVIEW" ? "Your Crew flagged this lift." : l.status === "NEEDS_PROOF" ? "This lift needs video proof." : "This lift was not verified."}</p><p className="mt-1 text-xs text-muted-foreground">{l.verification_reason ?? (l.status === "AI_ANALYZING" ? "This usually takes a short time." : "This result does not count in rankings. Upload a clearer video to try again.")}</p></div>}
+      {user?.id === l.user_id && l.status !== "VERIFIED" && l.status !== "AI_ANALYZING" && <div className="mt-5 max-w-xl"><label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-wide text-primary-foreground">{busy ? "Uploading…" : l.video_path ? "Upload a better video" : "Add video proof"}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addVideoProof(file); event.currentTarget.value = ""; }} /></label></div>}
       {user && user.id !== l.user_id && <Button variant="line" className="mt-5" disabled={busy} onClick={() => void flagLift()}>Flag lift</Button>}
-      <p className="mt-6 text-xs text-muted-foreground">Automatic checks are applied by the database. A lift that needs proof stays out of rankings until its owner attaches a video.</p>
+      <p className="mt-6 text-xs text-muted-foreground">Only lifts marked VERIFIED count in rankings, Crew Battles and progression. Unverified lifts stay saved and can be submitted again with clearer video proof.</p>
     </PageShell>
   );
 }
