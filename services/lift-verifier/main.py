@@ -119,8 +119,8 @@ def _hamming(left: str, right: str) -> int:
 
 def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
     # Only an identical video that already earned VERIFIED blocks reuse.
-    # A previous PENDING/REJECTED/NEEDS_REVIEW attempt must remain retryable:
-    # otherwise a user's own failed test permanently blocks the same proof.
+    # A previous NOT_VERIFIED attempt can be retried with the same proof.
+    # In-flight attempts are blocked to prevent concurrent duplicate processing.
     rows = _rest(
         "GET",
         "lift_video_fingerprints",
