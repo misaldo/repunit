@@ -17,12 +17,13 @@ export const exerciseLabel = (e: Exercise) => EXERCISES.find((x) => x.id === e)?
 export const STATUS_META: Record<LiftStatus, { label: string; tone: "verified" | "pending" | "warn" | "bad" | "ai" }> = {
   PENDING: { label: "Unverified", tone: "pending" },
   AI_ANALYZING: { label: "Analyzing", tone: "ai" },
-  AI_CHECKED: { label: "AI checked", tone: "ai" },
-  NEEDS_REVIEW: { label: "Needs review", tone: "warn" },
-  NEEDS_PROOF: { label: "Needs proof", tone: "warn" },
+  AI_CHECKED: { label: "Not verified", tone: "bad" },
+  NEEDS_REVIEW: { label: "Not verified", tone: "bad" },
+  NOT_VERIFIED: { label: "Not verified", tone: "bad" },
+  NEEDS_PROOF: { label: "Needs video proof", tone: "warn" },
   UNDER_REVIEW: { label: "Under review", tone: "warn" },
   VERIFIED: { label: "Verified", tone: "verified" },
-  REJECTED: { label: "Rejected", tone: "bad" },
+  REJECTED: { label: "Not verified", tone: "bad" },
 };
 
 /** Estimated 1-rep max (Epley). Single reps return the weight itself. */

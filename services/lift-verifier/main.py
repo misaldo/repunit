@@ -1,9 +1,7 @@
-"""REPUNIT lift-video screening.
+"""REPUNIT AI-only lift verification.
 
-The worker verifies only when both rep count and load are supported by evidence.
-Uncertain load/rep evidence is routed to NEEDS_REVIEW, never guessed or falsely rejected.
-A confident rep-count mismatch can be rejected; OCR weight mismatches require review
-because plate OCR can misread markings and cannot prove hidden plates or bar weight.
+A lift is VERIFIED only when repetition count and complete barbell load are both
+supported by validated evidence. Unknown or incomplete evidence becomes NOT_VERIFIED.
 """
 from __future__ import annotations
 
@@ -121,8 +119,8 @@ def _hamming(left: str, right: str) -> int:
 
 def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
     # Only an identical video that already earned VERIFIED blocks reuse.
-    # A previous PENDING/REJECTED/NEEDS_REVIEW attempt must remain retryable:
-    # otherwise a user's own failed test permanently blocks the same proof.
+    # A previous NOT_VERIFIED attempt can be retried with the same proof.
+    # In-flight attempts are blocked to prevent concurrent duplicate processing.
     rows = _rest(
         "GET",
         "lift_video_fingerprints",
@@ -137,8 +135,20 @@ def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
             "lifts",
             params={"id": f"eq.{previous_lift_id}", "select": "id,status", "limit": "1"},
         ).json()
-        if previous and is_verified_duplicate(previous[0].get("status")):
-            return previous_lift_id
+        if previous:
+            previous_status = previous[0].get("status")
+            if is_verified_duplicate(previous_status):
+                return previous_lift_id
+            if previous_status != "NOT_VERIFIED":
+                # Do not process the same footage concurrently for two lifts.
+                return previous_lift_id
+            # A failed attempt must remain retryable with the same video.
+            _rest(
+                "DELETE",
+                "lift_video_fingerprints",
+                params={"lift_id": f"eq.{previous_lift_id}"},
+                headers={"Prefer": "return=minimal"},
+            )
     return None
 
 
@@ -232,8 +242,16 @@ def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
              "prove every plate on both sleeves or the bar's actual weight. "
              "Total load is unknown pending a complete, independently validated model."
     )
-    return {"weight_read_kg": None, "weight_confidence": 0.0,
-            "observations": 0, "reason": reason}
+    return {
+        "weight_read_kg": None,
+        "weight_confidence": 0.0,
+        "observations": 0,
+        "complete_barbell_evidence": False,
+        "both_sleeves_complete": False,
+        "unique_plate_instances": False,
+        "bar_mass_kg": None,
+        "reason": reason,
+    }
 
 
 def _read_detected_plate_crops(
@@ -255,6 +273,10 @@ def _read_detected_plate_crops(
     return {
         "weight_read_kg": None,
         "weight_confidence": 0.0,
+        "complete_barbell_evidence": False,
+        "both_sleeves_complete": False,
+        "unique_plate_instances": False,
+        "bar_mass_kg": None,
         "observations": len(ocr_observations),
         "candidate_plate_detections_across_frames": len(detections),
         "ocr_observations": ocr_observations,
@@ -289,7 +311,7 @@ def _process_lift(record: dict[str, Any]) -> None:
             duplicate_of = _find_duplicate(digest, hashes)
             if duplicate_of and duplicate_of != lift_id:
                 logger.warning("Exact duplicate video for lift %s matches lift %s", lift_id, duplicate_of)
-                _set_status(lift_id, video_path, "REJECTED", "This exact video file was already submitted for another lift.")
+                _set_status(lift_id, video_path, "NOT_VERIFIED", "This exact video was already used for a verified lift.")
                 return
             _store_fingerprint(lift_id, digest, hashes)
             reps = _count_repetitions(video_file, exercise)
@@ -301,8 +323,28 @@ def _process_lift(record: dict[str, Any]) -> None:
                 weight = crop_ocr
             reps_match = reps["reps_detected"] == declared_reps if reps["reps_detected"] is not None and reps["reps_confidence"] >= 0.65 else None
             weight_read = weight["weight_read_kg"]
-            weight_match = abs(weight_read - declared_weight) <= 2.5 if weight_read is not None and weight["weight_confidence"] >= 0.55 else None
-            final_status = decide_lift_status(reps_match, weight_match)
+            bar_mass = weight.get("bar_mass_kg")
+            weight_evidence_complete = (
+                weight.get("complete_barbell_evidence") is True
+                and weight.get("both_sleeves_complete") is True
+                and weight.get("unique_plate_instances") is True
+                and isinstance(bar_mass, (int, float))
+                and math.isfinite(float(bar_mass))
+                and float(bar_mass) > 0
+            )
+            weight_match = (
+                abs(float(weight_read) - declared_weight) <= 2.5
+                if weight_evidence_complete
+                and isinstance(weight_read, (int, float))
+                and math.isfinite(float(weight_read))
+                and float(weight.get("weight_confidence", 0)) >= 0.55
+                else None
+            )
+            final_status = decide_lift_status(
+                reps_match,
+                weight_match,
+                weight_evidence_complete=weight_evidence_complete,
+            )
             analysis = {
                 "exercise": exercise,
                 "declared_reps": declared_reps,
@@ -314,6 +356,10 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "weight_read_kg": weight_read,
                 "weight_confidence": weight["weight_confidence"],
                 "weight_match": weight_match,
+                "weight_evidence_complete": weight_evidence_complete,
+                "both_sleeves_complete": weight.get("both_sleeves_complete", False),
+                "unique_plate_instances": weight.get("unique_plate_instances", False),
+                "bar_mass_kg": bar_mass,
                 "weight_reason": weight["reason"],
                 "visual_plate_detection": visual_plates,
                 "visual_plate_crop_ocr": crop_ocr,
@@ -322,35 +368,43 @@ def _process_lift(record: dict[str, Any]) -> None:
             }
             if not _is_current_video(lift_id, video_path):
                 return
-            if reps_match is True and weight_match is True:
-                # AI_CHECKED is deliberately not VERIFIED. Migration 0051 requires
-                # an authorized moderator to make the final approval decision.
-                _set_status(
-                    lift_id, video_path, "AI_CHECKED",
-                    f"AI matched {reps['reps_detected']} reps, but load evidence is not independently validated. Moderator approval is still required.",
-                    analysis,
+            if final_status == "VERIFIED":
+                reason = (
+                    f"AI verified {reps['reps_detected']} reps and a complete barbell load "
+                    f"of {float(weight_read):g} kg (within 2.5 kg of the submitted value)."
                 )
-                final_status = "AI_CHECKED"
-                analysis["decision"] = final_status
             else:
                 reasons = []
                 if reps_match is None:
-                    reasons.append("rep count could not be confirmed confidently")
+                    reasons.append("the repetition count could not be confirmed confidently")
                 elif reps_match is False:
-                    reasons.append(f"AI detected {reps['reps_detected']} reps but {declared_reps} were declared")
-                if weight_match is None:
-                    visual_note = "plate objects were detected, but total load cannot be established without both sleeves and bar mass" if visual_plates.get("available") and visual_plates.get("candidate_labels") else "total load cannot be established reliably"
-                    reasons.append(visual_note)
+                    reasons.append(
+                        f"AI detected {reps['reps_detected']} reps but {declared_reps} were submitted"
+                    )
+                if not weight_evidence_complete:
+                    reasons.append(
+                        "the complete load is unknown because both sleeves, unique plates and bar mass "
+                        "have not all been validated"
+                    )
+                elif weight_match is None:
+                    reasons.append("the total barbell load could not be read confidently")
                 elif weight_match is False:
-                    reasons.append(f"OCR estimated about {weight_read:g} kg versus declared {declared_weight:g} kg")
-                _set_status(lift_id, video_path, "NEEDS_REVIEW", "AI screening needs a moderator check: " + "; ".join(reasons) + ".", analysis)
-                final_status = "NEEDS_REVIEW"
-                analysis["decision"] = final_status
+                    reasons.append(
+                        f"AI estimated {float(weight_read):g} kg versus {declared_weight:g} kg submitted"
+                    )
+                reason = "Not verified: " + "; ".join(reasons) + "."
+            analysis["decision"] = final_status
+            _set_status(lift_id, video_path, final_status, reason, analysis)
             logger.info("AI screening finished for lift %s with status %s", lift_id, final_status)
     except Exception as error:
         logger.exception("AI screening failed for lift %s (%s)", lift_id, type(error).__name__)
         try:
-            _set_status(lift_id, video_path, "NEEDS_REVIEW", f"AI could not complete screening ({type(error).__name__}). A moderator must review the submitted proof.")
+            _set_status(
+                lift_id,
+                video_path,
+                "NOT_VERIFIED",
+                f"AI could not complete screening ({type(error).__name__}). Upload a clearer video and try again.",
+            )
         except Exception:
             logger.exception("Could not persist failure status for lift %s", lift_id)
 

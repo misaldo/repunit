@@ -1,7 +1,8 @@
-"""Conservative, dependency-free signal helpers for lift-video screening.
+"""Conservative, dependency-free decision helpers for REPUNIT lift screening.
 
-These helpers can reject ambiguous measurements, but are not a validated
-competition-lift judge and must never be used as sole proof for VERIFIED.
+A lift is VERIFIED only when repetition evidence matches and a separately validated
+load recognizer proves the complete barbell load, including both sleeves and bar mass.
+Unknown or incomplete evidence always produces NOT_VERIFIED.
 """
 from __future__ import annotations
 
@@ -15,11 +16,7 @@ def is_verified_duplicate(status: str | None) -> bool:
 
 def count_angle_cycles(values: Sequence[float], *, min_amplitude: float = 28.0,
                        min_separation: int = 5) -> int | None:
-    """Count complete low-to-high angle cycles using thresholds from the clip.
-
-    Returns None when the clip has too little motion to support a count.
-    The first partial movement is not counted unless a low phase was observed.
-    """
+    """Count complete low-to-high angle cycles using thresholds from the clip."""
     if len(values) < 12:
         return None
     low_value, high_value = min(values), max(values)
@@ -45,7 +42,10 @@ def count_angle_cycles(values: Sequence[float], *, min_amplitude: float = 28.0,
 
 def stable_plate_load(observations: Sequence[float], *, min_frames: int = 3,
                       tolerance_kg: float = 1.0) -> float | None:
-    """Return a repeated OCR load estimate only when enough frames agree."""
+    """Return a repeated OCR estimate only when enough independent readings agree.
+
+    This is a stability helper, not a complete barbell-load reconstruction.
+    """
     if len(observations) < min_frames:
         return None
     rounded = [round(float(value) * 2) / 2 for value in observations]
@@ -57,14 +57,18 @@ def stable_plate_load(observations: Sequence[float], *, min_frames: int = 3,
     return None
 
 
-def decide_lift_status(reps_match: bool | None, weight_match: bool | None) -> str:
-    """Only matching rep+load evidence verifies; uncertain load goes to review.
+def decide_lift_status(
+    reps_match: bool | None,
+    weight_match: bool | None,
+    *,
+    weight_evidence_complete: bool = False,
+) -> str:
+    """Verify only when reps and a complete, independently validated barbell load match.
 
-    A confident rep mismatch is rejected. OCR load mismatches are not hard rejects:
-    visual OCR is too error-prone to prove the actual loaded weight.
+    Completeness must come from a recognizer that tracks unique plates, confirms both
+    sleeves are fully visible, and identifies the bar mass. OCR confidence alone
+    is never sufficient.
     """
-    if reps_match is False:
-        return "REJECTED"
-    if reps_match is True and weight_match is True:
+    if reps_match is True and weight_match is True and weight_evidence_complete is True:
         return "VERIFIED"
-    return "NEEDS_REVIEW"
+    return "NOT_VERIFIED"

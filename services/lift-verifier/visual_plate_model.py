@@ -123,6 +123,10 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "detector": "RF-DETR Small",
             "reason": f"Custom RF-DETR plate checkpoint unavailable: {type(error).__name__}: {error}",
             "mass_estimate_kg": None,
+            "complete_barbell_evidence": False,
+            "both_sleeves_complete": False,
+            "unique_plate_instances": False,
+            "bar_mass_kg": None,
         }
     try:
         ocr = _load_ocr()
@@ -133,15 +137,19 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "ocr": "PaddleOCR",
             "reason": f"PaddleOCR could not initialize: {type(error).__name__}: {error}",
             "mass_estimate_kg": None,
+            "complete_barbell_evidence": False,
+            "both_sleeves_complete": False,
+            "unique_plate_instances": False,
+            "bar_mass_kg": None,
         }
 
     capture = cv2.VideoCapture(video_file)
     if not capture.isOpened():
-        return {"available": False, "reason": "Video could not be opened.", "mass_estimate_kg": None}
+        return {"available": False, "reason": "Video could not be opened.", "mass_estimate_kg": None, "complete_barbell_evidence": False, "both_sleeves_complete": False, "unique_plate_instances": False, "bar_mass_kg": None}
     total = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
     if total < 1:
         capture.release()
-        return {"available": False, "reason": "Video has no readable frames.", "mass_estimate_kg": None}
+        return {"available": False, "reason": "Video has no readable frames.", "mass_estimate_kg": None, "complete_barbell_evidence": False, "both_sleeves_complete": False, "unique_plate_instances": False, "bar_mass_kg": None}
 
     fractions = (0.12, 0.22, 0.32, 0.42, 0.52, 0.62, 0.72, 0.82)[:max(1, max_frames)]
     positions = sorted(set(max(0, min(total - 1, int(total * fraction))) for fraction in fractions))
@@ -225,6 +233,10 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
         "explicit_marking_candidates_not_total_load": explicit_mass_candidates,
         "frames": frame_results,
         "mass_estimate_kg": None,
+        "complete_barbell_evidence": False,
+        "both_sleeves_complete": False,
+        "unique_plate_instances": False,
+        "bar_mass_kg": None,
         "note": (
             "RF-DETR and PaddleOCR are connected for plate-instance detection and crop OCR. "
             "The checkpoint must be fine-tuned for REPUNIT plate classes. Per-frame detections "

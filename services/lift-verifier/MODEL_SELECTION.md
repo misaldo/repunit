@@ -12,7 +12,7 @@ The recommended long-term stack is:
 2. **PaddleOCR PP-OCRv5/PP-OCRv6** for reading visible numeric markings on detected plate crops. OCR output is evidence, not a load value by itself; normalize only supported markings and preserve per-crop confidence.
 3. **Temporal association across video frames** so the same physical plate is not counted repeatedly. Use track identity and per-frame evidence aggregation rather than summing detections across frames.
 4. **Load reconstruction with explicit completeness checks**: identify every plate on both sleeves, distinguish overlapping/hidden plates, apply a known bar type/mass only when the bar is identifiable or explicitly configured, and account for collars only if REPUNIT's rules define them as load.
-5. **Conservative decision gate**: return a numeric total only when both sleeves and all plates are sufficiently observed and the evidence is internally consistent. Otherwise return UNKNOWN / NEEDS_REVIEW. Never infer the far side by symmetry or assume a 20 kg bar.
+5. **Conservative decision gate**: return a numeric total only when both sleeves and all plates are sufficiently observed and the evidence is internally consistent. Otherwise return UNKNOWN / NOT_VERIFIED. Never infer the far side by symmetry or assume a 20 kg bar.
 
 ## Why this stack
 
