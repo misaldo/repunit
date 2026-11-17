@@ -35,13 +35,30 @@ The public datasets do not establish full-bar completeness. Before a production
 release, add appropriately licensed full-bar images/videos with independently
 verified per-plate annotations. Do not scrape videos without checking rights.
 
+## Download the public dataset
+
+Roboflow requires an API key for public dataset exports. Create a free Roboflow
+account, copy the API key from the account settings, and set it locally as an
+environment variable (do not send it in chat or commit it):
+
+```powershell
+$env:ROBOFLOW_API_KEY = "YOUR_KEY"
+python download_public_dataset.py --version 10
+```
+
+The downloader fetches ProjektCiezary's public `weightlifting-plates` v10
+dataset in COCO format. This dataset is only a starting point: it is not a
+full-bar/two-sleeve video dataset and cannot by itself validate total-load
+recognition. The training script deliberately checks that mass-labelled
+categories exist.
+
 ## Train
 
 Install the training extra for the pinned RF-DETR version in the worker's
 training environment, then run:
 
 ```bash
-python train_plate_model.py --dataset ./dataset --output ./runs/repunit-plates --epochs 100 --batch-size 4
+python train_plate_model.py --dataset ./dataset-projektciezary --output ./runs/repunit-plates --epochs 100 --batch-size 4 --device cuda
 ```
 
 The script checks COCO annotations, image files and mass-labelled categories
