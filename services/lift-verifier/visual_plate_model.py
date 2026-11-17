@@ -2,7 +2,7 @@
 
 This module only emits per-frame evidence. It never sums frame detections into a
 barbell load: that requires temporal tracking, both-sleeve completeness, known
-plate masses and known bar mass. A custom plate-trained checkpoint is required.
+plate masses and known a fixed 20 kg standard-bar rule. A pinned public plate checkpoint is used by default.
 """
 from __future__ import annotations
 
@@ -18,18 +18,70 @@ from PIL import Image
 
 MODEL_PATH_ENV = "REPUNIT_PLATE_MODEL_PATH"
 PLATE_CLASS_NAMES_ENV = "REPUNIT_PLATE_CLASS_NAMES"
+MODEL_REPO_ENV = "REPUNIT_PLATE_MODEL_REPO"
+MODEL_REVISION_ENV = "REPUNIT_PLATE_MODEL_REVISION"
+MODEL_SHA256_ENV = "REPUNIT_PLATE_MODEL_SHA256"
+MODEL_FILENAME = "checkpoint_best_total.pth"
+PUBLIC_MODEL_REPO = "Prithv122/custom-detector"
+PUBLIC_MODEL_REVISION = "be16623ab1de46cc2e2b9e4df477af5d71d04c58"
+PUBLIC_MODEL_SHA256 = "f802956130702712f05bfb82d8b437ea1648efe642ff90bbba2fb38a1d8bce1f"
+DETECTOR_THRESHOLD_ENV = "REPUNIT_PLATE_DETECTOR_THRESHOLD"
 DEFAULT_PLATE_CLASSES = {"plate", "weight_plate", "barbell_plate", "weight plate"}
+
+
+def _resolve_checkpoint() -> Path:
+    configured_path = os.environ.get(MODEL_PATH_ENV, "").strip()
+    if configured_path:
+        checkpoint = Path(configured_path)
+        if not checkpoint.is_file():
+            raise FileNotFoundError(f"RF-DETR plate checkpoint not found: {checkpoint}")
+        return checkpoint
+
+    # Public community checkpoint: pin both the immutable Hub revision and SHA-256.
+    # Safe deserialization is used below; never silently enable pickle execution.
+    repo_id = os.environ.get(MODEL_REPO_ENV, PUBLIC_MODEL_REPO).strip()
+    revision = os.environ.get(MODEL_REVISION_ENV, PUBLIC_MODEL_REVISION).strip()
+    expected_sha = os.environ.get(MODEL_SHA256_ENV, PUBLIC_MODEL_SHA256).strip().lower()
+    if repo_id != PUBLIC_MODEL_REPO or revision != PUBLIC_MODEL_REVISION:
+        raise RuntimeError(
+            "A non-default public model repo/revision was configured. Supply a verified local "
+            f"checkpoint through {MODEL_PATH_ENV} instead."
+        )
+    from huggingface_hub import hf_hub_download
+    checkpoint_path = Path(hf_hub_download(
+        repo_id=repo_id,
+        filename=MODEL_FILENAME,
+        revision=revision,
+    ))
+    import hashlib
+    digest = hashlib.sha256(checkpoint_path.read_bytes()).hexdigest()
+    if digest != expected_sha:
+        raise RuntimeError("Downloaded RF-DETR checkpoint SHA-256 does not match the pinned model card.")
+    return checkpoint_path
+
+
+@lru_cache(maxsize=1)
+def _checkpoint_metadata() -> dict[str, Any]:
+    configured_path = os.environ.get(MODEL_PATH_ENV, "").strip()
+    if configured_path:
+        return {
+            "source": "local_override",
+            "sha256_verified_against_published_digest": False,
+        }
+    return {
+        "source": f"{PUBLIC_MODEL_REPO}@{PUBLIC_MODEL_REVISION}",
+        "sha256_verified_against_published_digest": True,
+    }
 
 
 @lru_cache(maxsize=1)
 def _load_detector() -> Any:
-    checkpoint = os.environ.get(MODEL_PATH_ENV, "").strip()
-    if not checkpoint:
-        raise RuntimeError(f"{MODEL_PATH_ENV} is not configured; refusing to use generic COCO weights as a plate detector")
-    if not Path(checkpoint).is_file():
-        raise FileNotFoundError(f"RF-DETR plate checkpoint not found: {checkpoint}")
-    from rfdetr import RFDETRSmall
-    return RFDETRSmall(pretrain_weights=checkpoint)
+    checkpoint = _resolve_checkpoint()
+    from rfdetr import RFDETR
+    # The checkpoint is loaded with RF-DETR's safe deserialization defaults.
+    # If this fails due to legacy checkpoint serialization, fail closed; do not
+    # enable trust_checkpoint=True automatically.
+    return RFDETR.from_checkpoint(str(checkpoint), device="cpu")
 
 
 @lru_cache(maxsize=1)
@@ -91,7 +143,13 @@ def _normalize_detection_value(value: Any) -> list[Any]:
 
 
 def _is_plate_class(name: str, allowed: set[str]) -> bool:
-    normalized = name.strip().lower().replace("-", "_")
+    normalized = name.strip().lower().replace("-", "_").replace(" ", "")
+    # Public ProjektCiezary-derived checkpoint labels each plate by mass.
+    # Collars ("zacisk") are deliberately excluded from plate-mass candidates.
+    if normalized == "zacisk" or "collar" in normalized:
+        return False
+    if re.fullmatch(r"\d+(?:[.,]\d+)?kg", normalized):
+        return True
     return normalized in allowed or any(token in normalized for token in ("weight_plate", "barbell_plate"))
 
 
@@ -126,7 +184,7 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "complete_barbell_evidence": False,
             "both_sleeves_complete": False,
             "unique_plate_instances": False,
-            "bar_mass_kg": None,
+            "bar_mass_kg": 20.0,
         }
     try:
         ocr = _load_ocr()
@@ -140,7 +198,7 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "complete_barbell_evidence": False,
             "both_sleeves_complete": False,
             "unique_plate_instances": False,
-            "bar_mass_kg": None,
+            "bar_mass_kg": 20.0,
         }
 
     capture = cv2.VideoCapture(video_file)
@@ -168,7 +226,10 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(rgb)
         try:
-            detections = detector.predict(image, threshold=0.35)
+            threshold = float(os.environ.get(DETECTOR_THRESHOLD_ENV, "0.53"))
+            if not 0.0 < threshold < 1.0:
+                raise ValueError(f"{DETECTOR_THRESHOLD_ENV} must be between 0 and 1")
+            detections = detector.predict(image, threshold=threshold)
             boxes = _normalize_detection_value(getattr(detections, "xyxy", None))
             class_ids = _normalize_detection_value(getattr(detections, "class_id", None))
             confidences = _normalize_detection_value(getattr(detections, "confidence", None))
@@ -227,6 +288,8 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
     return {
         "available": True,
         "detector": "RF-DETR Small",
+        "checkpoint": _checkpoint_metadata()["source"],
+        "checkpoint_sha256_verified": _checkpoint_metadata()["sha256_verified_against_published_digest"],
         "ocr": "PaddleOCR",
         "frames_analyzed": len(frame_results),
         "plate_detections_across_frames_not_unique_plates": detection_count,
@@ -236,11 +299,11 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
         "complete_barbell_evidence": False,
         "both_sleeves_complete": False,
         "unique_plate_instances": False,
-        "bar_mass_kg": None,
+        "bar_mass_kg": 20.0,
         "note": (
             "RF-DETR and PaddleOCR are connected for plate-instance detection and crop OCR. "
-            "The checkpoint must be fine-tuned for REPUNIT plate classes. Per-frame detections "
+            "The public checkpoint detects plate-mass classes but was trained on side-on single-sleeve photos. Per-frame detections "
             "are not unique plate counts; OCR markings are not total load. Total load remains "
-            "UNKNOWN until temporal association, both-sleeve completeness and bar mass are validated."
+            "UNKNOWN until temporal association, both-sleeve completeness is validated; the standard bar adds 20 kg."
         ),
     }

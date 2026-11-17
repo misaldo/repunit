@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate
+from signal_logic import STANDARD_BAR_MASS_KG, count_angle_cycles, decide_lift_status, is_verified_duplicate
 from visual_plate_model import inspect_weight_plates
 
 import cv2
@@ -231,16 +231,15 @@ def _count_repetitions(video_file: Path, exercise: str) -> dict[str, Any]:
 def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
     """Do not infer total load from incomplete markings in the full lift video.
 
-    Sampled frames may hide inner plates, the far sleeve, or the bar marking.
-    Repeated OCR is not proof of the complete loaded bar weight, so this
-    function deliberately never sums partial observations.
+    REPUNIT uses a fixed 20 kg standard-bar rule. Sampled frames may still hide
+    plates or the far sleeve, so this function never sums incomplete observations.
     """
     reason = (
         "Pull-up loading cannot be inferred from barbell plate OCR."
         if exercise == "pullup"
         else "Plate markings alone cannot establish total load: the video does not "
-             "prove every plate on both sleeves or the bar's actual weight. "
-             "Total load is unknown pending a complete, independently validated model."
+             "prove every plate on both sleeves. The standard 20 kg bar is fixed by REPUNIT; "
+             "only plate detection and completeness remain unknown."
     )
     return {
         "weight_read_kg": None,
@@ -249,7 +248,7 @@ def _read_plate_markings(video_file: Path, exercise: str) -> dict[str, Any]:
         "complete_barbell_evidence": False,
         "both_sleeves_complete": False,
         "unique_plate_instances": False,
-        "bar_mass_kg": None,
+        "bar_mass_kg": STANDARD_BAR_MASS_KG if exercise != "pullup" else None,
         "reason": reason,
     }
 
@@ -276,15 +275,15 @@ def _read_detected_plate_crops(
         "complete_barbell_evidence": False,
         "both_sleeves_complete": False,
         "unique_plate_instances": False,
-        "bar_mass_kg": None,
+        "bar_mass_kg": STANDARD_BAR_MASS_KG if exercise != "pullup" else None,
         "observations": len(ocr_observations),
         "candidate_plate_detections_across_frames": len(detections),
         "ocr_observations": ocr_observations,
         "explicit_marking_candidates_not_total_load": mass_candidates,
         "reason": (
             "RF-DETR Small and PaddleOCR provide plate and marking evidence, but this video analysis "
-            "does not yet establish unique plates on both sleeves or the actual bar mass. "
-            "Total load remains unknown."
+            "does not yet establish unique plates on both sleeves. REPUNIT adds a fixed 20 kg "
+            "standard bar; total load remains unknown"
         ),
     }
 
@@ -360,6 +359,7 @@ def _process_lift(record: dict[str, Any]) -> None:
                 "both_sleeves_complete": weight.get("both_sleeves_complete", False),
                 "unique_plate_instances": weight.get("unique_plate_instances", False),
                 "bar_mass_kg": bar_mass,
+                "bar_mass_policy": "fixed_20kg_standard_bar" if exercise != "pullup" else "not_applicable",
                 "weight_reason": weight["reason"],
                 "visual_plate_detection": visual_plates,
                 "visual_plate_crop_ocr": crop_ocr,

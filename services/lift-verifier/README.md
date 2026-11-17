@@ -70,7 +70,7 @@ The worker now has an inference pipeline for a **custom plate-trained RF-DETR Sm
 
 Do not point `REPUNIT_PLATE_MODEL_PATH` at generic COCO weights: the COCO model is not trained to detect gym plates. The detector returns plate boxes per sampled frame and PaddleOCR reads text from each detected crop. PaddleOCR is initialized locally by the worker.
 
-**Important:** the pipeline intentionally does not sum detections across frames or OCR markings into total kilograms. A production load recognizer still needs a labelled plate dataset, a fine-tuned checkpoint, temporal tracking of physical plates, proof that both sleeves are completely observed, and a known bar mass. Until those checks are implemented and evaluated on held-out videos, `weight_read_kg` remains unknown and the lift is routed to review.
+**Important:** the pipeline intentionally does not sum detections across frames or OCR markings into total kilograms. A production load recognizer still needs a labelled plate dataset, a fine-tuned checkpoint, temporal tracking of physical plates, proof that both sleeves are completely observed, and a known bar mass. Until those checks are implemented and evaluated on held-out videos, `weight_read_kg` remains unknown and the lift is marked `NOT_VERIFIED`.
 
 ### Model training starting point
 

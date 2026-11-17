@@ -1,6 +1,6 @@
 import unittest
 
-from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate, stable_plate_load
+from signal_logic import count_angle_cycles, decide_lift_status, is_verified_duplicate, stable_plate_load, total_barbell_load
 
 
 class SignalLogicTests(unittest.TestCase):
@@ -51,6 +51,15 @@ class SignalLogicTests(unittest.TestCase):
 
     def test_partial_cycle_is_not_counted(self):
         self.assertIsNone(count_angle_cycles([160, 145, 110, 85, 82, 80, 82, 85, 90, 92, 94, 95]))
+
+    def test_total_load_adds_fixed_20kg_bar_to_both_plate_stacks(self):
+        self.assertEqual(total_barbell_load([20.0], [20.0]), 60.0)
+        self.assertEqual(total_barbell_load([10.0, 5.0], [10.0, 5.0]), 50.0)
+
+    def test_total_load_requires_both_sides_and_positive_plate_masses(self):
+        self.assertIsNone(total_barbell_load([20.0], []))
+        self.assertIsNone(total_barbell_load([], [20.0]))
+        self.assertIsNone(total_barbell_load([0.0], [20.0]))
 
     def test_single_plate_reading_is_not_a_total_load(self):
         self.assertIsNone(stable_plate_load([30.0]))
