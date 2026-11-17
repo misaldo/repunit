@@ -33,15 +33,15 @@ begin
       or (new.plate_video_path is distinct from old.plate_video_path and not workflow_update)
       or (new.status is distinct from old.status and not workflow_update)
       or (new.verification_reason is distinct from old.verification_reason and not workflow_update)
-      or new.verified_at is distinct from old.verified_at
+      or (new.verified_at is distinct from old.verified_at and not workflow_update)
       or new.xp_awarded_at is distinct from old.xp_awarded_at
-      or new.ai_reps_detected is distinct from old.ai_reps_detected
-      or new.ai_reps_confidence is distinct from old.ai_reps_confidence
-      or new.ai_reps_match is distinct from old.ai_reps_match
-      or new.ai_weight_read_kg is distinct from old.ai_weight_read_kg
-      or new.ai_weight_confidence is distinct from old.ai_weight_confidence
-      or new.ai_weight_match is distinct from old.ai_weight_match
-      or new.ai_analysis is distinct from old.ai_analysis then
+      or (new.ai_reps_detected is distinct from old.ai_reps_detected and not workflow_update)
+      or (new.ai_reps_confidence is distinct from old.ai_reps_confidence and not workflow_update)
+      or (new.ai_reps_match is distinct from old.ai_reps_match and not workflow_update)
+      or (new.ai_weight_read_kg is distinct from old.ai_weight_read_kg and not workflow_update)
+      or (new.ai_weight_confidence is distinct from old.ai_weight_confidence and not workflow_update)
+      or (new.ai_weight_match is distinct from old.ai_weight_match and not workflow_update)
+      or (new.ai_analysis is distinct from old.ai_analysis and not workflow_update) then
       raise exception 'Lift evidence and verification can only be changed by the AI worker or guarded proof workflows'
         using errcode = '42501';
     end if;
