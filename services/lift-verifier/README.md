@@ -10,7 +10,9 @@ This is a separate Python service because full video decoding and computer-visio
 - Uses adaptive joint-angle cycle thresholds for a conservative repetition screening estimate.
 - Runs a custom-checkpoint RF-DETR Small detector over sampled full-lift video frames and sends detected plate crops to PaddleOCR; no separate close-up is requested.
 - Never derives total bar load by doubling a single OCR value or assuming a 20 kg bar.
-- Routes load claims to NEEDS_REVIEW until a validated model can account for every plate on both sleeves and the actual bar mass. A confident rep-count mismatch is REJECTED.
+- Writes only VERIFIED or NOT_VERIFIED after analysis. Unknown or incomplete evidence is NOT_VERIFIED; the worker never requests moderator approval.
+- Requires complete-barbell evidence before it can set VERIFIED: unique plates, both sleeves confirmed complete, and a known bar mass.
+- The current plate pipeline does not yet produce complete-barbell evidence, so it safely returns NOT_VERIFIED until a REPUNIT plate model is trained and validated.
 
 ## Important limitation
 
