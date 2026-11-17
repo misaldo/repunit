@@ -2,7 +2,7 @@
 
 This module only emits per-frame evidence. It never sums frame detections into a
 barbell load: that requires temporal tracking, both-sleeve completeness, known
-plate masses and known bar mass. A custom plate-trained checkpoint is required.
+plate masses and known bar mass. A pinned public plate checkpoint is used by default.
 """
 from __future__ import annotations
 
@@ -58,6 +58,20 @@ def _resolve_checkpoint() -> Path:
     if digest != expected_sha:
         raise RuntimeError("Downloaded RF-DETR checkpoint SHA-256 does not match the pinned model card.")
     return checkpoint_path
+
+
+@lru_cache(maxsize=1)
+def _checkpoint_metadata() -> dict[str, Any]:
+    configured_path = os.environ.get(MODEL_PATH_ENV, "").strip()
+    if configured_path:
+        return {
+            "source": "local_override",
+            "sha256_verified_against_published_digest": False,
+        }
+    return {
+        "source": f"{PUBLIC_MODEL_REPO}@{PUBLIC_MODEL_REVISION}",
+        "sha256_verified_against_published_digest": True,
+    }
 
 
 @lru_cache(maxsize=1)
