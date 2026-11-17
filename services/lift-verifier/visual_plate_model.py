@@ -123,6 +123,10 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
             "detector": "RF-DETR Small",
             "reason": f"Custom RF-DETR plate checkpoint unavailable: {type(error).__name__}: {error}",
             "mass_estimate_kg": None,
+            "complete_barbell_evidence": False,
+            "both_sleeves_complete": False,
+            "unique_plate_instances": False,
+            "bar_mass_kg": None,
         }
     try:
         ocr = _load_ocr()
@@ -225,6 +229,10 @@ def inspect_weight_plates(video_file: str, *, max_frames: int = 8) -> dict[str, 
         "explicit_marking_candidates_not_total_load": explicit_mass_candidates,
         "frames": frame_results,
         "mass_estimate_kg": None,
+        "complete_barbell_evidence": False,
+        "both_sleeves_complete": False,
+        "unique_plate_instances": False,
+        "bar_mass_kg": None,
         "note": (
             "RF-DETR and PaddleOCR are connected for plate-instance detection and crop OCR. "
             "The checkpoint must be fine-tuned for REPUNIT plate classes. Per-frame detections "
