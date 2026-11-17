@@ -135,8 +135,20 @@ def _find_duplicate(digest: str, hashes: list[str]) -> str | None:
             "lifts",
             params={"id": f"eq.{previous_lift_id}", "select": "id,status", "limit": "1"},
         ).json()
-        if previous and is_verified_duplicate(previous[0].get("status")):
-            return previous_lift_id
+        if previous:
+            previous_status = previous[0].get("status")
+            if is_verified_duplicate(previous_status):
+                return previous_lift_id
+            if previous_status != "NOT_VERIFIED":
+                # Do not process the same footage concurrently for two lifts.
+                return previous_lift_id
+            # A failed attempt must remain retryable with the same video.
+            _rest(
+                "DELETE",
+                "lift_video_fingerprints",
+                params={"lift_id": f"eq.{previous_lift_id}"},
+                headers={"Prefer": "return=minimal"},
+            )
     return None
 
 
