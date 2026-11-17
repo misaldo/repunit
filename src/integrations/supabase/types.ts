@@ -439,6 +439,9 @@ export type Database = {
         | "AI_ANALYZING"
         | "AI_CHECKED"
         | "NEEDS_REVIEW"
+        | "NEEDS_PROOF"
+        | "UNDER_REVIEW"
+        | "NOT_VERIFIED"
         | "VERIFIED"
         | "REJECTED"
     }
@@ -575,6 +578,9 @@ export const Constants = {
         "AI_ANALYZING",
         "AI_CHECKED",
         "NEEDS_REVIEW",
+        "NEEDS_PROOF",
+        "UNDER_REVIEW",
+        "NOT_VERIFIED",
         "VERIFIED",
         "REJECTED",
       ],
