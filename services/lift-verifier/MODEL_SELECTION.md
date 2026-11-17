@@ -1,41 +1,47 @@
-# REPUNIT automatic barbell-load recognition: model decision
+# REPUNIT automatic barbell-load recognition
 
 Status: research decision and implementation specification. This is NOT a trained or production-ready load recognizer.
 
-## Decision
+## Selected candidate stack
 
-Do not replace OWLv2 with another generic zero-shot detector and call the problem solved. A detector can locate likely plates, but it cannot establish the mass of every plate, prove that hidden plates are absent, or determine the bar's mass.
+1. **RF-DETR Small fine-tuned on REPUNIT plate imagery** for plate-instance detection. Generic COCO weights are not a REPUNIT plate detector and must not be used to infer load.
+2. **PaddleOCR 3.x** for reading visible markings inside detected plate crops. OCR is supporting evidence, not a total-load measurement.
+3. **Temporal tracking** to associate the same physical plate across frames so repeated observations are never counted as additional plates.
+4. **Load reconstruction** only after every physical plate on both sleeves is accounted for, the bar type and mass are known, and observations are consistent.
+5. **Fail-closed decision**: if any sleeve, plate, marking, or bar-mass evidence is incomplete, return UNKNOWN and keep the lift NOT_VERIFIED.
 
-The recommended long-term stack is:
+Never infer the far sleeve by symmetry, never assume a 20 kg bar, and never sum detections across frames.
 
-1. **RF-DETR Small (Apache-2.0) fine-tuned on REPUNIT plate imagery** as the primary detector/instance segmenter. Train classes for plate instances and, where useful, plate families/marking regions. The pretrained COCO checkpoint is only an initialization; it is not a plate detector until fine-tuned on labelled gym footage.
-2. **PaddleOCR PP-OCRv5/PP-OCRv6** for reading visible numeric markings on detected plate crops. OCR output is evidence, not a load value by itself; normalize only supported markings and preserve per-crop confidence.
-3. **Temporal association across video frames** so the same physical plate is not counted repeatedly. Use track identity and per-frame evidence aggregation rather than summing detections across frames.
-4. **Load reconstruction with explicit completeness checks**: identify every plate on both sleeves, distinguish overlapping/hidden plates, apply a known bar type/mass only when the bar is identifiable or explicitly configured, and account for collars only if REPUNIT's rules define them as load.
-5. **Conservative decision gate**: return a numeric total only when both sleeves and all plates are sufficiently observed and the evidence is internally consistent. Otherwise return UNKNOWN / NOT_VERIFIED. Never infer the far side by symmetry or assume a 20 kg bar.
+## Current code status
 
-## Why this stack
+The worker contains an RF-DETR Small inference adapter and PaddleOCR crop-reading adapter. They require a custom checkpoint configured through `REPUNIT_PLATE_MODEL_PATH`. The repository does not contain a trained REPUNIT checkpoint or a labelled gym-plate dataset.
 
-- RF-DETR is designed for fine-tuning and supports detection/instance segmentation. Its Nano–Large checkpoints and package are Apache-2.0, suitable for commercial use subject to retaining notices. Official project: https://github.com/roboflow/rf-detr
-- RF-DETR Small is the practical initial size; move to Medium/Large only if evaluation shows a measurable accuracy gain worth the compute cost.
-- PaddleOCR's current documentation provides PP-OCRv5 and PP-OCRv6 detection/recognition pipelines and local inference options. Official docs: https://www.paddleocr.ai/main/en/version3.x/pipeline_usage/OCR.html
-- Generic open-vocabulary models such as OWLv2 or Grounding DINO can help bootstrap annotations or provide fallback detections, but zero-shot boxes are not calibrated mass measurements and should not be used to auto-approve a lift.
+The adapter currently returns per-frame candidate boxes and OCR observations only. It explicitly reports no total load, no unique physical plate count, no proof that both sleeves are complete, and no known bar mass. The production worker therefore cannot verify submitted weight yet. This is intentional fail-closed behavior, not a completed recognizer.
 
-## Required data before training
+The pose-angle repetition counter is also a screening heuristic, not a validated competition judge. It needs independent video evaluation before being trusted for competition results.
 
-Collect user-consented, labelled videos and frame crops covering:
-- different brands, colours, diameters, calibrated plate types and printed/embossed markings;
-- one or both sleeves visible, partial occlusion, stacked plates, collars, racks and background clutter;
-- front, side and oblique camera positions, different distances, lighting and video quality;
-- different bar types and explicitly recorded bar masses;
-- both matching and deliberately mismatching declared loads.
+## Data required before training
 
-Labels must include per-instance plate boxes/masks, plate identity across frames where possible, readable marking text or verified plate mass, both-sleeve completeness/visibility, bar type/mass, and verified total load. Split by recording/session/gym/equipment, not random adjacent frames, to avoid leakage.
+Collect user-consented, labelled full-lift videos and frame annotations covering:
+- multiple plate brands, colours, sizes, calibrated masses and marking styles;
+- single and stacked plates, overlapping edges, collars, racks and background clutter;
+- front, side and oblique camera views, varied distance, lighting and video quality;
+- both sleeves visible, one sleeve hidden, partial occlusion and genuinely ambiguous footage;
+- different bar types with independently confirmed bar masses;
+- correct and deliberately incorrect user-declared loads and rep counts.
 
-## Evaluation gates before enabling automatic weight matching
+For each physical plate, annotate a bounding box or mask, its identity across frames, visible marking text, and verified mass. Separately label sleeve visibility/completeness, bar type/mass, declared values, ground-truth values and whether the whole lift is valid. Split train/validation/test by recording session, gym and equipment—not by adjacent frames from the same video.
 
-Report plate-instance precision/recall, OCR exact-match rate on markings, per-video total-load exact-match and tolerance accuracy, false-accept rate, false-reject rate, and the fraction of videos safely abstained. Evaluate on a held-out set of unseen sessions/equipment. Do not enable automatic approval based only on COCO mAP or a few successful demos.
+Do not commit private gym videos or identifying data to GitHub. Store media in a restricted location with explicit participant consent and use pseudonymous IDs in manifests.
 
-## Current implementation status
+## Evaluation gates
 
-The current REPUNIT worker uses OWLv2 only for diagnostic candidate boxes. Its weight-reading functions deliberately return UNKNOWN, so total load is not automatically recognized. This is safer than fabricated kilograms. The proposed RF-DETR model has not been trained on REPUNIT plate data and must not be represented as integrated or validated yet.
+Use the offline harness in `services/lift-verifier/evaluation/` to compare candidates on identical clips. Report:
+- plate-instance precision and recall;
+- marking OCR exact-match rate;
+- total-load exact accuracy and accuracy within ±2.5 kg;
+- exact rep accuracy and joint reps+weight accuracy;
+- false-VERIFIED rate on invalid or ambiguous clips;
+- valid-lift recall, abstention rate, latency and operating cost.
+
+Hold out entire recording sessions and equipment combinations. Do not enable automatic weight matching based on detector mAP, confidence scores alone, or a handful of successful demos. No production accuracy claim is justified until this evaluation has been run on a representative labelled set.
