@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
-const projectId = "sfumcokjwvhxwuanlofw";
+const projectId = process.env.SUPABASE_PROJECT_ID || "kqezgcwfqfntazucbbzt";
 const executable = process.platform === "win32" ? "npx.cmd" : "npx";
 
 if (!process.env.SUPABASE_ACCESS_TOKEN) {

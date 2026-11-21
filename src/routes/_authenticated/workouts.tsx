@@ -1,7 +1,7 @@
 // @ts-nocheck -- references backend features not yet set up; typed once their tables exist
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dumbbell, Plus, Trash2, Globe, Lock, Users, Search, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/app-shell";
@@ -133,9 +133,15 @@ function WorkoutsPage() {
   const [draftExercises, setDraftExercises] = useState<Array<{ exercise_name: string; sets: number; reps: string; rest_seconds: number }>>([]);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [updatingVisibility, setUpdatingVisibility] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [category, setCategory] = useState("All");
+
+  // Never keep an expanded plan from the previous signed-in account on screen.
+  useEffect(() => {
+    setExpanded(null);
+  }, [user.id]);
 
   const exerciseDbQuery = useQuery({
     queryKey: ["repunit-exercise-library"],
@@ -150,24 +156,16 @@ function WorkoutsPage() {
   const plansQuery = useQuery({
     queryKey: ["workout-plans", user.id],
     queryFn: async () => {
-      const { data, error } = await db.from("workout_plans").select("*").order("created_at", { ascending: false });
+      const { data, error } = await db.from("workout_plans").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Plan[];
     },
   });
-  const subscriptionQuery = useQuery({
-    enabled: false,
-    queryKey: ["subscription", user.id],
-    queryFn: async () => {
-      const { data, error } = await db.from("user_subscriptions").select("status").eq("user_id", user.id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-  const isPro = true;
+  // Subscription checks and plan limits stay dormant until paid plans launch.
+  // All accounts can save workout plans without a billing lookup.
 
   const exercisesQuery = useQuery({
-    queryKey: ["workout-plan-exercises", expanded],
+    queryKey: ["workout-plan-exercises", user.id, expanded],
     enabled: !!expanded,
     queryFn: async () => {
       const { data, error } = await db.from("workout_plan_exercises").select("*").eq("plan_id", expanded!).order("position");
@@ -217,10 +215,6 @@ function WorkoutsPage() {
       toast.error("Workout limits could not be checked. Reload the page and try again.");
       return;
     }
-    if (!isPro && (plansQuery.data?.length ?? 0) >= 3) {
-      toast.error("Free accounts can save up to 3 workout plans. Upgrade to PRO for unlimited plans.");
-      return;
-    }
     if (saving || title.trim().length < 2 || draftExercises.length === 0) {
       toast.error("Add a workout name and at least one exercise.");
       return;
@@ -256,6 +250,24 @@ function WorkoutsPage() {
     } finally { setSaving(false); }
   }
 
+  async function updatePlanVisibility(plan: Plan, nextVisibility: Plan["visibility"]) {
+    if (plan.visibility === nextVisibility || updatingVisibility) return;
+    setUpdatingVisibility(plan.id);
+    try {
+      const { error } = await db.from("workout_plans")
+        .update({ visibility: nextVisibility })
+        .eq("id", plan.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["workout-plans", user.id] });
+      toast.success(nextVisibility === "public" ? "SPLIT is now public." : nextVisibility === "private" ? "SPLIT is now private." : "SPLIT is now visible to friends.");
+    } catch {
+      toast.error("Could not update SPLIT privacy. Please try again.");
+    } finally {
+      setUpdatingVisibility(null);
+    }
+  }
+
   async function deletePlan(plan: Plan) {
     if (!window.confirm("Remove this SPLIT day?")) return;
     try {
@@ -278,9 +290,7 @@ function WorkoutsPage() {
       </div>
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Build your weekly SPLIT</h2></div><div className="flex items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{plans.length} SPLIT days saved</span>{!isPro && plans.length >= 3 && <Button asChild size="sm" variant="hero"><Link to="/pricing">Go PRO</Link></Button>}</div></div>
-        {subscriptionQuery.isLoading && <p className="mb-4 text-xs text-muted-foreground">Checking your account plan…</p>}
-        {subscriptionQuery.isError && <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3"><p className="text-sm text-muted-foreground">Your account plan could not be checked. Saving is paused until this is resolved.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void subscriptionQuery.refetch()}>Try again</Button></div>}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Build your weekly SPLIT</h2></div><div className="flex items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{plans.length} SPLIT days saved</span></div></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Day title</label><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Push day / Upper body" /></div>
           <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Day</label><select value={workoutDay} onChange={(e) => setWorkoutDay(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{DAYS.map((day) => <option key={day}>{day}</option>)}</select></div>
@@ -297,7 +307,7 @@ function WorkoutsPage() {
           <Button type="button" variant="hero" className="w-full" onClick={() => setPickerOpen(true)}><Plus className="mr-2 h-4 w-4" />Add exercise</Button>
           {draftExercises.length > 0 ? <ol className="mt-4 space-y-2">{draftExercises.map((item, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"><span className="min-w-0"><b>{i + 1}. {item.exercise_name}</b><span className="block text-xs text-muted-foreground">{item.sets} sets × {item.reps}</span></span><button onClick={() => setDraftExercises((all) => all.filter((_, index) => index !== i))} aria-label="Remove exercise" className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button></li>)}</ol> : <p className="mt-4 rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">Your exercise list is empty. Tap “Add exercise” to get started.</p>}
         </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">This SPLIT day uses the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError || subscriptionQuery.isLoading || subscriptionQuery.isError || (!isPro && plans.length >= 3)} onClick={createPlan}>{saving ? "Saving…" : !isPro && plans.length >= 3 ? "Workout limit reached" : "Save SPLIT day"}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">This SPLIT day uses the privacy setting selected above.</p><Button variant="hero" disabled={saving || plansQuery.isLoading || plansQuery.isError} onClick={createPlan}>{saving ? "Saving…" : "Save SPLIT day"}</Button></div>
       </section>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
@@ -323,7 +333,18 @@ function WorkoutsPage() {
         {plansQuery.isLoading && !plansQuery.data ? <p className="text-muted-foreground">Loading SPLIT…</p> : plansQuery.isError && !plansQuery.data ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4"><p className="font-semibold text-destructive">Your SPLIT could not be loaded.</p><p className="mt-1 text-sm text-muted-foreground">Check your connection and try again. Your saved SPLIT has not been changed.</p><Button className="mt-3" size="sm" variant="line" onClick={() => void plansQuery.refetch()}>Try again</Button></div> : plans.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-3 h-8 w-8" />No SPLIT yet. Create your first plan above.</div> : (
           <div className="grid gap-3 md:grid-cols-2">{plans.map((plan) => <article key={plan.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold">{plan.title}</h3><p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{plan.workout_day || "Monday"}</p></div><button onClick={() => void deletePlan(plan)} aria-label="Remove day" className="rounded-md p-2 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></div>
-            <div className="mt-3 flex items-center gap-2 text-xs uppercase text-muted-foreground">{plan.visibility === "private" ? <Lock className="h-3.5 w-3.5" /> : plan.visibility === "public" ? <Globe className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}{plan.visibility === "followers" ? "Friends" : plan.visibility}</div>
+            <div className="mt-3">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Who can see this SPLIT?</label>
+              <div className="flex items-center gap-2">
+                {plan.visibility === "private" ? <Lock className="h-4 w-4 shrink-0 text-muted-foreground" /> : plan.visibility === "public" ? <Globe className="h-4 w-4 shrink-0 text-primary" /> : <Users className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                <select aria-label={`Privacy for ${plan.title}`} value={plan.visibility} disabled={updatingVisibility === plan.id || updatingVisibility !== null} onChange={(event) => void updatePlanVisibility(plan, event.target.value as Plan["visibility"])} className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-xs font-semibold uppercase">
+                  <option value="private">Private — only me</option>
+                  <option value="public">Public — everyone</option>
+                  <option value="followers">Friends</option>
+                </select>
+                {updatingVisibility === plan.id && <span className="text-[10px] text-muted-foreground">Saving…</span>}
+              </div>
+            </div>
             <Button className="mt-4 w-full" variant="line" onClick={() => setExpanded(expanded === plan.id ? null : plan.id)}>{expanded === plan.id ? "Hide exercises" : "View exercises"}</Button>
             {expanded === plan.id && <div className="mt-3 space-y-2">{exercisesQuery.isLoading && !exercisesQuery.data ? <p className="text-sm text-muted-foreground">Loading exercises…</p> : exercisesQuery.isError && !exercisesQuery.data ? <div className="rounded-lg bg-background p-3"><p className="text-sm text-muted-foreground">Exercises could not be loaded.</p><Button className="mt-2" size="sm" variant="line" onClick={() => void exercisesQuery.refetch()}>Try again</Button></div> : (exercisesQuery.data ?? []).length === 0 ? <p className="rounded-lg bg-background p-3 text-sm text-muted-foreground">No exercises in this SPLIT day yet.</p> : (exercisesQuery.data ?? []).map((ex, i) => <div key={ex.id} className="rounded-lg bg-background p-3 text-sm"><b>{i + 1}. {ex.exercise_name}</b><p className="text-muted-foreground">{ex.sets} sets × {ex.reps}</p></div>)}</div>}
           </article>)}</div>

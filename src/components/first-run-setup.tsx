@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyProfile, useUser } from "@/hooks/use-session";
 import { USERNAME_RE } from "@/lib/lifts";
+import { isRecentlyCreatedAccount } from "@/lib/onboarding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,7 +24,13 @@ export function FirstRunSetup() {
   const [locallyCompleted, setLocallyCompleted] = useState(false);
 
   useEffect(() => {
-    if (!user?.id) return;
+    setStep("profile");
+    setAvatar(null);
+    setSaving(false);
+    if (!user?.id) {
+      setLocallyCompleted(false);
+      return;
+    }
     try { setLocallyCompleted(window.localStorage.getItem("repunit-onboarding-done:" + user.id) === "1"); } catch { setLocallyCompleted(false); }
   }, [user?.id]);
 
@@ -33,7 +40,11 @@ export function FirstRunSetup() {
     setNickname(profile.display_name ?? "");
   }, [profile?.id, profile?.username, profile?.display_name]);
 
-  const open = Boolean(user?.id && profile && user.user_metadata?.["repunit_onboarding_required"] === true && (profile as any).onboarding_completed !== true && !locallyCompleted);
+  const isFreshAccount = isRecentlyCreatedAccount(user?.created_at);
+  // Google OAuth does not accept the same signUp metadata flag as email registration.
+  // Detect newly-created OAuth accounts by their auth creation timestamp.
+  const onboardingRequired = user?.user_metadata?.["repunit_onboarding_required"] === true || isFreshAccount;
+  const open = Boolean(user?.id && profile && onboardingRequired && (profile as any).onboarding_completed !== true && !locallyCompleted);
   if (!open || !profile || !user) return null;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {

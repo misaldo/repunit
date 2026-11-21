@@ -31,12 +31,12 @@ export function estimated1RM(weight: number, reps: number) {
   return Math.round(weight * (1 + reps / 30) * 10) / 10;
 }
 
-export const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+export const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 export const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
 export function validateVideo(file: File): string | null {
   if (!VIDEO_TYPES.includes(file.type)) return "Use an MP4, MOV or WebM video.";
-  if (file.size > VIDEO_MAX_BYTES) return "Video must be 100 MB or smaller.";
+  if (file.size > VIDEO_MAX_BYTES) return "Video must be 50 MB or smaller.";
   return null;
 }
 
