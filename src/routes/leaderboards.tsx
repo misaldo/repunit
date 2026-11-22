@@ -264,6 +264,7 @@ function Boards() {
         {ownCrew && <div className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"><span className="text-xs font-black uppercase tracking-widest text-primary">Your Crew · #{ownCrew.rank_position}</span><Crown className="h-4 w-4 text-primary"/></div>}
         {crewRows.length >= 3 && <div className="grid grid-cols-3 items-end gap-2">
           {[crewRows[1], crewRows[0], crewRows[2]].map((crew, index) => {
+            if (!crew) return null;
             const place = index === 1 ? 1 : index === 0 ? 2 : 3;
             return <Link key={crew.crew_id} to="/crews/$id" params={{id:crew.crew_id}}
               className={cn("flex min-w-0 flex-col items-center rounded-xl border border-border bg-card p-3 text-center transition hover:-translate-y-1 hover:border-primary/50", place === 1 && "min-h-36 border-primary/40 bg-primary/[0.08]")}>
