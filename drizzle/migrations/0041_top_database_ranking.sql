@@ -14,8 +14,8 @@ create index if not exists lifts_verified_exercise_date_rank_idx
   where status = 'VERIFIED';
 
 create index if not exists lifts_verified_user_exercise_rank_idx
-  on public.lifts (user_id, exercise, weight_kg desc, reps desc, lifted_on asc)
-  include (id, video_path)
+  on public.lifts (user_id, exercise, weight_kg desc, reps desc, lifted_on asc, id asc)
+  include (video_path)
   where status = 'VERIFIED';
 
 create index if not exists profiles_country_top_idx
@@ -89,7 +89,7 @@ begin
 
   return query
   with eligible as (
-    select l.user_id, l.exercise::text as exercise, l.weight_kg, l.reps,
+    select l.user_id, l.exercise as exercise, l.weight_kg, l.reps,
       l.id as lift_id, l.lifted_on, (l.video_path is not null) as has_video
     from public.lifts l
     where l.status = 'VERIFIED'
@@ -112,7 +112,7 @@ begin
       bool_or(b.has_video) as any_video,
       count(*) as lift_count
     from best b
-    where (_lift = 'total' or b.exercise = _lift)
+    where (_lift = 'total' or b.exercise::text = _lift)
     group by b.user_id
     having (_lift <> 'total' or count(*) = 3)
   ), ranked as (
