@@ -54,6 +54,35 @@ begin
     select user_id from public.get_top_lifters('bench', 'all', 'global', 100, null)
     group by user_id having count(*) > 1
   ) then raise exception 'Bench ranking returned duplicate users'; end if;
+  if exists (
+    with first_page as materialized (
+      select * from public.get_top_lifters('bench', 'all', 'global', 50, null)
+    ), cursor_row as (
+      select * from first_page order by rank_position desc limit 1
+    ), second_page as (
+      select page.* from cursor_row c
+      cross join lateral public.get_top_lifters(
+        'bench', 'all', 'global', 50,
+        jsonb_build_object(
+          'weight_kg', c.weight_kg,
+          'reps', c.reps,
+          'lifted_on', c.lifted_on,
+          'user_id', c.user_id
+        )
+      ) page
+    )
+    select 1 from first_page a join second_page b using (user_id)
+  ) then raise exception 'Keyset pagination returned duplicate users'; end if;
+
+  if (
+    select min(rank_position)
+    from public.get_top_lifters(
+      'bench', 'all', 'global', 50,
+      (select jsonb_build_object('weight_kg', weight_kg, 'reps', reps, 'lifted_on', lifted_on, 'user_id', user_id)
+       from public.get_top_lifters('bench', 'all', 'global', 50, null)
+       order by rank_position desc limit 1)
+    )
+  ) <> 51 then raise exception 'Second TOP page did not continue at rank 51'; end if;
 
   if exists (
     select 1 from public.get_top_lifters('total', 'all', 'global', 100, null) t
