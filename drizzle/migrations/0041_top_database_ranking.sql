@@ -52,7 +52,7 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set work_mem = '64MB'
+set work_mem = '8MB'
 as $
 declare
   period_start date;
@@ -152,7 +152,7 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set work_mem = '64MB'
+set work_mem = '8MB'
 as $
 declare
   my_row record;
@@ -207,7 +207,7 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set work_mem = '64MB'
+set work_mem = '8MB'
 as $
 declare period_start date;
 begin
@@ -274,7 +274,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public, pg_temp
-set work_mem = '64MB'
+set work_mem = '8MB'
 as $
 begin
   if auth.uid() is null then raise exception 'Sign in to change TOP privacy'; end if;
@@ -306,7 +306,7 @@ returns integer
 language plpgsql
 security definer
 set search_path = public, pg_temp
-set work_mem = '64MB'
+set work_mem = '8MB'
 as $
 declare
   week_start date := date_trunc('week', now() at time zone 'UTC')::date;
@@ -342,7 +342,7 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set work_mem = '64MB'
+set work_mem = '8MB'
 as $
 declare this_week date := date_trunc('week', now() at time zone 'UTC')::date;
 begin
