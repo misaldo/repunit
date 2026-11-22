@@ -247,8 +247,8 @@ function Boards() {
     {tab === "lifters" && scope === "global" && (moversQuery.data?.length ?? 0) > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-black uppercase tracking-widest">Rising lifters</h2><span className="text-[10px] text-muted-foreground">Since last week</span></div>
       <div className="flex gap-3 overflow-x-auto pb-1">
-        {moversQuery.data.map((mover) => <Link key={mover.user_id} to="/u/$username" params={{username:mover.username}} className="min-w-28 rounded-xl border border-border bg-background p-3 transition hover:border-primary/50">
-          <span className="block truncate text-xs font-bold">@{mover.username}</span><span className="font-stat mt-1 block text-2xl">#{mover.current_rank}</span><span className="text-[10px] font-bold text-primary">{mover.is_new ? "NEW TO TOP" : mover.places_gained > 0 ? `↑ ${mover.places_gained}` : "HOLDING"}</span>
+        {(moversQuery.data ?? []).map((mover) => <Link key={mover.user_id} to="/u/$username" params={{username:mover.username}} className="min-w-28 rounded-xl border border-border bg-background p-3 transition hover:border-primary/50">
+          <span className="block truncate text-xs font-bold">@{mover.username}</span><span className="font-stat mt-1 block text-2xl">#{mover.current_rank}</span><span className="text-[10px] font-bold text-primary">{mover.is_new ? "NEW TO TOP" : mover.places_gained !== null && mover.places_gained > 0 ? `↑ ${mover.places_gained}` : "HOLDING"}</span>
         </Link>)}
       </div>
     </section>}
