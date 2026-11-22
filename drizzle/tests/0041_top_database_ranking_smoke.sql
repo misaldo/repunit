@@ -61,6 +61,10 @@ begin
     group by user_id having count(*) > 1
   ) then raise exception 'Bench ranking returned duplicate users'; end if;
   if exists (
+    select 1 from public.get_top_lifters('bench', 'all', 'global', 10000, null)
+    where weight_kg >= 9999
+  ) then raise exception 'Unverified high-load lift leaked into verified TOP'; end if;
+  if exists (
     with first_page as materialized (
       select * from public.get_top_lifters('bench', 'all', 'global', 50, null)
     ), cursor_row as (
