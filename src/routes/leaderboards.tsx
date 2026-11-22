@@ -70,7 +70,8 @@ function Boards() {
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.length < 50) return undefined;
-      const last = lastPage[lastPage.length - 1];
+      const last = lastPage.at(-1);
+      if (!last) return undefined;
       return {
         weight_kg: last.weight_kg,
         reps: last.reps,
@@ -123,7 +124,7 @@ function Boards() {
   const shareRank = async () => {
     const rank = myRankQuery.data?.rank;
     if (!rank) return;
-    const label = lift === "total" ? "Total" : lift[0].toUpperCase() + lift.slice(1);
+    const label = lift === "total" ? "Total" : lift.charAt(0).toUpperCase() + lift.slice(1);
     const message = `I'm #${rank} on REPUNIT TOP for ${label} (${period === "all" ? "All time" : period}). Can you beat me?`;
     try {
       if (navigator.share) await navigator.share({ title: "My REPUNIT rank", text: message, url: window.location.origin });
@@ -177,7 +178,7 @@ function Boards() {
     <div className="mt-5 grid grid-cols-4 gap-2">
       {(["total", "bench", "squat", "deadlift"] as const).map((value) =>
         <button key={value} type="button" aria-pressed={lift === value} onClick={() => setLift(value)} className={chip(lift === value)}>
-          {value === "total" ? "Total" : value[0].toUpperCase() + value.slice(1)}
+          {value === "total" ? "Total" : value.charAt(0).toUpperCase() + value.slice(1)}
         </button>)}
     </div>
     <div className="mt-3 grid grid-cols-3 gap-2">
@@ -219,8 +220,8 @@ function Boards() {
       : lifters.isError && rows.length === 0 ? <div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">TOP is temporarily unavailable.</p><Button variant="line" className="mt-4" onClick={() => void lifters.refetch()}>Retry</Button></div>
       : rows.length === 0 ? <div className="rounded-2xl border border-dashed border-border p-8 text-center"><Trophy className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">No verified results yet</p><p className="mt-1 text-sm text-muted-foreground">Be the first to put a lift on TOP.</p><Button asChild variant="hero" className="mt-4"><Link to="/records/new">Log your first lift</Link></Button></div>
       : <>
-        <Podium rows={rows.slice(0,3) as any} currentUserId={user?.id}/>
-        {rows.length > 3 && <RankList rows={rows.slice(3) as any} start={3} currentUserId={user?.id}/>}
+        <Podium rows={rows.slice(0,3) as any} {...(user ? { currentUserId: user.id } : {})}/>
+        {rows.length > 3 && <RankList rows={rows.slice(3) as any} start={3} {...(user ? { currentUserId: user.id } : {})}/>}
         <div ref={sentinel} className="h-2" />
         {lifters.isFetchingNextPage && skeleton}
         {lifters.hasNextPage && !lifters.isFetchingNextPage && <button type="button" onClick={() => void lifters.fetchNextPage()} className="min-h-11 w-full rounded-xl border border-border bg-card text-xs font-bold uppercase tracking-wide text-muted-foreground hover:border-primary/50">Load more</button>}
