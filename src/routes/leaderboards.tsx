@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentProps } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageShell } from "@/components/app-shell";
 import { Podium, RankList } from "@/components/leaderboard-list";
@@ -41,6 +42,23 @@ type CrewRow = {
   member_count: number;
   score: number;
 };
+type MoverRow = {
+  user_id: string;
+  username: string;
+  current_rank: number;
+  places_gained: number | null;
+  is_new: boolean;
+};
+
+async function topRpc<T>(name: string, args: Record<string, unknown>) {
+  const client = supabase as unknown as {
+    rpc: (functionName: string, parameters: Record<string, unknown>) => Promise<{
+      data: T | null;
+      error: { message: string } | null;
+    }>;
+  };
+  return client.rpc(name, args);
+}
 
 function Boards() {
   const [tab, setTab] = useState<"lifters" | "crews">("lifters");
@@ -58,7 +76,7 @@ function Boards() {
     gcTime: 5 * 60_000,
     retry: 2,
     queryFn: async ({ pageParam }) => {
-      const { data, error } = await (supabase as any).rpc("get_top_lifters", {
+      const { data, error } = await topRpc<LifterRow[]>("get_top_lifters", {
         _lift: lift,
         _period: period,
         _scope: scope,
@@ -88,7 +106,7 @@ function Boards() {
     staleTime: 30_000,
     queryFn: async () => {
       const [{ data, error }, { data: memberships, error: membershipError }] = await Promise.all([
-        (supabase as any).rpc("get_top_crews", { _lift: lift, _period: period, _limit: 100 }),
+        topRpc<CrewRow[]>("get_top_crews", { _lift: lift, _period: period, _limit: 100 }),
         supabase.from("crew_members").select("crew_id").eq("user_id", user!.id),
       ]);
       if (error) throw error;
@@ -104,7 +122,7 @@ function Boards() {
     enabled: tab === "lifters" && !!user,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("get_my_rank", {
+      const { data, error } = await topRpc<{ rank: number | null; value: number | null; gap_kg: number | null }>("get_my_rank", {
         _lift: lift, _period: period, _scope: scope,
       });
       if (error) throw error;
@@ -117,10 +135,9 @@ function Boards() {
     enabled: !!user,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("profiles")
-        .select("top_opt_out").eq("id", user!.id).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle();
       if (error) throw error;
-      return Boolean(data?.top_opt_out);
+      return Boolean((data as unknown as { top_opt_out?: boolean } | null)?.top_opt_out);
     },
   });
   const changeTopPrivacy = async (hidden: boolean) => {
@@ -139,7 +156,7 @@ function Boards() {
     enabled: tab === "lifters" && scope === "global",
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("get_rank_movers", { _lift: lift, _limit: 5 });
+      const { data, error } = await topRpc<MoverRow[]>("get_rank_movers", { _lift: lift, _limit: 5 });
       if (error) throw error;
       return data ?? [];
     },
@@ -229,7 +246,7 @@ function Boards() {
     {tab === "lifters" && scope === "global" && (moversQuery.data?.length ?? 0) > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-black uppercase tracking-widest">Rising lifters</h2><span className="text-[10px] text-muted-foreground">Since last week</span></div>
       <div className="flex gap-3 overflow-x-auto pb-1">
-        {moversQuery.data.map((mover: any) => <Link key={mover.user_id} to="/u/$username" params={{username:mover.username}} className="min-w-28 rounded-xl border border-border bg-background p-3 transition hover:border-primary/50">
+        {moversQuery.data.map((mover) => <Link key={mover.user_id} to="/u/$username" params={{username:mover.username}} className="min-w-28 rounded-xl border border-border bg-background p-3 transition hover:border-primary/50">
           <span className="block truncate text-xs font-bold">@{mover.username}</span><span className="font-stat mt-1 block text-2xl">#{mover.current_rank}</span><span className="text-[10px] font-bold text-primary">{mover.is_new ? "NEW TO TOP" : mover.places_gained > 0 ? `↑ ${mover.places_gained}` : "HOLDING"}</span>
         </Link>)}
       </div>
@@ -248,8 +265,8 @@ function Boards() {
       : lifters.isError && rows.length === 0 ? <div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">TOP is temporarily unavailable.</p><Button variant="line" className="mt-4" onClick={() => void lifters.refetch()}>Retry</Button></div>
       : rows.length === 0 ? <div className="rounded-2xl border border-dashed border-border p-8 text-center"><Trophy className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">No verified results yet</p><p className="mt-1 text-sm text-muted-foreground">Be the first to put a lift on TOP.</p><Button asChild variant="hero" className="mt-4"><Link to="/records/new">Log your first lift</Link></Button></div>
       : <>
-        <Podium rows={rows.slice(0,3) as any} {...(user ? { currentUserId: user.id } : {})}/>
-        {rows.length > 3 && <RankList rows={rows.slice(3) as any} start={3} {...(user ? { currentUserId: user.id } : {})}/>}
+        <Podium rows={rows.slice(0,3) as unknown as ComponentProps<typeof Podium>["rows"]} {...(user ? { currentUserId: user.id } : {})}/>
+        {rows.length > 3 && <RankList rows={rows.slice(3) as unknown as ComponentProps<typeof RankList>["rows"]} start={3} {...(user ? { currentUserId: user.id } : {})}/>}
         <div ref={sentinel} className="h-2" />
         {lifters.isFetchingNextPage && skeleton}
         {lifters.hasNextPage && !lifters.isFetchingNextPage && <button type="button" onClick={() => void lifters.fetchNextPage()} className="min-h-11 w-full rounded-xl border border-border bg-card text-xs font-bold uppercase tracking-wide text-muted-foreground hover:border-primary/50">Load more</button>}
