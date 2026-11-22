@@ -47,14 +47,14 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/migrations/0041_top_database_ranking.sql
-      - name: Run migration smoke tests
-        env:
-          PGPASSWORD: postgres
-        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/0041_top_database_ranking_smoke.sql
       - name: Seed isolated 10k-user and 200k-lift benchmark dataset
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/fixtures/top-ranking-ci-seed.sql
+      - name: Run migration smoke tests
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/0041_top_database_ranking_smoke.sql
       - name: Run TOP query benchmarks
         env:
           PGPASSWORD: postgres
