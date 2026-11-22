@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-session";
 import { Users, Trophy, Crown, Swords, Globe2, Flag, UsersRound } from "lucide-react";
 import { LiveBattleCard } from "@/components/live-battle-card";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/leaderboards")({
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { title: "TOP — REPUNIT" }, { name: "description", content: "Global strength rankings for lifters and crews." }, { property: "og:title", content: "TOP — REPUNIT" }, { property: "og:description", content: "Who is the strongest?" }] }),
@@ -98,6 +99,43 @@ function Boards() {
   });
   const crewRows = crewQuery.data ?? [];
   const ownCrew = crewRows.find((row) => row.is_mine);
+  const myRankQuery = useQuery({
+    queryKey: ["top-my-rank-v2", lift, period, scope, user?.id],
+    enabled: tab === "lifters" && !!user && scope !== "global" ? false : tab === "lifters" && !!user,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_my_rank", {
+        _lift: lift, _period: period, _scope: scope,
+      });
+      if (error) throw error;
+      return data as { rank: number | null; value: number | null; gap_kg: number | null };
+    },
+  });
+  const moversQuery = useQuery({
+    queryKey: ["top-rank-movers-v2", lift],
+    enabled: tab === "lifters" && scope === "global",
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_rank_movers", { _lift: lift, _limit: 5 });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const shareRank = async () => {
+    const rank = myRankQuery.data?.rank;
+    if (!rank) return;
+    const label = lift === "total" ? "Total" : lift[0].toUpperCase() + lift.slice(1);
+    const message = `I'm #${rank} on REPUNIT TOP for ${label} (${period === "all" ? "All time" : period}). Can you beat me?`;
+    try {
+      if (navigator.share) await navigator.share({ title: "My REPUNIT rank", text: message, url: window.location.origin });
+      else {
+        await navigator.clipboard.writeText(`${message} ${window.location.origin}`);
+        toast.success("Rank copied to clipboard");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== "AbortError") toast.error("Could not share your rank");
+    }
+  };
 
   useEffect(() => {
     const node = sentinel.current;
@@ -156,6 +194,18 @@ function Boards() {
         </button>)}
     </div>}
 
+    {tab === "lifters" && user && myRankQuery.data?.rank && <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/35 bg-primary/[0.08] p-4">
+      <div><p className="text-[10px] font-black uppercase tracking-widest text-primary">Your global position</p><p className="font-stat mt-1 text-4xl">#{myRankQuery.data.rank}</p>{myRankQuery.data.gap_kg !== null && <p className="text-xs text-muted-foreground">{myRankQuery.data.gap_kg} kg to the next rank</p>}</div>
+      <Button type="button" variant="hero" className="min-h-11" onClick={() => void shareRank()}>Share rank</Button>
+    </div>}
+    {tab === "lifters" && scope === "global" && (moversQuery.data?.length ?? 0) > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-black uppercase tracking-widest">Rising lifters</h2><span className="text-[10px] text-muted-foreground">Since last week</span></div>
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {moversQuery.data.map((mover: any) => <Link key={mover.user_id} to="/u/$username" params={{username:mover.username}} className="min-w-28 rounded-xl border border-border bg-background p-3 transition hover:border-primary/50">
+          <span className="block truncate text-xs font-bold">@{mover.username}</span><span className="font-stat mt-1 block text-2xl">#{mover.current_rank}</span><span className="text-[10px] font-bold text-primary">{mover.is_new ? "NEW TO TOP" : mover.places_gained > 0 ? `↑ ${mover.places_gained}` : "HOLDING"}</span>
+        </Link>)}
+      </div>
+    </section>}
     <p className="mt-4 text-xs text-muted-foreground">
       {tab === "crews"
         ? "Crew score is the combined best verified lifts of its five strongest members."
