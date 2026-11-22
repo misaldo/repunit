@@ -81,7 +81,6 @@ function Boards() {
   });
 
   const rows = useMemo(() => lifters.data?.pages.flat() ?? [], [lifters.data]);
-  const myRow = rows.find((row) => row.user_id === user?.id);
   const crewQuery = useQuery({
     queryKey: ["top-db-crews-v2", lift, period, user?.id],
     enabled: tab === "crews" && !!user,
