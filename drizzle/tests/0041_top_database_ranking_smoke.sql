@@ -34,6 +34,12 @@ begin
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relname = 'top_rank_snapshots' and c.relrowsecurity
   ) then raise exception 'top_rank_snapshots must have RLS enabled'; end if;
+  if has_table_privilege('authenticated', 'public.top_rank_snapshots', 'select') then
+    raise exception 'Authenticated users must not read internal rank snapshots directly';
+  end if;
+  if has_function_privilege('anon', 'public.get_my_rank(text,text,text)', 'execute') then
+    raise exception 'Anonymous users must not call get_my_rank';
+  end if;
 
   for row_rank, row_user_id in
     select t.rank_position, t.user_id
