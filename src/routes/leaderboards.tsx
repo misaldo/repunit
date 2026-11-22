@@ -101,7 +101,7 @@ function Boards() {
   const ownCrew = crewRows.find((row) => row.is_mine);
   const myRankQuery = useQuery({
     queryKey: ["top-my-rank-v2", lift, period, scope, user?.id],
-    enabled: tab === "lifters" && !!user && scope !== "global" ? false : tab === "lifters" && !!user,
+    enabled: tab === "lifters" && !!user,
     staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await (supabase as any).rpc("get_my_rank", {
@@ -195,7 +195,7 @@ function Boards() {
     </div>}
 
     {tab === "lifters" && user && myRankQuery.data?.rank && <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/35 bg-primary/[0.08] p-4">
-      <div><p className="text-[10px] font-black uppercase tracking-widest text-primary">Your global position</p><p className="font-stat mt-1 text-4xl">#{myRankQuery.data.rank}</p>{myRankQuery.data.gap_kg !== null && <p className="text-xs text-muted-foreground">{myRankQuery.data.gap_kg} kg to the next rank</p>}</div>
+      <div><p className="text-[10px] font-black uppercase tracking-widest text-primary">Your position</p><p className="font-stat mt-1 text-4xl">#{myRankQuery.data.rank}</p>{myRankQuery.data.gap_kg !== null && <p className="text-xs text-muted-foreground">{myRankQuery.data.gap_kg} kg to the next rank</p>}</div>
       <Button type="button" variant="hero" className="min-h-11" onClick={() => void shareRank()}>Share rank</Button>
     </div>}
     {tab === "lifters" && scope === "global" && (moversQuery.data?.length ?? 0) > 0 && <section className="mt-5 rounded-2xl border border-border bg-card p-4">
