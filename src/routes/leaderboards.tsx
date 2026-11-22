@@ -576,7 +576,7 @@ function Boards() {
                 </div>
               )}
               <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                {crewRows.map((crew) => (
+                {(crewRows.length >= 3 ? crewRows.slice(3) : crewRows).map((crew) => (
                   <Link
                     key={crew.crew_id}
                     to="/crews/$id"
