@@ -25,3 +25,8 @@ select (substr(md5((p.username||':'||n)::text),1,8)||'-'||substr(md5((p.username
        'VERIFIED'
 from public.profiles p
 cross join generate_series(1,20) n;
+
+ANALYZE public.profiles;
+ANALYZE public.crews;
+ANALYZE public.crew_members;
+ANALYZE public.lifts;
