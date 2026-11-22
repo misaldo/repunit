@@ -220,7 +220,6 @@ function Boards() {
       : lifters.isError && rows.length === 0 ? <div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">TOP is temporarily unavailable.</p><Button variant="line" className="mt-4" onClick={() => void lifters.refetch()}>Retry</Button></div>
       : rows.length === 0 ? <div className="rounded-2xl border border-dashed border-border p-8 text-center"><Trophy className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">No verified results yet</p><p className="mt-1 text-sm text-muted-foreground">Be the first to put a lift on TOP.</p><Button asChild variant="hero" className="mt-4"><Link to="/records/new">Log your first lift</Link></Button></div>
       : <>
-        {myRow && <div className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"><span className="text-xs font-black uppercase tracking-widest text-primary">You are #{myRow.rank_position}</span><Crown className="h-4 w-4 text-primary"/></div>}
         <Podium rows={rows.slice(0,3) as any} currentUserId={user?.id}/>
         {rows.length > 3 && <RankList rows={rows.slice(3) as any} start={3} currentUserId={user?.id}/>}
         <div ref={sentinel} className="h-2" />
