@@ -284,6 +284,11 @@ create table if not exists public.top_rank_snapshots (
 create index if not exists top_rank_snapshots_lookup_idx
   on public.top_rank_snapshots(lift, snapshot_week desc, rank_position);
 
+-- Snapshot rows are internal ranking history, never a public table API.
+alter table public.top_rank_snapshots enable row level security;
+revoke all on table public.top_rank_snapshots from anon, authenticated;
+
+
 create or replace function public.capture_top_rank_snapshot()
 returns integer
 language plpgsql
