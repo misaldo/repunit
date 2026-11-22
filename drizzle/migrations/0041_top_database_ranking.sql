@@ -53,7 +53,7 @@ language plpgsql
 stable
 security definer
 set search_path = ''
-set work_mem = '16MB'
+set work_mem = '8MB'
 as $$
 declare
   period_start date;
@@ -205,7 +205,7 @@ language plpgsql
 stable
 security definer
 set search_path = ''
-set work_mem = '16MB'
+set work_mem = '8MB'
 as $$
 declare period_start date;
 begin
