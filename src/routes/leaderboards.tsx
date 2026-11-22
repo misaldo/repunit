@@ -384,9 +384,13 @@ function Boards() {
             </p>
             <p className="font-stat mt-1 text-4xl">#{myRankQuery.data.rank}</p>
             {myRankQuery.data.rank <= 10 ? (
-              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">TOP 10 milestone</p>
+              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                TOP 10 milestone
+              </p>
             ) : myRankQuery.data.rank <= 100 ? (
-              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">TOP 100 milestone</p>
+              <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                TOP 100 milestone
+              </p>
             ) : null}
             {myRankQuery.data.gap_kg !== null && (
               <p className="text-xs text-muted-foreground">
