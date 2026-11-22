@@ -9,8 +9,11 @@ select (substr(md5(('crew'||g)::text),1,8)||'-'||substr(md5(('crew'||g)::text),9
 from generate_series(1,100) g;
 insert into public.crew_members(crew_id,user_id,role)
 select c.id,p.id,'member'
-from public.profiles p
-join public.crews c on c.name = 'Crew '||(((row_number() over(order by p.username)-1)%100)+1);
+from (
+  select id, row_number() over(order by username) as member_number
+  from public.profiles
+) p
+join public.crews c on c.name = 'Crew '||(((p.member_number-1)%100)+1);
 insert into public.lifts(id,user_id,exercise,weight_kg,reps,lifted_on,video_path,status)
 select (substr(md5((p.username||':'||n)::text),1,8)||'-'||substr(md5((p.username||':'||n)::text),9,4)||'-4'||substr(md5((p.username||':'||n)::text),14,3)||'-a'||substr(md5((p.username||':'||n)::text),18,3)||'-'||substr(md5((p.username||':'||n)::text),21,12))::uuid,
        p.id,
