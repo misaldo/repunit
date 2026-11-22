@@ -93,7 +93,7 @@ begin
       l.id as lift_id, l.lifted_on, (l.video_path is not null) as has_video
     from public.lifts l
     where l.status = 'VERIFIED'
-      and l.exercise::text in ('bench','squat','deadlift')
+      and l.exercise in ('bench','squat','deadlift')
       and (period_start is null or l.lifted_on >= period_start)
   ), best as (
     select distinct on (e.user_id, e.exercise)
