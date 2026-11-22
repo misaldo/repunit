@@ -145,8 +145,12 @@ function Boards() {
       <span className="flex items-center gap-2"><Swords className="h-4 w-4 text-primary"/>BATTLES <span className="text-xs font-medium normal-case tracking-normal text-muted-foreground">All battles & challenges</span></span>
       <span className="text-primary">→</span>
     </Link>
-    <p className="eyebrow">REPUNIT GLOBAL STRENGTH</p>
-    <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="font-stat mt-1 text-5xl uppercase sm:text-6xl">TOP<span className="text-primary">.</span></h1>{tab==="crews"?<Button asChild variant="hero" className="min-h-11"><Link to="/crews/new">Create crew</Link></Button>:tab==="friends"?<Button asChild variant="hero" className="min-h-11"><Link to="/people">Find lifters</Link></Button>:<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
+    <section className="relative mb-5 overflow-hidden rounded-2xl border border-border bg-[radial-gradient(ellipse_at_85%_15%,rgba(220,38,38,0.16),transparent_55%),linear-gradient(145deg,hsl(var(--card)),hsl(var(--background)))] px-5 py-6 sm:px-7 sm:py-8">
+      <div className="pointer-events-none absolute right-4 top-1 font-stat text-[7rem] leading-none text-primary/[0.07] sm:right-8 sm:text-[10rem]">01</div>
+      <p className="eyebrow relative">REPUNIT / GLOBAL STRENGTH</p>
+      <div className="relative mt-2 flex flex-wrap items-end justify-between gap-4"><div><h1 className="font-stat text-6xl uppercase leading-none tracking-tight sm:text-7xl">TOP<span className="text-primary">.</span></h1><p className="mt-2 max-w-xs text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Earn your place. Stay on top.</p></div>{tab==="crews"?<Button asChild variant="hero" className="min-h-11"><Link to="/crews/new">Create crew</Link></Button>:tab==="friends"?<Button asChild variant="hero" className="min-h-11"><Link to="/people">Find lifters</Link></Button>:<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
+      <div className="relative mt-5 h-px w-16 bg-primary"/>
+    </section>
     <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card p-1">{tabButton("lifters","Lifters",Trophy)}{tabButton("crews","Crews",Users)}{tabButton("friends","Friends",Users)}</div>
     <div className="mt-5 grid grid-cols-4 gap-2">
       {(["bench","squat","deadlift","total"] as const).map((value)=> <button key={value} type="button" aria-pressed={ex===value} onClick={()=>setEx(value)} className={chip(ex===value)}>{value==="total"?"Total":value[0].toUpperCase()+value.slice(1)}</button>)}
