@@ -22,7 +22,7 @@ Do not run the disposable benchmark fixture against production. It inserts 10,00
   - Scope: `global`, `country`, or `crew`.
   - Uses VERIFIED lifts only; keyset cursor pagination.
   - Total requires all three verified lifts and sums their best weights.
-- `get_my_rank(_lift, _period, _scope)`
+- `get_my_rank(_lift, _period, _scope)` (current implementation resolves rank within the first 10,000 ranked users; raise this cap or replace with a direct rank-count query before expecting accurate personal ranks beyond that range.)
 - `get_top_crews(_lift, _period, _limit)`
   - Crew score is the combined best score of the five strongest eligible members.
 - `get_rank_movers(_lift, _limit)`
