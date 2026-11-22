@@ -218,7 +218,7 @@ begin
     else null
   end;
   return query
-  with user_best as (
+  with user_best as materialized (
     -- Best lift per lifter/exercise first; only then fan out to their Crew memberships.
     -- This preserves the lift tie-break rule while avoiding multiplying the full lift
     -- history by every Crew membership before aggregation.
