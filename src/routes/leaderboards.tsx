@@ -177,15 +177,16 @@ function Boards() {
     }
   };
 
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = lifters;
   useEffect(() => {
     const node = sentinel.current;
-    if (!node || !lifters.hasNextPage || lifters.isFetchingNextPage || tab !== "lifters") return;
+    if (!node || !hasNextPage || isFetchingNextPage || tab !== "lifters") return;
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) void lifters.fetchNextPage();
+      if (entries[0]?.isIntersecting) void fetchNextPage();
     }, { rootMargin: "320px" });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [lifters.hasNextPage, lifters.isFetchingNextPage, lifters.fetchNextPage, tab]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, tab]);
 
   const chip = (active: boolean) => cn(
     "min-h-11 shrink-0 rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-wide transition-colors",
