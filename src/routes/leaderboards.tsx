@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageShell } from "@/components/app-shell";
 import { Podium, RankList } from "@/components/leaderboard-list";
 import { cn } from "@/lib/utils";
@@ -111,6 +111,29 @@ function Boards() {
       return data as { rank: number | null; value: number | null; gap_kg: number | null };
     },
   });
+  const queryClient = useQueryClient();
+  const privacyQuery = useQuery({
+    queryKey: ["top-privacy", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("profiles")
+        .select("top_opt_out").eq("id", user!.id).maybeSingle();
+      if (error) throw error;
+      return Boolean(data?.top_opt_out);
+    },
+  });
+  const changeTopPrivacy = async (hidden: boolean) => {
+    const { error } = await (supabase as any).rpc("set_top_opt_out", { _opt_out: hidden });
+    if (error) {
+      toast.error("Could not update TOP privacy");
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["top-privacy", user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ["top-db-lifters-v2"] });
+    await queryClient.invalidateQueries({ queryKey: ["top-my-rank-v2"] });
+    toast.success(hidden ? "Hidden from public TOP" : "Visible on public TOP");
+  };
   const moversQuery = useQuery({
     queryKey: ["top-rank-movers-v2", lift],
     enabled: tab === "lifters" && scope === "global",
@@ -194,6 +217,11 @@ function Boards() {
         </button>)}
     </div>}
 
+    {tab === "lifters" && user && <label className="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
+      <span><span className="block text-xs font-bold">Hide me from public TOP</span><span className="block text-[10px] text-muted-foreground">Your lifts stay saved and visible inside your Crews.</span></span>
+      <input type="checkbox" checked={privacyQuery.data ?? false} disabled={privacyQuery.isLoading || privacyQuery.isError}
+        onChange={(event) => void changeTopPrivacy(event.target.checked)} className="h-5 w-5 accent-primary"/>
+    </label>}
     {tab === "lifters" && user && myRankQuery.data?.rank && <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/35 bg-primary/[0.08] p-4">
       <div><p className="text-[10px] font-black uppercase tracking-widest text-primary">Your position</p><p className="font-stat mt-1 text-4xl">#{myRankQuery.data.rank}</p>{myRankQuery.data.gap_kg !== null && <p className="text-xs text-muted-foreground">{myRankQuery.data.gap_kg} kg to the next rank</p>}</div>
       <Button type="button" variant="hero" className="min-h-11" onClick={() => void shareRank()}>Share rank</Button>
