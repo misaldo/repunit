@@ -157,23 +157,32 @@ as $$
 declare
   my_row record;
   around_rows jsonb;
+  all_rows public.get_top_lifters%rowtype;
 begin
   if auth.uid() is null then raise exception 'Sign in to view your rank'; end if;
-  select * into my_row
-  from public.get_top_lifters(_lift, _period, _scope, 10000, null) t
-  where t.user_id = auth.uid()
+
+  -- Materialize one ranking scan and reuse it for the user's row, neighbors and gap.
+  with ranking as materialized (
+    select * from public.get_top_lifters(_lift, _period, _scope, 10000, null)
+  )
+  select r.rank_position, r.user_id, r.weight_kg
+    into my_row
+  from ranking r
+  where r.user_id = auth.uid()
   limit 1;
 
   if my_row.user_id is null then
     return jsonb_build_object('rank', null, 'value', null, 'rows', '[]'::jsonb, 'gap_kg', null);
   end if;
 
+  with ranking as materialized (
+    select * from public.get_top_lifters(_lift, _period, _scope, 10000, null)
+  )
   select coalesce(jsonb_agg(to_jsonb(x) order by x.rank_position), '[]'::jsonb)
     into around_rows
   from (
-    select *
-    from public.get_top_lifters(_lift, _period, _scope, 10000, null) t
-    where t.rank_position between greatest(1, my_row.rank_position - 2) and my_row.rank_position + 2
+    select * from ranking
+    where rank_position between greatest(1, my_row.rank_position - 2) and my_row.rank_position + 2
   ) x;
 
   return jsonb_build_object(
