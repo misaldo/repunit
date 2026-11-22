@@ -21,6 +21,14 @@ create index if not exists profiles_country_top_idx
   on public.profiles (country_code, id)
   where top_opt_out = false;
 
+-- Crew scoring joins memberships from the lift owner side; keep this direction indexed.
+create index if not exists crew_members_user_crew_idx
+  on public.crew_members (user_id, crew_id);
+
+create index if not exists lifts_verified_user_exercise_date_idx
+  on public.lifts (user_id, exercise, lifted_on, weight_kg desc, reps desc)
+  where status = 'VERIFIED';
+
 create or replace function public.get_top_lifters(
   _lift text,
   _period text default 'all',
