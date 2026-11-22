@@ -218,20 +218,27 @@ begin
     else null
   end;
   return query
-  with member_best as (
-    select cm.crew_id, l.user_id, l.exercise::text as exercise,
-      max(l.weight_kg) as best_weight
-    from public.crew_members cm
-    join public.lifts l on l.user_id = cm.user_id
-    join public.profiles member_profile on member_profile.id = cm.user_id
-    where (not member_profile.top_opt_out or exists (
-        select 1 from public.crew_members viewer_members
-        where viewer_members.crew_id = cm.crew_id and viewer_members.user_id = auth.uid()
-      ))
-      and l.status = 'VERIFIED'
+  with user_best as (
+    -- Best lift per lifter/exercise first; only then fan out to their Crew memberships.
+    -- This preserves the lift tie-break rule while avoiding multiplying the full lift
+    -- history by every Crew membership before aggregation.
+    select distinct on (l.user_id, l.exercise)
+      l.user_id, l.exercise::text as exercise, l.weight_kg as best_weight,
+      l.reps, l.lifted_on
+    from public.lifts l
+    where l.status = 'VERIFIED'
       and l.exercise::text in ('bench','squat','deadlift')
       and (period_start is null or l.lifted_on >= period_start)
-    group by cm.crew_id, l.user_id, l.exercise
+    order by l.user_id, l.exercise, l.weight_kg desc, l.reps desc, l.lifted_on asc
+  ), member_best as (
+    select cm.crew_id, ub.user_id, ub.exercise, ub.best_weight
+    from user_best ub
+    join public.crew_members cm on cm.user_id = ub.user_id
+    join public.profiles member_profile on member_profile.id = ub.user_id
+    where not member_profile.top_opt_out or exists (
+      select 1 from public.crew_members viewer_members
+      where viewer_members.crew_id = cm.crew_id and viewer_members.user_id = auth.uid()
+    )
   ), scored_members as (
     select mb.crew_id, mb.user_id,
       case when _lift = 'total' then sum(mb.best_weight)
