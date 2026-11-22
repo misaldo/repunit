@@ -263,13 +263,13 @@ returns void
 language plpgsql
 security definer
 set search_path = public, pg_temp
-as $
+as $$
 begin
   if auth.uid() is null then raise exception 'Sign in to change TOP privacy'; end if;
   update public.profiles set top_opt_out = coalesce(_opt_out, false)
   where id = auth.uid();
 end;
-$;
+$$;
 
 create table if not exists public.top_rank_snapshots (
   id bigint generated always as identity primary key,
