@@ -122,11 +122,14 @@ begin
   from ranked r
   join public.profiles p on p.id = r.user_id
   where (_cursor is null)
-     or (r.score, r.score_reps, r.achieved_on, r.user_id) <
-        (( _cursor->>'weight_kg')::numeric, (_cursor->>'reps')::integer,
-         (_cursor->>'lifted_on')::date, (_cursor->>'user_id')::uuid)
+     or r.score < (_cursor->>'weight_kg')::numeric
+     or (r.score = (_cursor->>'weight_kg')::numeric and r.score_reps < (_cursor->>'reps')::integer)
+     or (r.score = (_cursor->>'weight_kg')::numeric and r.score_reps = (_cursor->>'reps')::integer
+         and r.achieved_on > (_cursor->>'lifted_on')::date)
+     or (r.score = (_cursor->>'weight_kg')::numeric and r.score_reps = (_cursor->>'reps')::integer
+         and r.achieved_on = (_cursor->>'lifted_on')::date and r.user_id > (_cursor->>'user_id')::uuid)
   order by r.position
-  limit greatest(1, least(coalesce(_limit, 50), 100));
+  limit greatest(1, least(coalesce(_limit, 50), 10000));
 end;
 $$;
 
@@ -147,7 +150,7 @@ declare
 begin
   if auth.uid() is null then raise exception 'Sign in to view your rank'; end if;
   select * into my_row
-  from public.get_top_lifters(_lift, _period, _scope, 100, null) t
+  from public.get_top_lifters(_lift, _period, _scope, 10000, null) t
   where t.user_id = auth.uid()
   limit 1;
 
@@ -278,7 +281,7 @@ begin
   foreach category in array array['bench','squat','deadlift','total'] loop
     insert into public.top_rank_snapshots(snapshot_week, lift, user_id, rank_position, value_kg)
     select week_start, category, t.user_id, t.rank_position, t.weight_kg
-    from public.get_top_lifters(category, 'all', 'global', 100, null) t
+    from public.get_top_lifters(category, 'all', 'global', 10000, null) t
     on conflict(snapshot_week, lift, user_id) do update
       set rank_position = excluded.rank_position, value_kg = excluded.value_kg;
     get diagnostics current_count = row_count;
@@ -310,7 +313,7 @@ begin
   return query
   with current_rows as (
     select t.user_id, t.rank_position
-    from public.get_top_lifters(_lift, 'all', 'global', 100, null) t
+    from public.get_top_lifters(_lift, 'all', 'global', 10000, null) t
   ), previous_rows as (
     select s.user_id, s.rank_position
     from public.top_rank_snapshots s
@@ -335,7 +338,7 @@ revoke all on function public.get_my_rank(text,text,text) from public, anon;
 revoke all on function public.get_top_crews(text,text,integer) from public, anon;
 revoke all on function public.get_rank_movers(text,integer) from public, anon;
 revoke all on function public.capture_top_rank_snapshot() from public, anon, authenticated;
-grant execute on function public.get_top_lifters(text,text,text,integer,jsonb) to authenticated;
+grant execute on function public.get_top_lifters(text,text,text,integer,jsonb) to anon, authenticated;
 grant execute on function public.get_my_rank(text,text,text) to authenticated;
 grant execute on function public.get_top_crews(text,text,integer) to authenticated;
 grant execute on function public.get_rank_movers(text,integer) to authenticated;
