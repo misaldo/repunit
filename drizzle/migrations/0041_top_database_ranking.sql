@@ -344,5 +344,21 @@ grant execute on function public.get_top_crews(text,text,integer) to authenticat
 grant execute on function public.get_rank_movers(text,integer) to authenticated;
 grant execute on function public.capture_top_rank_snapshot() to service_role;
 
+-- Schedule the weekly snapshot when pg_cron is already enabled in Supabase.
+-- If it is not enabled, the migration remains safe; enable pg_cron and run:
+-- select cron.schedule('repunit-top-weekly-snapshot', '5 0 * * 1',
+--   $select public.capture_top_rank_snapshot();$);
+do $schedule$
+begin
+  if exists (select 1 from pg_namespace where nspname = 'cron') then
+    execute 'select cron.unschedule(jobid) from cron.job where jobname = ''repunit-top-weekly-snapshot''';
+    execute $job$select cron.schedule('repunit-top-weekly-snapshot', '5 0 * * 1',
+      'select public.capture_top_rank_snapshot();')$job$;
+  end if;
+exception when undefined_table or undefined_function then
+  raise notice 'pg_cron is not enabled; configure the weekly TOP snapshot job after enabling it.';
+end;
+$schedule$;
+
 notify pgrst, 'reload schema';
 commit;
