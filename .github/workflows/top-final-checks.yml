@@ -1,0 +1,43 @@
+name: TOP final app validation
+
+on:
+  push:
+    branches: [feat/top-database-ranking]
+    paths:
+      - 'src/routes/leaderboards.tsx'
+      - 'src/components/leaderboard-list.tsx'
+      - '.github/workflows/top-final-checks.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/top-database-ranking
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format changed TOP files
+        run: npx prettier --write src/routes/leaderboards.tsx src/components/leaderboard-list.tsx
+      - name: Auto-fix changed TOP route lint
+        run: npx eslint src/routes/leaderboards.tsx --fix
+      - name: Commit formatting fixes to feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add src/routes/leaderboards.tsx src/components/leaderboard-list.tsx
+            git commit -m "style(top): format and lint ranking UI"
+            git push origin HEAD:feat/top-database-ranking
+          fi
+      - run: npm run typecheck
+      - run: npx eslint src/routes/leaderboards.tsx
+      - run: npm test
+      - run: npm run build
