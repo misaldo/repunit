@@ -30,3 +30,8 @@ ANALYZE public.profiles;
 ANALYZE public.crews;
 ANALYZE public.crew_members;
 ANALYZE public.lifts;
+
+VACUUM (ANALYZE) public.profiles;
+VACUUM (ANALYZE) public.crews;
+VACUUM (ANALYZE) public.crew_members;
+VACUUM (ANALYZE) public.lifts;
