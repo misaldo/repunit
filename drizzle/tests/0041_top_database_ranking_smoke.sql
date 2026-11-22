@@ -6,11 +6,9 @@ begin;
 do $$
 declare
   test_user uuid;
-  first_row record;
-  second_row record;
   previous_rank bigint := 0;
-  current_rank bigint;
-  current_user uuid;
+  row_rank bigint;
+  row_user_id uuid;
   result_count integer := 0;
   my_rank jsonb;
 begin
@@ -34,18 +32,18 @@ begin
     where n.nspname = 'public' and c.relname = 'top_rank_snapshots' and c.relrowsecurity
   ) then raise exception 'top_rank_snapshots must have RLS enabled'; end if;
 
-  for current_rank, current_user in
+  for row_rank, row_user_id in
     select t.rank_position, t.user_id
     from public.get_top_lifters('bench', 'all', 'global', 100, null) t
     order by t.rank_position
   loop
-    if current_rank <= previous_rank then
+    if row_rank <= previous_rank then
       raise exception 'Bench rank positions are not strictly increasing';
     end if;
-    if current_user is null then
+    if row_user_id is null then
       raise exception 'Bench ranking returned a null user id';
     end if;
-    previous_rank := current_rank;
+    previous_rank := row_rank;
     result_count := result_count + 1;
   end loop;
 
