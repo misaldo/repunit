@@ -53,7 +53,7 @@ stable
 security definer
 set search_path = public, pg_temp
 set work_mem = '8MB'
-as $
+as $$
 declare
   period_start date;
   my_country char(2);
@@ -153,7 +153,7 @@ stable
 security definer
 set search_path = public, pg_temp
 set work_mem = '8MB'
-as $
+as $$
 declare
   my_row record;
   around_rows jsonb;
@@ -208,7 +208,7 @@ stable
 security definer
 set search_path = public, pg_temp
 set work_mem = '8MB'
-as $
+as $$
 declare period_start date;
 begin
   if auth.uid() is null then raise exception 'Sign in to view Crew rankings'; end if;
@@ -275,7 +275,7 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 set work_mem = '8MB'
-as $
+as $$
 begin
   if auth.uid() is null then raise exception 'Sign in to change TOP privacy'; end if;
   update public.profiles set top_opt_out = coalesce(_opt_out, false)
@@ -307,7 +307,7 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 set work_mem = '8MB'
-as $
+as $$
 declare
   week_start date := date_trunc('week', now() at time zone 'UTC')::date;
   category text;
@@ -343,7 +343,7 @@ stable
 security definer
 set search_path = public, pg_temp
 set work_mem = '8MB'
-as $
+as $$
 declare this_week date := date_trunc('week', now() at time zone 'UTC')::date;
 begin
   if _lift not in ('bench','squat','deadlift','total') then raise exception 'Invalid lift category'; end if;
