@@ -51,7 +51,7 @@ returns table (
 language plpgsql
 stable
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 set work_mem = '8MB'
 as $$
 declare
@@ -151,7 +151,7 @@ returns jsonb
 language plpgsql
 stable
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 set work_mem = '8MB'
 as $$
 declare
@@ -203,7 +203,7 @@ returns table (
 language plpgsql
 stable
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 set work_mem = '8MB'
 as $$
 declare period_start date;
@@ -270,7 +270,7 @@ create or replace function public.set_top_opt_out(_opt_out boolean)
 returns void
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 set work_mem = '8MB'
 as $$
 begin
@@ -302,7 +302,7 @@ create or replace function public.capture_top_rank_snapshot()
 returns integer
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 set work_mem = '8MB'
 as $$
 declare
@@ -338,7 +338,7 @@ returns table (
 language plpgsql
 stable
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 set work_mem = '8MB'
 as $$
 declare this_week date := date_trunc('week', now() at time zone 'UTC')::date;
