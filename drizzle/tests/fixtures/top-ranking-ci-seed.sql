@@ -26,6 +26,11 @@ select (substr(md5((p.username||':'||n)::text),1,8)||'-'||substr(md5((p.username
 from public.profiles p
 cross join generate_series(1,20) n;
 
+-- A deliberately spectacular unverified lift must never enter TOP.
+insert into public.lifts(id,user_id,exercise,weight_kg,reps,lifted_on,video_path,status)
+select '00000000-0000-4000-a000-000000000001'::uuid, id, 'bench', 9999, 1, date '2026-01-01', null, 'PENDING'
+from public.profiles where username = 'lifter_1';
+
 ANALYZE public.profiles;
 ANALYZE public.crews;
 ANALYZE public.crew_members;
