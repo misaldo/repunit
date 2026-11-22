@@ -262,6 +262,19 @@ function Boards() {
       : crewRows.length === 0 ? <div className="rounded-2xl border border-dashed border-border p-8 text-center"><Users className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">No Crew results yet</p><p className="mt-1 text-sm text-muted-foreground">Create or join a Crew to compete.</p><Button asChild variant="hero" className="mt-4"><Link to="/crews">Explore Crews</Link></Button></div>
       : <>
         {ownCrew && <div className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"><span className="text-xs font-black uppercase tracking-widest text-primary">Your Crew · #{ownCrew.rank_position}</span><Crown className="h-4 w-4 text-primary"/></div>}
+        {crewRows.length >= 3 && <div className="grid grid-cols-3 items-end gap-2">
+          {[crewRows[1], crewRows[0], crewRows[2]].map((crew, index) => {
+            const place = index === 1 ? 1 : index === 0 ? 2 : 3;
+            return <Link key={crew.crew_id} to="/crews/$id" params={{id:crew.crew_id}}
+              className={cn("flex min-w-0 flex-col items-center rounded-xl border border-border bg-card p-3 text-center transition hover:-translate-y-1 hover:border-primary/50", place === 1 && "min-h-36 border-primary/40 bg-primary/[0.08]")}>
+              <span className="font-stat text-2xl">{place === 1 ? <Crown className="mx-auto h-5 w-5 text-primary"/> : `#${place}`}</span>
+              <span className="mt-2 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-elevated text-xl" style={{borderColor:crew.accent_color ?? undefined}}>{crew.emblem || "🏋️"}</span>
+              <b className="mt-2 w-full truncate text-[10px] font-black uppercase">{crew.name}</b>
+              <span className="font-stat mt-1 text-lg">{Math.round(Number(crew.score)).toLocaleString()}</span>
+              <span className="text-[9px] uppercase text-muted-foreground">kg total</span>
+            </Link>;
+          })}
+        </div>}
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {crewRows.map((crew) => <Link key={crew.crew_id} to="/crews/$id" params={{id:crew.crew_id}}
             className={cn("grid grid-cols-[2rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 py-3.5 transition last:border-0 hover:bg-elevated", crew.is_mine && "bg-primary/[0.08]")}>
