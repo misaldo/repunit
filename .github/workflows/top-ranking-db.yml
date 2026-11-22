@@ -1,0 +1,61 @@
+name: TOP database migration tests
+
+on:
+  push:
+    branches: [feat/top-database-ranking]
+    paths:
+      - 'drizzle/migrations/0041_top_database_ranking.sql'
+      - 'drizzle/tests/0041_top_database_ranking_*.sql'
+      - 'drizzle/tests/fixtures/top-ranking-ci-schema.sql'
+      - 'drizzle/tests/fixtures/top-ranking-ci-seed.sql'
+      - '.github/workflows/top-ranking-db.yml'
+  pull_request:
+    paths:
+      - 'drizzle/migrations/0041_top_database_ranking.sql'
+      - 'drizzle/tests/0041_top_database_ranking_*.sql'
+      - 'drizzle/tests/fixtures/top-ranking-ci-schema.sql'
+      - 'drizzle/tests/fixtures/top-ranking-ci-seed.sql'
+      - '.github/workflows/top-ranking-db.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: repunit_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d repunit_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create disposable Supabase-compatible schema
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/fixtures/top-ranking-ci-schema.sql
+      - name: Apply TOP migration
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/migrations/0041_top_database_ranking.sql
+      - name: Seed isolated 10k-user and 200k-lift benchmark dataset
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/fixtures/top-ranking-ci-seed.sql
+      - name: Run migration smoke tests
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/0041_top_database_ranking_smoke.sql
+      - name: Run TOP query benchmarks
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d repunit_test -v ON_ERROR_STOP=1 -f drizzle/tests/0041_top_database_ranking_benchmark.sql
