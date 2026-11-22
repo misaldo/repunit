@@ -11,6 +11,9 @@ declare
   row_user_id uuid;
   result_count integer := 0;
   my_rank jsonb;
+  total_count integer;
+  expected_total integer;
+  my_country char(2);
 begin
   select id into test_user from public.profiles order by id limit 1;
   if test_user is null then
@@ -56,6 +59,37 @@ begin
     select 1 from public.get_top_lifters('total', 'all', 'global', 100, null) t
     where t.lift_id is not null
   ) then raise exception 'Total ranking must not claim a single lift id'; end if;
+
+  select count(*) into total_count
+  from public.get_top_lifters('total', 'all', 'global', 10000, null);
+  select count(*) into expected_total
+  from (
+    select user_id from public.lifts
+    where status = 'VERIFIED' and exercise::text in ('bench','squat','deadlift')
+    group by user_id having count(distinct exercise) = 3
+  ) eligible;
+  if total_count <> expected_total then
+    raise exception 'Total must include exactly users with all three verified lifts (expected %, got %)', expected_total, total_count;
+  end if;
+
+  -- A user opting out disappears from global TOP, while their data remains stored.
+  perform public.set_top_opt_out(true);
+  if exists (
+    select 1 from public.get_top_lifters('bench', 'all', 'global', 10000, null) t
+    where t.user_id = test_user
+  ) then raise exception 'Opted-out user is still visible in global TOP'; end if;
+  perform public.set_top_opt_out(false);
+  if not exists (
+    select 1 from public.get_top_lifters('bench', 'all', 'global', 10000, null) t
+    where t.user_id = test_user
+  ) then raise exception 'Restored user did not return to global TOP'; end if;
+
+  select country_code into my_country from public.profiles where id = test_user;
+  if my_country is not null and exists (
+    select 1 from public.get_top_lifters('bench', 'all', 'country', 10000, null) t
+    join public.profiles p on p.id = t.user_id
+    where p.country_code <> my_country
+  ) then raise exception 'Country scope returned a user from another country'; end if;
 
   if exists (
     select 1 from public.get_top_crews('bench', 'all', 100) t
