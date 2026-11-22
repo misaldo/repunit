@@ -15,6 +15,7 @@ create index if not exists lifts_verified_exercise_date_rank_idx
 
 create index if not exists lifts_verified_user_exercise_rank_idx
   on public.lifts (user_id, exercise, weight_kg desc, reps desc, lifted_on asc)
+  include (id, video_path)
   where status = 'VERIFIED';
 
 create index if not exists profiles_country_top_idx
