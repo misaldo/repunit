@@ -141,7 +141,7 @@ function Boards() {
     },
   });
   const changeTopPrivacy = async (hidden: boolean) => {
-    const { error } = await (supabase as any).rpc("set_top_opt_out", { _opt_out: hidden });
+    const { error } = await topRpc<null>("set_top_opt_out", { _opt_out: hidden });
     if (error) {
       toast.error("Could not update TOP privacy");
       return;
