@@ -155,46 +155,34 @@ set search_path = public, pg_temp
 set work_mem = '8MB'
 as $$
 declare
-  my_row record;
-  around_rows jsonb;
-  all_rows public.get_top_lifters%rowtype;
+  result_payload jsonb;
 begin
   if auth.uid() is null then raise exception 'Sign in to view your rank'; end if;
 
-  -- Materialize one ranking scan and reuse it for the user's row, neighbors and gap.
   with ranking as materialized (
     select * from public.get_top_lifters(_lift, _period, _scope, 10000, null)
   )
-  select r.rank_position, r.user_id, r.weight_kg
-    into my_row
-  from ranking r
-  where r.user_id = auth.uid()
-  limit 1;
-
-  if my_row.user_id is null then
-    return jsonb_build_object('rank', null, 'value', null, 'rows', '[]'::jsonb, 'gap_kg', null);
-  end if;
-
-  with ranking as materialized (
-    select * from public.get_top_lifters(_lift, _period, _scope, 10000, null)
-  )
-  select coalesce(jsonb_agg(to_jsonb(x) order by x.rank_position), '[]'::jsonb)
-    into around_rows
-  from (
-    select * from ranking
-    where rank_position between greatest(1, my_row.rank_position - 2) and my_row.rank_position + 2
-  ) x;
-
-  return jsonb_build_object(
-    'rank', my_row.rank_position,
-    'value', my_row.weight_kg,
-    'rows', around_rows,
-    'gap_kg', (
-      select greatest(0, above.weight_kg - my_row.weight_kg)
-      from public.get_top_lifters(_lift, _period, _scope, 10000, null) above
-      where above.rank_position = my_row.rank_position - 1
+  select coalesce((
+    select jsonb_build_object(
+      'rank', me.rank_position,
+      'value', me.weight_kg,
+      'rows', coalesce((
+        select jsonb_agg(to_jsonb(neighbor) order by neighbor.rank_position)
+        from ranking neighbor
+        where neighbor.rank_position between greatest(1, me.rank_position - 2) and me.rank_position + 2
+      ), '[]'::jsonb),
+      'gap_kg', (
+        select greatest(0, above.weight_kg - me.weight_kg)
+        from ranking above
+        where above.rank_position = me.rank_position - 1
+      )
     )
-  );
+    from ranking me
+    where me.user_id = auth.uid()
+  ), jsonb_build_object('rank', null, 'value', null, 'rows', '[]'::jsonb, 'gap_kg', null))
+  into result_payload;
+
+  return result_payload;
 end;
 $$;
 
