@@ -10,11 +10,12 @@ permissions:
 
 jobs:
   app:
+    if: github.event_name == 'push' || github.head_ref == 'feat/top-database-ranking'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feat/top-database-ranking
+          ref: ${{ github.head_ref || github.ref }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -32,7 +33,7 @@ jobs:
           if ! git diff --quiet; then
             git add src/routes/leaderboards.tsx src/components/leaderboard-list.tsx
             git commit -m "style(top): format and lint ranking UI"
-            git push origin HEAD:feat/top-database-ranking
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
           fi
       - run: npm run typecheck
       - name: Run repository lint baseline
