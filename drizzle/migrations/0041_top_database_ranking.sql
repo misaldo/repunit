@@ -103,7 +103,7 @@ begin
   ), values_by_user as (
     select b.user_id,
       case when _lift = 'total' then sum(b.weight_kg) else max(b.weight_kg) end as score,
-      case when _lift = 'total' then sum(b.reps)::integer
+      case when _lift = 'total' then 1::integer
            else (array_agg(b.reps order by b.weight_kg desc, b.reps desc, b.lifted_on asc))[1] end as score_reps,
       case when _lift = 'total' then max(b.lifted_on)
            else (array_agg(b.lifted_on order by b.weight_kg desc, b.reps desc, b.lifted_on asc))[1] end as achieved_on,
