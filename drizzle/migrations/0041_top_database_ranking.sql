@@ -162,7 +162,7 @@ begin
     into around_rows
   from (
     select *
-    from public.get_top_lifters(_lift, _period, _scope, 100, null) t
+    from public.get_top_lifters(_lift, _period, _scope, 10000, null) t
     where t.rank_position between greatest(1, my_row.rank_position - 2) and my_row.rank_position + 2
   ) x;
 
@@ -172,7 +172,7 @@ begin
     'rows', around_rows,
     'gap_kg', (
       select greatest(0, above.weight_kg - my_row.weight_kg)
-      from public.get_top_lifters(_lift, _period, _scope, 100, null) above
+      from public.get_top_lifters(_lift, _period, _scope, 10000, null) above
       where above.rank_position = my_row.rank_position - 1
     )
   );
@@ -214,7 +214,12 @@ begin
       max(l.weight_kg) as best_weight
     from public.crew_members cm
     join public.lifts l on l.user_id = cm.user_id
-    where l.status = 'VERIFIED'
+    join public.profiles member_profile on member_profile.id = cm.user_id
+    where (not member_profile.top_opt_out or exists (
+        select 1 from public.crew_members viewer_members
+        where viewer_members.crew_id = cm.crew_id and viewer_members.user_id = auth.uid()
+      ))
+      and l.status = 'VERIFIED'
       and l.exercise::text in ('bench','squat','deadlift')
       and (period_start is null or l.lifted_on >= period_start)
     group by cm.crew_id, l.user_id, l.exercise
@@ -252,6 +257,19 @@ begin
   limit greatest(1, least(coalesce(_limit,50),100));
 end;
 $$;
+
+create or replace function public.set_top_opt_out(_opt_out boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $
+begin
+  if auth.uid() is null then raise exception 'Sign in to change TOP privacy'; end if;
+  update public.profiles set top_opt_out = coalesce(_opt_out, false)
+  where id = auth.uid();
+end;
+$;
 
 create table if not exists public.top_rank_snapshots (
   id bigint generated always as identity primary key,
@@ -337,11 +355,13 @@ revoke all on function public.get_top_lifters(text,text,text,integer,jsonb) from
 revoke all on function public.get_my_rank(text,text,text) from public, anon;
 revoke all on function public.get_top_crews(text,text,integer) from public, anon;
 revoke all on function public.get_rank_movers(text,integer) from public, anon;
+revoke all on function public.set_top_opt_out(boolean) from public, anon;
 revoke all on function public.capture_top_rank_snapshot() from public, anon, authenticated;
 grant execute on function public.get_top_lifters(text,text,text,integer,jsonb) to anon, authenticated;
 grant execute on function public.get_my_rank(text,text,text) to authenticated;
 grant execute on function public.get_top_crews(text,text,integer) to authenticated;
 grant execute on function public.get_rank_movers(text,integer) to authenticated;
+grant execute on function public.set_top_opt_out(boolean) to authenticated;
 grant execute on function public.capture_top_rank_snapshot() to service_role;
 
 -- Schedule the weekly snapshot when pg_cron is already enabled in Supabase.
