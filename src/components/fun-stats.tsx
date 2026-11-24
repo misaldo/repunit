@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { Sparkles, Scale } from "lucide-react";
 
 const COMPARISONS = [
-  { name: "adult elephants", kg: 5000, emoji: "🐘" },
-  { name: "average cars", kg: 1500, emoji: "🚗" },
-  { name: "city buses", kg: 12000, emoji: "🚌" },
-  { name: "grand pianos", kg: 450, emoji: "🎹" },
-  { name: "blue whales", kg: 140000, emoji: "🐋" },
-  { name: "motorcycles", kg: 200, emoji: "🏍️" },
-  { name: "small delivery vans", kg: 2500, emoji: "🚐" },
-  { name: "adult giraffes", kg: 1200, emoji: "🦒" },
+  { name: "adult elephants", kg: 5000 },
+  { name: "average cars", kg: 1500 },
+  { name: "city buses", kg: 12000 },
+  { name: "grand pianos", kg: 450 },
+  { name: "blue whales", kg: 140000 },
+  { name: "motorcycles", kg: 200 },
+  { name: "small delivery vans", kg: 2500 },
+  { name: "adult giraffes", kg: 1200 },
 ];
 
 export function formatLiftVolume(kg: number) {
@@ -53,7 +53,7 @@ export function FunStatsCard({ kg, headline = "THE NUMBERS HIT DIFFERENT", prefi
         <p className="mt-1 text-sm text-muted-foreground">{prefix} moved</p>
         <p className="font-stat mt-0.5 text-3xl uppercase sm:text-4xl">{formatLiftVolume(kg)}</p>
         <div className="mt-3 flex items-center gap-2 rounded-xl border border-border/70 bg-background/70 px-3 py-2.5">
-          <span className="text-2xl" aria-hidden="true">{comparison.emoji}</span>
+          <Scale className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <p className="text-sm">That’s roughly the weight of <strong className="text-foreground">{comparison.label}</strong>.</p>
         </div>
       </div>
