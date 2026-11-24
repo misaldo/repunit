@@ -188,45 +188,66 @@ function Profile() {
   async function toggleFollow() {
     if (!user || !data || busy) return;
     setBusy(true);
-    const result = social?.isFollowing
-      ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.id)
-      : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.id });
-    if (result.error) toast.error("Could not update this follow. Check your connection and try again.");
-    else {
+    try {
+      const result = social?.isFollowing
+        ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.id)
+        : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.id });
+      if (result.error) throw result.error;
       await Promise.all([refetchSocial(), qc.invalidateQueries({ queryKey: ["profile-social"] })]);
       toast.success(social?.isFollowing ? "Unfollowed" : "Following");
+    } catch {
+      toast.error("Could not update this follow. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function sendFriendRequest() {
     if (!user || !data || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.id });
-    if (error) toast.error(error.message?.includes("already sent") ? "This person already sent you a request. Accept it below." : "Could not send friend request. Please try again.");
-    else toast.success("Friend request sent.");
-    await refetchSocial();
-    setFriendBusy(false);
+    try {
+      const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.id });
+      if (error) {
+        toast.error(error.message?.includes("already sent") ? "This person already sent you a request. Accept it below." : "Could not send friend request. Please try again.");
+        return;
+      }
+      toast.success("Friend request sent.");
+      await refetchSocial();
+    } catch {
+      toast.error("Could not send friend request. Please try again.");
+    } finally {
+      setFriendBusy(false);
+    }
   }
 
   async function respondFriendRequest(accept: boolean) {
     if (!user || !social?.incomingRequestId || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("respond_friend_request", { _request: social.incomingRequestId, _accept: accept });
-    if (error) toast.error("Could not update this friend request. Please try again.");
-    else toast.success(accept ? "You're now friends." : "Friend request ignored.");
-    await refetchSocial();
-    setFriendBusy(false);
+    try {
+      const { error } = await (supabase as any).rpc("respond_friend_request", { _request: social.incomingRequestId, _accept: accept });
+      if (error) throw error;
+      toast.success(accept ? "You're now friends." : "Friend request ignored.");
+      await refetchSocial();
+    } catch {
+      toast.error("Could not update this friend request. Please try again.");
+    } finally {
+      setFriendBusy(false);
+    }
   }
 
   async function removeFriend() {
     if (!user || !data || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("remove_friend", { _other: data.id });
-    if (error) toast.error("Could not remove this friend. Please try again.");
-    else toast.success("Friend removed.");
-    await refetchSocial();
-    setFriendBusy(false);
+    try {
+      const { error } = await (supabase as any).rpc("remove_friend", { _other: data.id });
+      if (error) throw error;
+      toast.success("Friend removed.");
+      await refetchSocial();
+    } catch {
+      toast.error("Could not remove this friend. Please try again.");
+    } finally {
+      setFriendBusy(false);
+    }
   }
 
   async function sendChallenge() {
