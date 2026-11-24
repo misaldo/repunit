@@ -253,15 +253,22 @@ function Profile() {
   async function sendChallenge() {
     if (!user || !data || !social?.isFriend || challengeBusy) return;
     const target = Number(challengeWeight);
-    if (!Number.isFinite(target) || target <= 0 || target > 600) { toast.error("Enter a target between 0.5 and 600 kg."); return; }
+    if (!Number.isFinite(target) || target < 0.5 || target > 600) { toast.error("Enter a target between 0.5 and 600 kg."); return; }
     setChallengeBusy(true);
-    const { error } = await (supabase as any).from("lifter_challenges").insert({
-      challenger_id: user.id, challenged_id: data.id, exercise: challengeExercise,
-      target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
-    if (error) toast.error("Could not send this challenge. Check your connection and try again.");
-    else { toast.success("Challenge sent. Let the rivalry begin."); setChallengeOpen(false); setChallengeWeight("100"); }
-    setChallengeBusy(false);
+    try {
+      const { error } = await (supabase as any).from("lifter_challenges").insert({
+        challenger_id: user.id, challenged_id: data.id, exercise: challengeExercise,
+        target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      if (error) throw error;
+      toast.success("Challenge sent. Let the rivalry begin.");
+      setChallengeOpen(false);
+      setChallengeWeight("100");
+    } catch {
+      toast.error("Could not send this challenge. Check your connection and try again.");
+    } finally {
+      setChallengeBusy(false);
+    }
   }
 
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
