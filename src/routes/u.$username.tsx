@@ -30,18 +30,31 @@ function Profile() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
+    staleTime: 60_000,
     queryFn: async () => {
-      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username).maybeSingle();
+      const { data: profile, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, username, display_name, bio, avatar_url, created_at")
+        .eq("username", username)
+        .maybeSingle();
       if (error) throw error;
-      if (!p) return null;
-      const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
-        supabase.from("lifts").select("*").eq("user_id", p.id).order("lifted_on", { ascending: false }),
-        supabase.from("posts").select("id, content, created_at").eq("user_id", p.id).order("created_at", { ascending: false }).limit(20),
-      ]);
-      if (liftsError) throw liftsError;
-      // Posts are an optional profile feature. A missing posts table or stricter
-      // preview RLS must never prevent the public profile, lifts or SPLIT loading.
-      return { p, lifts: lifts ?? [], posts: postsError ? [] : (posts ?? []) };
+      return profile;
+    },
+  });
+
+  // Load secondary records separately so they cannot block the profile header.
+  const { data: lifts = [], isLoading: liftsLoading, isError: liftsError, refetch: refetchLifts } = useQuery({
+    queryKey: ["profile-lifts", data?.id],
+    enabled: !!data?.id,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data: records, error } = await supabase
+        .from("lifts")
+        .select("*")
+        .eq("user_id", data!.id)
+        .order("lifted_on", { ascending: false });
+      if (error) throw error;
+      return records ?? [];
     },
   });
 
@@ -233,7 +246,8 @@ function Profile() {
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
   if (isError && !data) return <PageShell><p>Could not load this profile.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
-  const { p, lifts, posts } = data;
+  const p = data;
+  const posts: never[] = [];
   const isOwnProfile = user?.id === p.id;
 
   return (
@@ -279,7 +293,7 @@ function Profile() {
         <div className="mt-5 flex flex-wrap gap-6 border-t border-border pt-4 text-sm">
           <div><strong className="text-foreground">{social?.followers ?? "—"}</strong> <span className="text-muted-foreground">followers</span></div>
           <div><strong className="text-foreground">{social?.following ?? "—"}</strong> <span className="text-muted-foreground">following</span></div>
-          <div><strong className="text-foreground">{lifts.length}</strong> <span className="text-muted-foreground">lift records</span></div>
+          <div><strong className="text-foreground">{liftsLoading ? "…" : lifts.length}</strong> <span className="text-muted-foreground">lift records</span></div>
         </div>
       </section>
 
@@ -297,7 +311,7 @@ function Profile() {
             const best = lifts.filter((l) => l.exercise === e.id && l.status !== "REJECTED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
             return <div key={e.id} className="rounded-xl border border-border bg-card p-4">
               <p className="eyebrow">{e.short}</p>
-              <p className="font-stat mt-2 text-4xl">{best ? Number(best.weight_kg) : "—"}<span className="text-sm text-muted-foreground">{best ? "kg" : ""}</span></p>
+              <p className="font-stat mt-2 text-4xl">{liftsLoading ? "…" : best ? Number(best.weight_kg) : "—"}<span className="text-sm text-muted-foreground">{best && !liftsLoading ? "kg" : ""}</span></p>
               {best && <StatusBadge status={best.status} className="mt-2" />}
             </div>;
           })}
@@ -306,9 +320,9 @@ function Profile() {
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-xl font-bold">Recent lifts</h2>
+          <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-xl font-bold">Recent lifts</h2>{liftsError && <button type="button" onClick={() => void refetchLifts()} className="text-xs font-bold text-primary">Retry</button>}</div>
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
+            {liftsLoading && <li className="p-4 text-sm text-muted-foreground">Loading lifts…</li>}{liftsError && !lifts.length && <li className="p-4 text-sm text-muted-foreground">Lifts could not be loaded. Try again.</li>}{!liftsLoading && !liftsError && lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
             {lifts.slice(0, 10).map((l) => <li key={l.id}><Link to="/records/$id" params={{ id: l.id }} className="flex items-center justify-between gap-3 p-4 hover:bg-elevated">
               <span><span className="font-semibold">{exerciseLabel(l.exercise)}</span><span className="ml-2 text-xs text-muted-foreground">{l.lifted_on}</span></span>
               <span className="flex items-center gap-2"><StatusBadge status={l.status} /><span className="font-stat text-xl">{Number(l.weight_kg)}×{l.reps}</span></span>
