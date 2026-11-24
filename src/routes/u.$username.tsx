@@ -64,36 +64,36 @@ function Profile() {
   }, [isLoading, data]);
 
   const { data: streak = 0 } = useQuery({
-    queryKey: ["profile-streak", data?.p.id], enabled: !!data?.p.id,
+    queryKey: ["profile-streak", data?.id], enabled: !!data?.id,
     queryFn: async () => {
-      const { data: stats, error } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", data!.p.id).maybeSingle();
+      const { data: stats, error } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", data!.id).maybeSingle();
       if (error) throw error;
       return Number(stats?.current_streak ?? 0);
     },
   });
 
   const { data: workoutPlans = [], isLoading: workoutPlansLoading, isError: workoutPlansError, refetch: refetchWorkoutPlans } = useQuery({
-    queryKey: ["profile-workouts", data?.p.id, user?.id === data?.p.id],
-    enabled: !!data?.p.id,
+    queryKey: ["profile-workouts", data?.id, user?.id === data?.id],
+    enabled: !!data?.id,
     queryFn: async () => {
       const { data: plans, error } = await (supabase as any).from("workout_plans")
         .select("id,title,workout_day,visibility,created_at")
-        .eq("user_id", data!.p.id)
+        .eq("user_id", data!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       let isFriend = false;
-      if (user?.id && user.id !== data!.p.id) {
-        const { data: friendStatus, error: friendStatusError } = await (supabase as any).rpc("friendship_status", { _other: data!.p.id });
+      if (user?.id && user.id !== data!.id) {
+        const { data: friendStatus, error: friendStatusError } = await (supabase as any).rpc("friendship_status", { _other: data!.id });
         if (!friendStatusError) isFriend = Boolean(friendStatus?.is_friend);
         else if (friendStatusError.code === "42883" || friendStatusError.code === "PGRST202") {
           const [{ data: outgoing }, { data: incoming }] = await Promise.all([
-            (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.p.id).maybeSingle(),
-            (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.p.id).eq("following_id", user.id).maybeSingle(),
+            (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.id).maybeSingle(),
+            (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.id).eq("following_id", user.id).maybeSingle(),
           ]);
           isFriend = Boolean(outgoing && incoming);
         } else throw friendStatusError;
       }
-      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || (plan.visibility === "followers" && isFriend) || user?.id === data!.p.id);
+      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || (plan.visibility === "followers" && isFriend) || user?.id === data!.id);
     },
   });
 
@@ -147,10 +147,10 @@ function Profile() {
   }
 
   const { data: social, isError: socialError, refetch: refetchSocial } = useQuery({
-    queryKey: ["profile-social", data?.p.id, user?.id],
-    enabled: !!data?.p.id,
+    queryKey: ["profile-social", data?.id, user?.id],
+    enabled: !!data?.id,
     queryFn: async () => {
-      const profileId = data!.p.id;
+      const profileId = data!.id;
       const [{ count: followers, error: followersError }, { count: following, error: followingError }, { data: relation, error: relationError }] = await Promise.all([
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileId),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileId),
@@ -189,8 +189,8 @@ function Profile() {
     if (!user || !data || busy) return;
     setBusy(true);
     const result = social?.isFollowing
-      ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.p.id)
-      : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.p.id });
+      ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.id)
+      : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.id });
     if (result.error) toast.error("Could not update this follow. Check your connection and try again.");
     else {
       await Promise.all([refetchSocial(), qc.invalidateQueries({ queryKey: ["profile-social"] })]);
@@ -202,7 +202,7 @@ function Profile() {
   async function sendFriendRequest() {
     if (!user || !data || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.p.id });
+    const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.id });
     if (error) toast.error(error.message?.includes("already sent") ? "This person already sent you a request. Accept it below." : "Could not send friend request. Please try again.");
     else toast.success("Friend request sent.");
     await refetchSocial();
@@ -222,7 +222,7 @@ function Profile() {
   async function removeFriend() {
     if (!user || !data || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("remove_friend", { _other: data.p.id });
+    const { error } = await (supabase as any).rpc("remove_friend", { _other: data.id });
     if (error) toast.error("Could not remove this friend. Please try again.");
     else toast.success("Friend removed.");
     await refetchSocial();
@@ -235,7 +235,7 @@ function Profile() {
     if (!Number.isFinite(target) || target <= 0 || target > 600) { toast.error("Enter a target between 0.5 and 600 kg."); return; }
     setChallengeBusy(true);
     const { error } = await (supabase as any).from("lifter_challenges").insert({
-      challenger_id: user.id, challenged_id: data.p.id, exercise: challengeExercise,
+      challenger_id: user.id, challenged_id: data.id, exercise: challengeExercise,
       target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
     if (error) toast.error("Could not send this challenge. Check your connection and try again.");
