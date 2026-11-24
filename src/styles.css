@@ -156,6 +156,8 @@
 @utility font-stat {
   font-family: var(--font-stat);
   font-weight: 800;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
   letter-spacing: -0.01em;
   line-height: 0.9;
 }
