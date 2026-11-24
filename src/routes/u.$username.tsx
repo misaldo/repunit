@@ -30,18 +30,31 @@ function Profile() {
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["public-profile", username],
+    staleTime: 60_000,
     queryFn: async () => {
-      const { data: p, error } = await (supabase as any).from("profiles").select("id, username, display_name, bio, avatar_url, created_at").eq("username", username).maybeSingle();
+      const { data: profile, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, username, display_name, bio, avatar_url, created_at")
+        .eq("username", username)
+        .maybeSingle();
       if (error) throw error;
-      if (!p) return null;
-      const [{ data: lifts, error: liftsError }, { data: posts, error: postsError }] = await Promise.all([
-        supabase.from("lifts").select("*").eq("user_id", p.id).order("lifted_on", { ascending: false }),
-        supabase.from("posts").select("id, content, created_at").eq("user_id", p.id).order("created_at", { ascending: false }).limit(20),
-      ]);
-      if (liftsError) throw liftsError;
-      // Posts are an optional profile feature. A missing posts table or stricter
-      // preview RLS must never prevent the public profile, lifts or SPLIT loading.
-      return { p, lifts: lifts ?? [], posts: postsError ? [] : (posts ?? []) };
+      return profile;
+    },
+  });
+
+  // Load secondary records separately so they cannot block the profile header.
+  const { data: lifts = [], isLoading: liftsLoading, isError: liftsError, refetch: refetchLifts } = useQuery({
+    queryKey: ["profile-lifts", data?.id],
+    enabled: !!data?.id,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data: records, error } = await supabase
+        .from("lifts")
+        .select("*")
+        .eq("user_id", data!.id)
+        .order("lifted_on", { ascending: false });
+      if (error) throw error;
+      return records ?? [];
     },
   });
 
@@ -51,36 +64,36 @@ function Profile() {
   }, [isLoading, data]);
 
   const { data: streak = 0 } = useQuery({
-    queryKey: ["profile-streak", data?.p.id], enabled: !!data?.p.id,
+    queryKey: ["profile-streak", data?.id], enabled: !!data?.id,
     queryFn: async () => {
-      const { data: stats, error } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", data!.p.id).maybeSingle();
+      const { data: stats, error } = await (supabase as any).from("user_progress").select("current_streak").eq("user_id", data!.id).maybeSingle();
       if (error) throw error;
       return Number(stats?.current_streak ?? 0);
     },
   });
 
   const { data: workoutPlans = [], isLoading: workoutPlansLoading, isError: workoutPlansError, refetch: refetchWorkoutPlans } = useQuery({
-    queryKey: ["profile-workouts", data?.p.id, user?.id === data?.p.id],
-    enabled: !!data?.p.id,
+    queryKey: ["profile-workouts", data?.id, user?.id === data?.id],
+    enabled: !!data?.id,
     queryFn: async () => {
       const { data: plans, error } = await (supabase as any).from("workout_plans")
         .select("id,title,workout_day,visibility,created_at")
-        .eq("user_id", data!.p.id)
+        .eq("user_id", data!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       let isFriend = false;
-      if (user?.id && user.id !== data!.p.id) {
-        const { data: friendStatus, error: friendStatusError } = await (supabase as any).rpc("friendship_status", { _other: data!.p.id });
+      if (user?.id && user.id !== data!.id) {
+        const { data: friendStatus, error: friendStatusError } = await (supabase as any).rpc("friendship_status", { _other: data!.id });
         if (!friendStatusError) isFriend = Boolean(friendStatus?.is_friend);
         else if (friendStatusError.code === "42883" || friendStatusError.code === "PGRST202") {
           const [{ data: outgoing }, { data: incoming }] = await Promise.all([
-            (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.p.id).maybeSingle(),
-            (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.p.id).eq("following_id", user.id).maybeSingle(),
+            (supabase as any).from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", data!.id).maybeSingle(),
+            (supabase as any).from("follows").select("follower_id").eq("follower_id", data!.id).eq("following_id", user.id).maybeSingle(),
           ]);
           isFriend = Boolean(outgoing && incoming);
         } else throw friendStatusError;
       }
-      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || (plan.visibility === "followers" && isFriend) || user?.id === data!.p.id);
+      return (plans ?? []).filter((plan: { visibility: string }) => plan.visibility === "public" || (plan.visibility === "followers" && isFriend) || user?.id === data!.id);
     },
   });
 
@@ -134,10 +147,10 @@ function Profile() {
   }
 
   const { data: social, isError: socialError, refetch: refetchSocial } = useQuery({
-    queryKey: ["profile-social", data?.p.id, user?.id],
-    enabled: !!data?.p.id,
+    queryKey: ["profile-social", data?.id, user?.id],
+    enabled: !!data?.id,
     queryFn: async () => {
-      const profileId = data!.p.id;
+      const profileId = data!.id;
       const [{ count: followers, error: followersError }, { count: following, error: followingError }, { data: relation, error: relationError }] = await Promise.all([
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", profileId),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", profileId),
@@ -175,65 +188,94 @@ function Profile() {
   async function toggleFollow() {
     if (!user || !data || busy) return;
     setBusy(true);
-    const result = social?.isFollowing
-      ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.p.id)
-      : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.p.id });
-    if (result.error) toast.error("Could not update this follow. Check your connection and try again.");
-    else {
+    try {
+      const result = social?.isFollowing
+        ? await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", data.id)
+        : await supabase.from("follows").insert({ follower_id: user.id, following_id: data.id });
+      if (result.error) throw result.error;
       await Promise.all([refetchSocial(), qc.invalidateQueries({ queryKey: ["profile-social"] })]);
       toast.success(social?.isFollowing ? "Unfollowed" : "Following");
+    } catch {
+      toast.error("Could not update this follow. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function sendFriendRequest() {
     if (!user || !data || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.p.id });
-    if (error) toast.error(error.message?.includes("already sent") ? "This person already sent you a request. Accept it below." : "Could not send friend request. Please try again.");
-    else toast.success("Friend request sent.");
-    await refetchSocial();
-    setFriendBusy(false);
+    try {
+      const { error } = await (supabase as any).rpc("send_friend_request", { _recipient: data.id });
+      if (error) {
+        toast.error(error.message?.includes("already sent") ? "This person already sent you a request. Accept it below." : "Could not send friend request. Please try again.");
+        return;
+      }
+      toast.success("Friend request sent.");
+      await refetchSocial();
+    } catch {
+      toast.error("Could not send friend request. Please try again.");
+    } finally {
+      setFriendBusy(false);
+    }
   }
 
   async function respondFriendRequest(accept: boolean) {
     if (!user || !social?.incomingRequestId || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("respond_friend_request", { _request: social.incomingRequestId, _accept: accept });
-    if (error) toast.error("Could not update this friend request. Please try again.");
-    else toast.success(accept ? "You're now friends." : "Friend request ignored.");
-    await refetchSocial();
-    setFriendBusy(false);
+    try {
+      const { error } = await (supabase as any).rpc("respond_friend_request", { _request: social.incomingRequestId, _accept: accept });
+      if (error) throw error;
+      toast.success(accept ? "You're now friends." : "Friend request ignored.");
+      await refetchSocial();
+    } catch {
+      toast.error("Could not update this friend request. Please try again.");
+    } finally {
+      setFriendBusy(false);
+    }
   }
 
   async function removeFriend() {
     if (!user || !data || friendBusy) return;
     setFriendBusy(true);
-    const { error } = await (supabase as any).rpc("remove_friend", { _other: data.p.id });
-    if (error) toast.error("Could not remove this friend. Please try again.");
-    else toast.success("Friend removed.");
-    await refetchSocial();
-    setFriendBusy(false);
+    try {
+      const { error } = await (supabase as any).rpc("remove_friend", { _other: data.id });
+      if (error) throw error;
+      toast.success("Friend removed.");
+      await refetchSocial();
+    } catch {
+      toast.error("Could not remove this friend. Please try again.");
+    } finally {
+      setFriendBusy(false);
+    }
   }
 
   async function sendChallenge() {
     if (!user || !data || !social?.isFriend || challengeBusy) return;
     const target = Number(challengeWeight);
-    if (!Number.isFinite(target) || target <= 0 || target > 600) { toast.error("Enter a target between 0.5 and 600 kg."); return; }
+    if (!Number.isFinite(target) || target < 0.5 || target > 600) { toast.error("Enter a target between 0.5 and 600 kg."); return; }
     setChallengeBusy(true);
-    const { error } = await (supabase as any).from("lifter_challenges").insert({
-      challenger_id: user.id, challenged_id: data.p.id, exercise: challengeExercise,
-      target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
-    if (error) toast.error("Could not send this challenge. Check your connection and try again.");
-    else { toast.success("Challenge sent. Let the rivalry begin."); setChallengeOpen(false); setChallengeWeight("100"); }
-    setChallengeBusy(false);
+    try {
+      const { error } = await (supabase as any).from("lifter_challenges").insert({
+        challenger_id: user.id, challenged_id: data.id, exercise: challengeExercise,
+        target_weight_kg: target, due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      if (error) throw error;
+      toast.success("Challenge sent. Let the rivalry begin.");
+      setChallengeOpen(false);
+      setChallengeWeight("100");
+    } catch {
+      toast.error("Could not send this challenge. Check your connection and try again.");
+    } finally {
+      setChallengeBusy(false);
+    }
   }
 
   if (isLoading) return <PageShell><p className="text-muted-foreground">Loading…</p></PageShell>;
   if (isError && !data) return <PageShell><p>Could not load this profile.</p><Button variant="line" className="mt-4" onClick={() => refetch()}>Try again</Button></PageShell>;
   if (!data) return <PageShell><p>Lifter not found.</p></PageShell>;
-  const { p, lifts, posts } = data;
+  const p = data;
+  const posts: never[] = [];
   const isOwnProfile = user?.id === p.id;
 
   return (
@@ -279,7 +321,7 @@ function Profile() {
         <div className="mt-5 flex flex-wrap gap-6 border-t border-border pt-4 text-sm">
           <div><strong className="text-foreground">{social?.followers ?? "—"}</strong> <span className="text-muted-foreground">followers</span></div>
           <div><strong className="text-foreground">{social?.following ?? "—"}</strong> <span className="text-muted-foreground">following</span></div>
-          <div><strong className="text-foreground">{lifts.length}</strong> <span className="text-muted-foreground">lift records</span></div>
+          <div><strong className="text-foreground">{liftsLoading ? "…" : lifts.length}</strong> <span className="text-muted-foreground">lift records</span></div>
         </div>
       </section>
 
@@ -294,10 +336,10 @@ function Profile() {
         <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Personal records</h2></div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {EXERCISES.filter((e) => e.id !== "pullup").map((e) => {
-            const best = lifts.filter((l) => l.exercise === e.id && l.status !== "REJECTED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
+            const best = lifts.filter((l) => l.exercise === e.id && l.status === "VERIFIED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
             return <div key={e.id} className="rounded-xl border border-border bg-card p-4">
               <p className="eyebrow">{e.short}</p>
-              <p className="font-stat mt-2 text-4xl">{best ? Number(best.weight_kg) : "—"}<span className="text-sm text-muted-foreground">{best ? "kg" : ""}</span></p>
+              <p className="font-stat mt-2 text-4xl">{liftsLoading ? "…" : best ? Number(best.weight_kg) : "—"}<span className="text-sm text-muted-foreground">{best && !liftsLoading ? "kg" : ""}</span></p>
               {best && <StatusBadge status={best.status} className="mt-2" />}
             </div>;
           })}
@@ -306,9 +348,9 @@ function Profile() {
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-xl font-bold">Recent lifts</h2>
+          <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-xl font-bold">Recent lifts</h2>{liftsError && <button type="button" onClick={() => void refetchLifts()} className="text-xs font-bold text-primary">Retry</button>}</div>
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
+            {liftsLoading && <li className="p-4 text-sm text-muted-foreground">Loading lifts…</li>}{liftsError && !lifts.length && <li className="p-4 text-sm text-muted-foreground">Lifts could not be loaded. Try again.</li>}{!liftsLoading && !liftsError && lifts.length === 0 && <li className="p-4 text-sm text-muted-foreground">No lifts yet.</li>}
             {lifts.slice(0, 10).map((l) => <li key={l.id}><Link to="/records/$id" params={{ id: l.id }} className="flex items-center justify-between gap-3 p-4 hover:bg-elevated">
               <span><span className="font-semibold">{exerciseLabel(l.exercise)}</span><span className="ml-2 text-xs text-muted-foreground">{l.lifted_on}</span></span>
               <span className="flex items-center gap-2"><StatusBadge status={l.status} /><span className="font-stat text-xl">{Number(l.weight_kg)}×{l.reps}</span></span>
