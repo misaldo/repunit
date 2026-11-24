@@ -336,7 +336,7 @@ function Profile() {
         <div className="mb-4 flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold">Personal records</h2></div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {EXERCISES.filter((e) => e.id !== "pullup").map((e) => {
-            const best = lifts.filter((l) => l.exercise === e.id && l.status !== "REJECTED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
+            const best = lifts.filter((l) => l.exercise === e.id && l.status === "VERIFIED").sort((a, b) => Number(b.weight_kg) - Number(a.weight_kg))[0];
             return <div key={e.id} className="rounded-xl border border-border bg-card p-4">
               <p className="eyebrow">{e.short}</p>
               <p className="font-stat mt-2 text-4xl">{liftsLoading ? "…" : best ? Number(best.weight_kg) : "—"}<span className="text-sm text-muted-foreground">{best && !liftsLoading ? "kg" : ""}</span></p>
