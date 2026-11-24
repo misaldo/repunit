@@ -107,28 +107,12 @@ function useCrewRanks(exercise:Exercise|"total",period:Period,region:Region,enab
 }
 
 function Boards() {
-  const [tab,setTab]=useState<"lifters"|"crews"|"friends">("lifters");
+  const [tab,setTab]=useState<"lifters"|"crews">("lifters");
   const [ex,setEx]=useState<Exercise|"total">("bench");
   const [period,setPeriod]=useState<Period>("all");
   const {user}=useUser();
   const since=periodStart(period);
-  const audience=useQuery({
-    queryKey:["leaderboard-audience","friends",user?.id],
-    enabled:!!user?.id&&tab==="friends",
-    staleTime:30000,
-    retry:2,
-    queryFn:async()=>{
-      const {data:friendships,error}=await (supabase as any).from("friend_requests")
-        .select("requester_id,recipient_id")
-        .eq("status","accepted")
-        .or(`requester_id.eq.${user!.id},recipient_id.eq.${user!.id}`);
-      if(error)throw error;
-      const friendIds=(friendships??[]).map((row:any)=>row.requester_id===user!.id?row.recipient_id:row.requester_id);
-      return [...new Set([user!.id,...friendIds])];
-    },
-  });
-  const friendIds=tab==="friends"?(audience.data??[]):undefined;
-  const {data:rows=[],isLoading,isError,isFetching,refetch}=useLeaderboard(ex,null,since,friendIds);
+  const {data:rows=[],isLoading,isError,isFetching,refetch}=useLeaderboard(ex,null,since);
   const myRow=user?.id?rows.find((row:any)=>row.user_id===user.id):null;
   const myRank=myRow?(myRow.rank_position??rows.findIndex((row:any)=>row.user_id===user.id)+1):0;
   const {data:crewData,isLoading:crewsLoading,isError:crewsError,isFetching:crewsFetching,refetch:refetchCrews}=useCrewRanks(ex,period,"global",!!user?.id);
@@ -138,7 +122,7 @@ function Boards() {
   const chip=(on:boolean)=>cn("min-h-10 shrink-0 rounded-xl border px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all hover:border-primary/50",on?"border-primary bg-primary/15 text-foreground":"border-border bg-card text-muted-foreground");
   const podiumColors=["border-yellow-400/50 bg-yellow-400/10 text-yellow-300","border-slate-300/40 bg-slate-300/10 text-slate-200","border-orange-500/40 bg-orange-500/10 text-orange-300"];
   const skeleton=<div className="space-y-3" aria-label="Loading leaderboard">{[0,1,2,3,4].map((n)=><div key={n} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"><div className="h-10 w-10 animate-pulse rounded-full bg-muted"/><div className="flex-1 space-y-2"><div className="h-3 w-1/3 animate-pulse rounded bg-muted"/><div className="h-2 w-1/2 animate-pulse rounded bg-muted"/></div><div className="h-6 w-16 animate-pulse rounded bg-muted"/></div>)}</div>;
-  const tabButton=(value:"lifters"|"crews"|"friends",label:string,Icon:any)=><button key={value} type="button" onClick={()=>setTab(value)} aria-pressed={tab===value} className={cn("flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-xs font-black uppercase tracking-wide transition",tab===value?"bg-primary text-primary-foreground shadow-glow":"text-muted-foreground hover:bg-elevated hover:text-foreground")}><Icon className="h-4 w-4"/>{label}</button>;
+  const tabButton=(value:"lifters"|"crews",label:string,Icon:any)=><button key={value} type="button" onClick={()=>setTab(value)} aria-pressed={tab===value} className={cn("flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-xs font-black uppercase tracking-wide transition",tab===value?"bg-primary text-primary-foreground shadow-glow":"text-muted-foreground hover:bg-elevated hover:text-foreground")}><Icon className="h-4 w-4"/>{label}</button>;
   return <PageShell>
     <div className="mb-3"><LiveBattleCard compact/></div>
     <Link to="/battles" className="mb-6 flex min-h-12 items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-black uppercase tracking-wide text-foreground transition hover:border-primary/50 hover:bg-elevated">
@@ -146,8 +130,8 @@ function Boards() {
       <span className="text-primary">→</span>
     </Link>
     <p className="eyebrow">REPUNIT GLOBAL STRENGTH</p>
-    <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="font-stat mt-1 text-5xl uppercase sm:text-6xl">TOP<span className="text-primary">.</span></h1>{tab==="crews"?<Button asChild variant="hero" className="min-h-11"><Link to="/crews/new">Create crew</Link></Button>:tab==="friends"?<Button asChild variant="hero" className="min-h-11"><Link to="/people">Find lifters</Link></Button>:<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
-    <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card p-1">{tabButton("lifters","Lifters",Trophy)}{tabButton("crews","Crews",Users)}{tabButton("friends","Friends",Users)}</div>
+    <div className="flex flex-wrap items-end justify-between gap-3"><h1 className="font-stat mt-1 text-5xl uppercase sm:text-6xl">TOP<span className="text-primary">.</span></h1>{tab==="crews"?<Button asChild variant="hero" className="min-h-11"><Link to="/crews/new">Create crew</Link></Button>:<Button asChild variant="hero" className="min-h-11"><Link to="/records/new">Log a lift</Link></Button>}</div>
+    <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card p-1">{tabButton("lifters","Lifters",Trophy)}{tabButton("crews","Crews",Users)}</div>
     <div className="mt-5 grid grid-cols-4 gap-2">
       {(["bench","squat","deadlift","total"] as const).map((value)=> <button key={value} type="button" aria-pressed={ex===value} onClick={()=>setEx(value)} className={chip(ex===value)}>{value==="total"?"Total":value[0].toUpperCase()+value.slice(1)}</button>)}
     </div>
@@ -164,12 +148,9 @@ function Boards() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card">{crewRows.map((crew,i)=>{const own=crewData?.myCrewIds.includes(crew.id);return <Link key={crew.id} to="/crews/$id" params={{id:crew.id}} className={cn("grid grid-cols-[2rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-3 py-3.5 transition last:border-0 hover:bg-elevated",own&&"bg-primary/[0.08]")}><span className={cn("font-stat text-xl",own?"text-primary":"text-muted-foreground")}>{i+1}</span><span className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-elevated text-xl" style={{borderColor:crew.accent_color??undefined}}>{crew.emblem||"🏋️"}</span><span className="min-w-0"><b className="block truncate text-xs font-black uppercase">{crew.name}{own&&<span className="ml-1.5 text-[8px] text-primary">YOU</span>}</b><span className="mt-1 flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground"><span>{crew.members} members</span><span className="inline-flex items-center gap-1"><Swords className="h-3 w-3"/>{crew.wins} wins</span></span></span><span className="text-right"><b className="font-stat text-lg tabular-nums">{Math.round(crew.total).toLocaleString()}</b><span className="block text-[9px] text-muted-foreground">kg volume</span><span className="mt-0.5 flex items-center justify-end gap-1 text-[9px] text-muted-foreground">{crew.movement>0?<><TrendingUp className="h-3 w-3"/>+{crew.movement}</>:crew.movement<0?<><TrendingDown className="h-3 w-3"/>{crew.movement}</>:<Minus className="h-3 w-3"/>}</span></span></Link>})}</div>
       </>}
     </div>:<div className="mt-6 space-y-6">
-      {tab==="friends"&&!user?<div className="rounded-2xl border border-dashed border-border p-8 text-center"><Users className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">Sign in to see your friends</p><Button asChild variant="hero" className="mt-4"><Link to="/auth">Sign in</Link></Button></div>
-      :tab==="friends"&&audience.isLoading&&!audience.data?skeleton
-      :tab==="friends"&&audience.isError&&!audience.data?<div className="rounded-2xl border border-border p-6 text-center"><p className="font-semibold">Friends could not be loaded yet.</p><Button variant="line" className="mt-3" onClick={()=>void audience.refetch()}>Retry</Button></div>
-      :isLoading&&!rows.length?skeleton
+      {isLoading&&!rows.length?skeleton
       :isError&&!rows.length?<div className="rounded-2xl border border-border bg-card p-6 text-center"><p className="font-semibold">TOP is temporarily unavailable.</p><p className="mt-1 text-sm text-muted-foreground">Please try again. Your previous results will appear automatically when available.</p><Button variant="line" className="mt-4" onClick={()=>void refetch()}>Retry</Button></div>
-      :rows.length===0?<div className="rounded-2xl border border-dashed border-border p-8 text-center"><Trophy className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">{tab==="friends"?"No friend lifts yet":"No PRs logged yet"}</p><p className="mt-1 text-sm text-muted-foreground">{tab==="friends"?"Follow lifters to build your friends leaderboard.":"Be the first to put a lift on TOP."}</p><Button asChild variant="hero" className="mt-4"><Link to={tab==="friends"?"/people":"/records/new"}>{tab==="friends"?"Find lifters":"Log your first lift"}</Link></Button></div>
+      :rows.length===0?<div className="rounded-2xl border border-dashed border-border p-8 text-center"><Trophy className="mx-auto h-8 w-8 text-muted-foreground"/><p className="mt-3 font-bold">{"No PRs logged yet"}</p><p className="mt-1 text-sm text-muted-foreground">{"Be the first to put a lift on TOP."}</p><Button asChild variant="hero" className="mt-4"><Link to={"/records/new"}>{"Log your first lift"}</Link></Button></div>
       :<>
         {isError&&<p className="text-xs text-muted-foreground">Showing the last available results. <button type="button" onClick={()=>void refetch()} className="font-bold text-primary underline">Retry</button></p>}
         {isFetching&&!isError&&<p className="text-xs text-muted-foreground">Updating results…</p>}
